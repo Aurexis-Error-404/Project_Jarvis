@@ -1,0 +1,84 @@
+{
+    "project": {
+        "name": "JARVIS",
+        "stack": [
+            "Electron",
+            "React",
+            "FastAPI",
+            "Claude API",
+            "Ollama",
+            "CodeLlama",
+            "Python",
+            "WebSocket"
+        ],
+        "current_focus": "Proactive developer intelligence — zero search paradigm",
+        "repo_root": "/src"
+    },
+    "decisions": [
+        {
+            "what": "AI engine for proactive gate",
+            "chose": "Ollama / CodeLlama",
+            "rejected": "Claude API",
+            "reason": "Gate runs 50+ times per hour — must be free and local"
+        },
+        {
+            "what": "AI engine for error diagnosis",
+            "chose": "claude-sonnet-4-20250514",
+            "rejected": "claude-haiku-4-5-20251001",
+            "reason": "Error diagnosis is user-facing quality — needs deep reasoning"
+        },
+        {
+            "what": "AI engine for summaries and commit messages",
+            "chose": "claude-haiku-4-5-20251001",
+            "rejected": "claude-sonnet-4-20250514",
+            "reason": "Structured short output — haiku matches sonnet quality at 4x lower cost"
+        },
+        {
+            "what": "Project memory format",
+            "chose": "jarvis.json structured schema",
+            "rejected": "free-text notes",
+            "reason": "Structured fields prevent hallucination — Claude reads schema not prose"
+        },
+        {
+            "what": "Local secure mode model",
+            "chose": "CodeLlama via Ollama",
+            "rejected": "Claude API in local mode",
+            "reason": "Zero bytes leave machine in secure mode"
+        }
+    ],
+    "open_questions": [
+        "Proactive gate cooldown window — 5 minutes or 10 minutes?",
+        "Max tool iterations before hard stop — 10 or 15?",
+        "Surface card auto-dismiss timer — 8 seconds or 12 seconds?"
+    ],
+    "rejected_approaches": [
+        "Claude API for proactive gate",
+        "Sonnet for all tasks",
+        "Free-text project memory",
+        "localStorage for state persistence"
+    ],
+    "ai_config": {
+        "mode": "local",
+        "cloud_model": "claude-sonnet-4-20250514",
+        "haiku_model": "claude-haiku-4-5-20251001",
+        "local_model": "ollama/codellama",
+        "max_tool_iterations": 10,
+        "system_prompt_version": "v1"
+    },
+    "websocket": {
+        "port": 8765,
+        "events_send": [
+            "user_query",
+            "mode_change",
+            "surface_dismissed"
+        ],
+        "events_receive": [
+            "jarvis_stream_chunk",
+            "jarvis_surface",
+            "jarvis_response",
+            "jarvis_mode_ack",
+            "jarvis_error"
+        ]
+    },
+    "session_log": []
+}

@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JARVIS — 48-Hour Master Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0e0e10;
+  --bg2: #141418;
+  --bg3: #1c1c22;
+  --bg4: #242430;
+  --white: #e8e6f0;
+  --white2: #8888a0;
+  --white3: #44445a;
+  --gold: #f0b429;
+  --gold-d: #b8860a;
+  --gold-l: rgba(240,180,41,.1);
+  --teal: #00d4b4;
+  --teal-d: #009980;
+  --teal-l: rgba(0,212,180,.08);
+  --red: #ff4d4d;
+  --red-l: rgba(255,77,77,.1);
+  --blue: #4d9fff;
+  --blue-l: rgba(77,159,255,.1);
+  --purple: #b47dff;
+  --purple-l: rgba(180,125,255,.1);
+  --green: #4dcc88;
+  --green-l: rgba(77,204,136,.1);
+  --rule: rgba(232,230,240,.06);
+  --rule2: rgba(232,230,240,.03);
+  --font-b: 'Outfit', sans-serif;
+  --font-m: 'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font-b);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* HEADER */
+.header {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--rule);
+  padding: 32px 48px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 32px;
+  align-items: center;
+}
+
+@media (max-width: 800px) { .header { grid-template-columns: 1fr; padding: 24px 20px; } }
+
+.header-left {}
+.header-tag {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .22em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+h1 {
+  font-family: var(--font-b);
+  font-size: clamp(28px, 5vw, 46px);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+
+h1 .gold { color: var(--gold); }
+
+.header-deck {
+  font-size: 13px;
+  color: var(--white2);
+  line-height: 1.7;
+  max-width: 560px;
+}
+
+.header-right {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 200px;
+}
+
+.hstat {
+  background: var(--bg3);
+  border: 1px solid var(--rule);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.hstat-label { font-family: var(--font-m); font-size: 9px; letter-spacing: .12em; color: var(--white3); text-transform: uppercase; }
+.hstat-val { font-family: var(--font-m); font-size: 13px; color: var(--gold); font-weight: 500; }
+
+/* ROLE LEGEND */
+.legend {
+  background: var(--bg2);
+  border-bottom: 2px solid var(--rule);
+  padding: 16px 48px;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+@media (max-width: 700px) { .legend { padding: 16px 20px; } }
+
+.legend-title {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .18em;
+  color: var(--white3);
+  text-transform: uppercase;
+  margin-right: 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--white2);
+  white-space: nowrap;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* PHASE HEADER */
+.phase-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 2px solid var(--rule);
+  padding: 12px 48px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) { .phase-header { padding: 12px 20px; } }
+
+.phase-badge {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .1em;
+  padding: 4px 14px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.phase-badge.p1 { background: rgba(240,180,41,.15); color: var(--gold); border: 1px solid rgba(240,180,41,.3); }
+.phase-badge.p2 { background: rgba(0,212,180,.1); color: var(--teal); border: 1px solid rgba(0,212,180,.25); }
+.phase-badge.p3 { background: rgba(77,204,136,.1); color: var(--green); border: 1px solid rgba(77,204,136,.25); }
+
+.phase-title {
+  font-family: var(--font-b);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+}
+
+.phase-hours {
+  font-family: var(--font-m);
+  font-size: 11px;
+  color: var(--white3);
+}
+
+.phase-focus {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--white2);
+  font-style: italic;
+}
+
+/* MAIN */
+main { max-width: 1200px; margin: 0 auto; padding: 0 48px 80px; }
+@media (max-width: 700px) { main { padding: 0 16px 60px; } }
+
+/* HOUR BLOCK */
+.hour-block {
+  border-bottom: 1px solid var(--rule);
+  padding: 0;
+  position: relative;
+}
+
+.hour-block.gate {
+  border: 1px solid rgba(255,77,77,.3);
+  border-radius: 0;
+  background: rgba(255,77,77,.03);
+  margin: 8px 0;
+}
+
+.hour-block.feature-freeze {
+  border: 2px solid rgba(255,77,77,.5);
+  background: rgba(255,77,77,.05);
+  margin: 8px 0;
+}
+
+.hour-header {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  align-items: stretch;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.hour-header:hover { background: rgba(232,230,240,.02); }
+
+.hour-time {
+  background: var(--bg2);
+  border-right: 1px solid var(--rule);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+.hour-time-val {
+  font-family: var(--font-m);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--white);
+  line-height: 1;
+}
+
+.hour-time-sub {
+  font-family: var(--font-m);
+  font-size: 9px;
+  color: var(--white3);
+  letter-spacing: .06em;
+}
+
+.hour-summary {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.hour-title {
+  font-family: var(--font-b);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--white);
+  flex: 1;
+  min-width: 200px;
+}
+
+.hour-roles {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.role-tag {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .08em;
+  padding: 3px 8px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.rt-ai    { background: var(--gold-l);   color: var(--gold);   border: 1px solid rgba(240,180,41,.25); }
+.rt-back  { background: var(--teal-l);   color: var(--teal);   border: 1px solid rgba(0,212,180,.2); }
+.rt-front { background: var(--blue-l);   color: var(--blue);   border: 1px solid rgba(77,159,255,.2); }
+.rt-integ { background: var(--red-l);    color: var(--red);    border: 1px solid rgba(255,77,77,.2); }
+.rt-docs  { background: var(--purple-l); color: var(--purple); border: 1px solid rgba(180,125,255,.2); }
+.rt-all   { background: var(--green-l);  color: var(--green);  border: 1px solid rgba(77,204,136,.2); }
+
+.hour-expand-hint {
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--white3);
+  flex-shrink: 0;
+}
+
+/* HOUR DETAIL */
+.hour-detail {
+  display: none;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: var(--rule);
+  border-top: 1px solid var(--rule);
+}
+
+.hour-block.open .hour-detail { display: grid; }
+
+@media (max-width: 900px) {
+  .hour-detail { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .hour-detail { grid-template-columns: 1fr; }
+}
+
+.role-cell {
+  background: var(--bg2);
+  padding: 16px;
+  position: relative;
+}
+
+.role-cell.active { background: var(--bg3); }
+.role-cell.dim { background: var(--bg); opacity: .5; }
+
+.role-cell-header {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.rch-ai    { color: var(--gold); }
+.rch-back  { color: var(--teal); }
+.rch-front { color: var(--blue); }
+.rch-integ { color: var(--red); }
+.rch-docs  { color: var(--purple); }
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-item {
+  font-size: 12px;
+  color: var(--white2);
+  line-height: 1.5;
+  display: flex;
+  gap: 8px;
+}
+
+.task-item::before {
+  content: '›';
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.task-item.critical { color: var(--white); font-weight: 500; }
+.task-item.critical::before { color: var(--gold); }
+.task-item.normal::before { color: var(--white3); }
+.task-item.support::before { color: var(--white3); }
+.task-item.idle { color: var(--white3); font-style: italic; }
+.task-item.idle::before { color: var(--white3); }
+
+.cell-output {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--gold);
+  background: var(--gold-l);
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--white2);
+  line-height: 1.6;
+}
+
+.cell-output-label {
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.cell-send {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--teal);
+  background: var(--teal-l);
+  font-size: 11px;
+  color: var(--white2);
+  line-height: 1.6;
+}
+
+.cell-send-label {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.cell-test {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-left: 2px solid var(--blue);
+  background: var(--blue-l);
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--white2);
+  line-height: 1.6;
+}
+
+.cell-test-label {
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 4px;
+}
+
+.cell-gate {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255,77,77,.3);
+  background: var(--red-l);
+  font-size: 11px;
+  color: var(--white2);
+  line-height: 1.6;
+}
+
+.cell-gate-label {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 4px;
+}
+
+/* GATE SPECIAL */
+.gate-banner {
+  background: rgba(255,77,77,.08);
+  border: 1px solid rgba(255,77,77,.3);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 4px 0;
+}
+
+.gate-banner-label {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--red);
+  font-weight: 500;
+}
+
+.gate-banner-desc {
+  font-size: 12.5px;
+  color: var(--white2);
+}
+
+/* TOGGLE ALL */
+.controls {
+  padding: 16px 48px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg2);
+  position: sticky;
+  top: 52px;
+  z-index: 40;
+}
+
+@media (max-width: 700px) { .controls { padding: 12px 20px; top: 44px; } }
+
+.ctrl-btn {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border: 1px solid var(--rule);
+  background: var(--bg3);
+  color: var(--white2);
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.ctrl-btn:hover { background: var(--bg4); color: var(--white); border-color: var(--white3); }
+.ctrl-btn.active { background: var(--gold-l); color: var(--gold); border-color: rgba(240,180,41,.3); }
+
+.ctrl-filter {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border: 1px solid var(--rule);
+  background: var(--bg3);
+  color: var(--white2);
+  cursor: pointer;
+  transition: all .15s;
+  margin-left: auto;
+}
+
+/* FOOTER */
+footer {
+  background: var(--bg2);
+  border-top: 1px solid var(--rule);
+  padding: 20px 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ft-brand { font-family: var(--font-m); font-size: 12px; color: var(--gold); }
+.ft-meta { font-family: var(--font-m); font-size: 10px; color: var(--white3); text-align: right; letter-spacing: .06em; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.header, .legend { animation: fadeIn .4s ease both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div class="header-tag">// Master Build Roadmap · All Roles · Every Hour</div>
+    <h1>JARVIS — <span class="gold">48 Hours.</span><br>Hour by Hour.</h1>
+    <div class="header-deck">Every hour of the 3-day build, every role, every task. Click any hour block to expand the full detail for all 5 roles. Use the filter buttons to focus on one role at a time.</div>
+  </div>
+  <div class="header-right">
+    <div class="hstat"><span class="hstat-label">Total Hours</span><span class="hstat-val">48</span></div>
+    <div class="hstat"><span class="hstat-label">Roles</span><span class="hstat-val">5</span></div>
+    <div class="hstat"><span class="hstat-label">Decision Gates</span><span class="hstat-val">2</span></div>
+    <div class="hstat"><span class="hstat-label">Feature Freeze</span><span class="hstat-val">Hr 36</span></div>
+    <div class="hstat"><span class="hstat-label">Target Score</span><span class="hstat-val">9 / 10</span></div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span class="legend-title">Roles:</span>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div>AI Lead (Rahul)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--teal)"></div>Backend Implementor</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div>Frontend Implementor</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>Integration Lead</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div>Research + Docs</div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="ctrl-btn active" onclick="expandAll()">Expand All</button>
+  <button class="ctrl-btn" onclick="collapseAll()">Collapse All</button>
+  <span style="font-family:var(--font-m);font-size:9px;letter-spacing:.15em;color:var(--white3);text-transform:uppercase;align-self:center;margin-left:16px">Filter:</span>
+  <button class="ctrl-btn" onclick="filterRole('ai')">AI Lead</button>
+  <button class="ctrl-btn" onclick="filterRole('back')">Backend</button>
+  <button class="ctrl-btn" onclick="filterRole('front')">Frontend</button>
+  <button class="ctrl-btn" onclick="filterRole('integ')">Integration</button>
+  <button class="ctrl-btn" onclick="filterRole('docs')">Docs</button>
+  <button class="ctrl-btn" onclick="filterRole(null)">All Roles</button>
+</div>
+
+<main>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PHASE 1 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="phase-header">
+  <div class="phase-badge p1">Phase 1</div>
+  <div class="phase-title">Foundation — Core Pipeline</div>
+  <div class="phase-hours">Hours 0 – 18</div>
+  <div class="phase-focus">Goal: End-to-end pipeline working. All tools implemented. Proactive engine decision made.</div>
+</div>
+
+<!-- HOUR 0 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 0–1</div><div class="hour-time-sub">All hands</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Kickoff — Contracts Before Code</div>
+      <div class="hour-roles"><span class="role-tag rt-all">All 5</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Send API setup message to group chat immediately</div>
+        <div class="task-item critical">Open Google Doc "JARVIS Contracts"</div>
+        <div class="task-item critical">Verify API key + $20 spend cap is set in console.anthropic.com</div>
+        <div class="task-item normal">Open test_prompt.py — this is your terminal for the day</div>
+      </div>
+      <div class="cell-send"><div class="cell-send-label">Send to group chat now:</div>"API ready. Key in .env only. AI_MODE=local is the default — nobody uses cloud without telling me."</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Read the WebSocket protocol AI Lead is writing — ask questions now, not at hour 8</div>
+        <div class="task-item normal">Set up Python virtual environment</div>
+        <div class="task-item normal">Install: fastapi, uvicorn, anthropic, websockets, gitpython, playwright, watchdog, pandas, openpyxl, jinja2</div>
+        <div class="task-item normal">pip install playwright && playwright install chromium</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">npm create electron-app jarvis-desktop</div>
+        <div class="task-item normal">Add React renderer setup</div>
+        <div class="task-item normal">Read WebSocket protocol in Google Doc</div>
+        <div class="task-item critical">Confirm with AI Lead: what events does React need to handle?</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Create GitHub repo, set main branch protection, require PRs</div>
+        <div class="task-item critical">Create .env.example: ANTHROPIC_API_KEY, AI_MODE=local, OLLAMA_BASE_URL, PROJECT_PATH</div>
+        <div class="task-item normal">Commit empty folder structure so everyone can clone</div>
+        <div class="task-item normal">Schedule pipeline test announcement: "First pipeline test at Hour 6"</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Install Ollama → ollama pull codellama → verify it responds</div>
+        <div class="task-item critical">Wait for AI Lead to send CLAUDE.md content — commit immediately</div>
+        <div class="task-item normal">Start research: Playwright CSS selectors for GitHub README, dev.to, Google Scholar</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 1-2 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 1–2</div><div class="hour-time-sub">Contracts</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Write All Contract Documents — Locked Before Code</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-docs">Docs</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Write all 6 tool definitions in Google Doc (30 min)</div>
+        <div class="task-item critical">Write full WebSocket protocol with Backend (20 min)</div>
+        <div class="task-item critical">Write jarvis.json with real pest detection data (15 min)</div>
+        <div class="task-item critical">Write CLAUDE.md content — send to Person 5 to commit</div>
+      </div>
+      <div class="cell-output"><div class="cell-output-label">Deliverable:</div>Google Doc with: 6 tool schemas + WebSocket protocol + jarvis.json + CLAUDE.md all written and shared</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Review tool definitions with AI Lead — confirm all 6 are implementable</div>
+        <div class="task-item critical">Agree on WebSocket event structure — ask about edge cases now</div>
+        <div class="task-item normal">Create backend/ folder structure: main.py, ai/, tools/, memory/, context/</div>
+      </div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-front">Frontend</div>
+      <div class="task-list"><div class="task-item idle">Continuing environment setup. Reading protocol doc.</div></div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list"><div class="task-item idle">Repo setup. Waiting for contracts to be finalized.</div></div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Commit CLAUDE.md as soon as AI Lead sends content</div>
+        <div class="task-item critical">Commit jarvis.json to repo root — do not change any field names</div>
+        <div class="task-item normal">Begin Jinja2 template structure (wait for AI Lead to define variables)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 2-4 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 2–4</div><div class="hour-time-sub">Core build starts</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Backend Server + System Prompt v1 + Electron Shell</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-front">Frontend</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Write system prompt v1 in test_prompt.py</div>
+        <div class="task-item critical">Run memory test 1: "What database are we using?" → must say SQLite</div>
+        <div class="task-item critical">Run memory test 2: "Should we consider PostgreSQL?" → must NOT update memory</div>
+        <div class="task-item critical">Run memory test 3: "We're going with PostgreSQL" → MUST call update_project_memory</div>
+        <div class="task-item normal">Add prompt caching to test script (cache_control: ephemeral)</div>
+        <div class="task-item normal">Iterate prompt until all 3 memory tests pass</div>
+      </div>
+      <div class="cell-test"><div class="cell-test-label">Test script structure:</div>client.messages.create(system=[{text: prompt, cache_control: {type: ephemeral}}], tools=tool_defs, messages=[...])</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">FastAPI app with WebSocket at /ws endpoint</div>
+        <div class="task-item critical">Basic Claude API call — no tools yet, just messages in, text out</div>
+        <div class="task-item critical">Add prompt caching to claude_client.py (first thing, not later)</div>
+        <div class="task-item normal">Add rate limit retry with exponential backoff</div>
+        <div class="task-item normal">jarvis.json reader function in memory/jarvis_json.py</div>
+      </div>
+      <div class="cell-output"><div class="cell-output-label">Deliverable by Hr 4:</div>FastAPI running on :8000, WebSocket at ws://localhost:8765, basic Claude response working</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Electron main.js: basic window creation</div>
+        <div class="task-item critical">Global hotkey: Ctrl+Space shows/hides overlay div</div>
+        <div class="task-item critical">Preload IPC bridge setup</div>
+        <div class="task-item normal">Basic React App.jsx with conversation panel div</div>
+      </div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list"><div class="task-item idle">Monitoring repo commits. Preparing for Hr 6 test.</div></div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item normal">Research Playwright: how to extract article text from GitHub README pages</div>
+        <div class="task-item normal">Research Playwright: selectors for dev.to article body</div>
+        <div class="task-item normal">Document findings in Google Doc for Backend Implementor</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 4-6 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 4–6</div><div class="hour-time-sub">WebSocket + UI</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">WebSocket Connected — Electron Talks to Python</div>
+      <div class="hour-roles"><span class="role-tag rt-back">Backend</span><span class="role-tag rt-front">Frontend</span><span class="role-tag rt-integ">Integration</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item normal">Continue system prompt iteration — target v4 by end of this block</div>
+        <div class="task-item normal">Write error diagnosis prompt section — not wired yet, just drafted</div>
+        <div class="task-item normal">Run 5 variations of: "Why would my training loop crash with a CUDA error?" — evaluate specificity</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">WebSocket send/receive — handles user_query, sends jarvis_reply</div>
+        <div class="task-item critical">Wire jarvis.json into every Claude call as system prompt context</div>
+        <div class="task-item critical">status_update events: send "Thinking..." when Claude is processing</div>
+        <div class="task-item normal">error event: send structured error if Claude call fails</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">useWebSocket hook: connect to ws://localhost:8765, auto-reconnect on drop</div>
+        <div class="task-item critical">Input field in overlay → sends user_query event on Enter</div>
+        <div class="task-item critical">Receives jarvis_reply → appends to conversation panel</div>
+        <div class="task-item critical">SECURE/CLOUD mode badge — build this now, top-right corner, always visible</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Hour 6 Pipeline Test: open Electron → type "hello" → verify response appears</div>
+        <div class="task-item critical">If fails: identify which layer broke (WebSocket? Claude call? Electron IPC?)</div>
+        <div class="task-item critical">Report result to group chat immediately</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">Pipeline Test #1 — Hr 6</div>Criterion: "Hello Jarvis" → response appears in Electron UI. If fail: all hands debug before proceeding.</div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list"><div class="task-item normal">Complete Playwright selector research. Send to Backend in doc.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 6-9 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 6–9</div><div class="hour-time-sub">Tool layer</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Tool Use Loop + First Two Tools</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-front">Frontend</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">When Backend says codebase_reader is ready: ask for sample output. Read every field name.</div>
+        <div class="task-item critical">Write error diagnosis prompt using exact field names from real tool output</div>
+        <div class="task-item normal">Test: paste real traceback from pest detection project → evaluate CAUSE line</div>
+        <div class="task-item normal">System prompt iteration continues — target v6</div>
+      </div>
+      <div class="cell-test"><div class="cell-test-label">Quality test:</div>CAUSE must name: actual file path + actual line number + actual variable. If not → context not injected correctly.</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Tool_use loop: handle tool_use stop_reason → dispatch → send tool_result → loop until end_turn</div>
+        <div class="task-item critical">tools/codebase_reader.py: scan /src, read key files, return structured dict</div>
+        <div class="task-item critical">tools/git_interface.py: gitpython, read commits, diff, stats</div>
+        <div class="task-item critical">Show AI Lead sample output from both tools before writing prompts</div>
+        <div class="task-item normal">tool_call_status events: send to Electron when tool starts and completes</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Receives tool_call_status → show "Reading codebase..." indicator</div>
+        <div class="task-item normal">Conversation panel: distinguish user messages from Jarvis replies visually</div>
+        <div class="task-item normal">Loading state animation while Claude is processing</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #2 at Hr 9: query that triggers tool call → verify tool executes → response references file content</div>
+        <div class="task-item normal">Track: is the tool_call_status event reaching Electron UI?</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">Pipeline Test #2 — Hr 9</div>"What files are in my project?" → Claude calls read_codebase → response names actual files</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Begin Jinja2 HTML templates — AI Lead has defined variables by now</div>
+        <div class="task-item normal">Research template: two types — research_report.html and data_report.html</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 9-12 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 9–12</div><div class="hour-time-sub">Remaining tools</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Remaining 4 Tools + Memory Manager</div>
+      <div class="hour-roles"><span class="role-tag rt-back">Backend</span><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-integ">Integration</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Write git session briefing prompt — "summarize what changed in last 24h in 3 bullets"</div>
+        <div class="task-item critical">Test: run git briefing → bullets must reference actual commit messages, not generic "you made commits"</div>
+        <div class="task-item normal">Write commit message generator prompt</div>
+        <div class="task-item normal">System prompt v7 — should pass all 3 memory regression tests reliably now</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">memory/jarvis_json.py: read + atomic write (temp file → rename pattern)</div>
+        <div class="task-item critical">memory/session_log.py: SQLite, store conversation turns with timestamp</div>
+        <div class="task-item critical">memory/summarizer.py: called on session end, writes session_YYYYMMDD.txt</div>
+        <div class="task-item critical">AI mode router: reads AI_MODE, returns correct client (sonnet/haiku/ollama)</div>
+        <div class="task-item normal">tools/read_session_history.py: reads last 3 session .txt files</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Settings panel: mode toggle (Cloud ↔ Secure) — sends SET_MODE event</div>
+        <div class="task-item normal">Receives status_update → shows in status bar below overlay</div>
+        <div class="task-item normal">System tray icon — right-click shows "Open" option</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #3 at Hr 12: full memory cycle — query → Claude updates jarvis.json → verify file changed on disk</div>
+        <div class="task-item normal">Pipeline Test #3b: mode toggle in UI → verify backend switches model</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">Pipeline Test #3 — Hr 12</div>"We're going with PostgreSQL, remember that" → update_project_memory called → jarvis.json shows PostgreSQL in decisions</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Complete both Jinja2 HTML templates with correct variable names from AI Lead</div>
+        <div class="task-item normal">Test templates render with sample data — no broken variable errors</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 12-15 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 12–15</div><div class="hour-time-sub">Proactive engine</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Proactive Context Engine — File Watcher + Ollama Gate</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-integ">Integration</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Write Gate Prompt for Ollama: JSON only output, confidence 0–1, should_surface true/false</div>
+        <div class="task-item critical">Write Surface Prompt for haiku: 2–3 bullets, project-specific, 15 words max each</div>
+        <div class="task-item critical">Test gate: 5 scenarios (current focus file, config file, irrelevant file, recently surfaced file, no history file)</div>
+        <div class="task-item critical">Test surface: every bullet must contain a specific fact from jarvis.json or git history</div>
+      </div>
+      <div class="cell-test"><div class="cell-test-label">Gate test scenarios (all must pass):</div>
+      train.py (current focus) → should_surface: true<br>
+      requirements.txt → should_surface: false<br>
+      random_util.py → should_surface: false<br>
+      train.py again within 10min → should_surface: false</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">context/file_watcher.py: watchdog FileSystemEventHandler + 5-second debounce</div>
+        <div class="task-item critical">Signal registry pattern — SIGNAL_SOURCES list that CalendarWatcher can plug into later</div>
+        <div class="task-item critical">Gate call: Ollama only, parse JSON response (strip markdown fences)</div>
+        <div class="task-item critical">If confidence ≥ 0.7: call Surface prompt on haiku → send context_surface WebSocket event</div>
+        <div class="task-item normal">"Query in progress" flag: pause proactive engine during active Claude calls</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Context surface panel: receives context_surface event → shows bullets above overlay</div>
+        <div class="task-item normal">Dismiss button on surface panel</div>
+        <div class="task-item normal">Surface panel auto-hides after 30 seconds if not dismissed</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #4 at Hr 15: open a watched file → wait for surface → verify bullets appear in UI</div>
+        <div class="task-item normal">Run 3 consecutive file opens — verify debounce prevents duplicate surfaces</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">Pipeline Test #4 — Hr 15</div>Open train.py → within 8 seconds → context_surface event fires → UI shows 2–3 bullets about the file</div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list"><div class="task-item idle">Templates complete. Begin demo script research — what should the 3-minute script cover?</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 15-18 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 15–18</div><div class="hour-time-sub">Phase 1 close</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Phase 1 Completion + Integration Verification</div>
+      <div class="hour-roles"><span class="role-tag rt-all">All 5</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">System prompt final Phase 1 version — all 3 memory tests pass reliably</div>
+        <div class="task-item critical">Error diagnosis prompt locked — passes quality test (specific file + line)</div>
+        <div class="task-item critical">Gate and surface prompts stable — 5/5 test scenarios passing</div>
+        <div class="task-item normal">Write Ollama variants of all prompts (shorter, simpler instructions)</div>
+      </div>
+      <div class="cell-send"><div class="cell-send-label">Status to team at Hr 17:</div>"System prompt v9. All prompts stable. Memory, error diagnosis, proactive gate all passing test suites. Ready for Phase 2 — need web_research and report tools from Backend."</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">All 6 tools returning correct format — verified by showing AI Lead sample outputs</div>
+        <div class="task-item critical">Rate limit retry logic confirmed working (test by temporarily lowering rate limit)</div>
+        <div class="task-item normal">Begin Playwright setup for web_research tool (Phase 2 prep)</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">All WebSocket events handled and displaying correctly</div>
+        <div class="task-item normal">Mode toggle working — SECURE badge changes when switched</div>
+        <div class="task-item normal">Begin context surface panel polish</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #5 at Hr 18: FULL demo flow A–Z — proactive surface → error diagnosis → mode toggle</div>
+        <div class="task-item critical">Run proactive engine ×5 consecutively — any failure → proactive is CUT from demo</div>
+        <div class="task-item critical">GO / NO-GO DECISION: announce to team</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">⚠ Decision Gate — Hr 18</div>Proactive engine: 5/5 reliable → KEEP in demo as Act 1. Any failure → CUT, use fallback flow. This decision is FINAL.</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item normal">Write first draft of 3-minute demo script</div>
+        <div class="task-item normal">Prepare the real traceback from pest detection project for error diagnosis demo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PHASE 2 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="phase-header">
+  <div class="phase-badge p2">Phase 2</div>
+  <div class="phase-title">Intelligence — Reports + Prompt Engineering</div>
+  <div class="phase-hours">Hours 18 – 36</div>
+  <div class="phase-focus">Goal: Research reports working and project-specific. Demo rehearsal started. Feature freeze at Hr 36.</div>
+</div>
+
+<!-- HOUR 18-21 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 18–21</div><div class="hour-time-sub">Web research</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Web Research Tool + First Report Generation</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-integ">Integration</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">As soon as web_research tool is ready: run first research report end to end</div>
+        <div class="task-item critical">Query: "Research CNN architectures for satellite image classification on small datasets"</div>
+        <div class="task-item critical">Read recommendation section — does it mention EfficientNet-B3? Small datasets? Sentinel-2?</div>
+        <div class="task-item critical">If generic: begin iteration. THIS is the most important prompt work of the entire build.</div>
+        <div class="task-item normal">Iterate research report prompt — track which version you're on</div>
+      </div>
+      <div class="cell-test"><div class="cell-test-label">The one quality question:</div>Does the recommendation section name EfficientNet-B3 and reference small dataset constraint? If no → iterate.</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">tools/web_research.py: Playwright async, DuckDuckGo search, scrape top 5 pages</div>
+        <div class="task-item critical">Use CSS selectors from Person 5's research doc</div>
+        <div class="task-item critical">Truncate scraped content to 3000 tokens per page</div>
+        <div class="task-item critical">tools/report_generator.py: Jinja2 render + write to /reports/ with timestamp filename</div>
+        <div class="task-item normal">report_generated WebSocket event: send absolute file path to Electron</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Receives report_generated event → show "Open Report" button</div>
+        <div class="task-item normal">Button opens HTML file in default browser using shell.openExternal</div>
+        <div class="task-item normal">Notification: "Report saved: [filename]"</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #6: full research report — query → web_research fires → report saved → button appears in UI → report opens in browser</div>
+        <div class="task-item normal">Time the full cycle — must complete in under 60 seconds for demo</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">Pipeline Test #6 — Hr 21</div>Research query → HTML report saved to /reports/ → UI shows "Open Report" button → report opens. Time it.</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item normal">Verify Jinja2 templates render correctly with real data from first report run</div>
+        <div class="task-item normal">Continue demo script — now incorporating the report generation moment</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 21-27 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 21–27</div><div class="hour-time-sub">Score lives here</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Research Report Prompt — 15 Iterations to Project-Specific Output</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-front">Frontend</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">6 hours of focused prompt iteration on research report — nothing else</div>
+        <div class="task-item critical">Iteration 1–5: get recommendation section to reference EfficientNet-B3</div>
+        <div class="task-item critical">Iteration 6–10: get it to avoid suggesting ResNet (rejected decision in jarvis.json)</div>
+        <div class="task-item critical">Iteration 11–15: get it to reference Sentinel-2 specific constraints</div>
+        <div class="task-item critical">Target: "Given your EfficientNet-B3 on Sentinel-2 with small datasets, B4 is the upgrade path"</div>
+        <div class="task-item normal">Also iterate: session summary prompt + commit message prompt</div>
+      </div>
+      <div class="cell-output"><div class="cell-output-label">Target output (recommendation section):</div>"Given your current EfficientNet-B3 implementation on Sentinel-2 multispectral imagery with small training datasets, EfficientNet-B4 is the most viable upgrade path. ResNet variants are not recommended given your team's documented decision."</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Session end summarizer: triggered by SESSION_END WebSocket event → 5-bullet summary → write session_YYYYMMDD.txt</div>
+        <div class="task-item critical">read_session_history tool: reads last 3 session files → returns as context</div>
+        <div class="task-item normal">Excel reader: openpyxl + pandas, reads first 500 rows, returns column names + basic stats</div>
+        <div class="task-item normal">Folder watcher for Excel: watchdog on /data/incoming, fires when .xlsx detected</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Session briefing display: on startup, show last session summary in conversation panel</div>
+        <div class="task-item normal">Electron: on window close → send SESSION_END event → wait for summary confirmation</div>
+        <div class="task-item normal">Conversation history: persist conversations to localStorage, restore on startup</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Tests #7, #8 at Hr 24, #9 at Hr 27</div>
+        <div class="task-item normal">Test session cycle: open → query → close → reopen → verify session summary displayed</div>
+        <div class="task-item normal">Test mode switch mid-conversation: cloud → secure → verify output still works</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo script second draft — all 5 acts mapped to specific features</div>
+        <div class="task-item normal">Research: what questions do hackathon judges typically ask about AI projects?</div>
+        <div class="task-item normal">Prepare answers to: "How is this different from ChatGPT?" and "How does it know your project?"</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 27-30 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 27–30</div><div class="hour-time-sub">Final features</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Git Intelligence + Project Setup Tool + Ollama Variants</div>
+      <div class="hour-roles"><span class="role-tag rt-ai">AI Lead</span><span class="role-tag rt-back">Backend</span><span class="role-tag rt-front">Frontend</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Write Ollama-specific variants of all major prompts: shorter, simpler, explicit JSON instructions</div>
+        <div class="task-item critical">Test secure mode end to end: all queries routed to Ollama, no Claude API calls</div>
+        <div class="task-item normal">Write commit message generator prompt — test against real staged diff</div>
+        <div class="task-item normal">Write project setup assistant prompt — test with "FastAPI + PostgreSQL project"</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Git commit message generator: reads staged diff → returns conventional commit format</div>
+        <div class="task-item normal">Git PR description generator: reads branch diff vs main → returns structured description</div>
+        <div class="task-item normal">Project setup tool: generates folder structure + requirements.txt + .env.example</div>
+        <div class="task-item normal">Verify all tools have graceful error returns — no unhandled exceptions anywhere</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Report library page: lists /reports/*.html files with date and title</div>
+        <div class="task-item normal">Git action shortcuts: quick-access buttons for "Generate commit message" and "Briefing"</div>
+        <div class="task-item normal">Keyboard shortcuts documentation in settings panel</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #10 at Hr 30: secure mode full flow — all queries to Ollama, verify no API calls in console logs</div>
+        <div class="task-item critical">Verify SECURE badge updates correctly when mode switches</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">Pipeline Test #10 — Hr 30</div>Switch to Secure mode → run same query → Ollama responds → no Anthropic API calls in network logs → SECURE badge visible</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Final demo script — word for word, timed to exactly 3 minutes</div>
+        <div class="task-item normal">Fallback demo script — what to say if proactive engine was cut at Hr 18</div>
+        <div class="task-item normal">Quantified impact statement: "developers context-switch 8–12 times daily, losing 23 minutes each time = 3+ hours of focus lost per day"</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 30-33 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 30–33</div><div class="hour-time-sub">UI polish</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Demo UI Polish + Backup Reports Pre-Generated</div>
+      <div class="hour-roles"><span class="role-tag rt-front">Frontend</span><span class="role-tag rt-docs">Docs</span><span class="role-tag rt-integ">Integration</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item normal">Final prompt review: read every prompt once — look for ambiguous instructions</div>
+        <div class="task-item normal">Verify all prompts are committed to backend/ai/prompts.py — not scattered in test files</div>
+        <div class="task-item normal">Write the "how does it know?" judge answer — practice saying it in 30 seconds</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Bug fixes from integration tests only</div>
+        <div class="task-item normal">Performance: verify report generates in under 60 seconds</div>
+        <div class="task-item normal">Verify prompt caching is active — check token usage logs show cache_read_input_tokens</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">Final UI polish: clean typography, loading animations, smooth transitions</div>
+        <div class="task-item critical">SECURE MODE badge: must be impossible to miss — test from across a room</div>
+        <div class="task-item critical">Demo-specific: ensure conversation panel shows full exchange clearly at projector resolution</div>
+        <div class="task-item normal">Test on demo machine screen resolution — adjust if needed</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Tests #11, #12: full demo A–Z two consecutive times — both must pass</div>
+        <div class="task-item critical">Time each demo run — must be under 3 minutes</div>
+        <div class="task-item critical">Document every failure point from both runs</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Pre-generate 2 backup research reports with exact demo query — save to /reports/</div>
+        <div class="task-item critical">Verify backup reports are project-specific (recommendation section passes quality test)</div>
+        <div class="task-item normal">Prepare pitch deck: Problem → Solution → Demo → Impact → Enterprise Angle → Team</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 33-36 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 33–36</div><div class="hour-time-sub">Phase 2 close</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Final Integration + Pre-Freeze Verification</div>
+      <div class="hour-roles"><span class="role-tag rt-all">All 5</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">All prompts finalized — no changes after Hr 36 unless critical failure</div>
+        <div class="task-item critical">Read every AI output in final integration test — flag any generic responses</div>
+        <div class="task-item normal">Prepare judge Q&A answers for all anticipated questions</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">All PRs merged before Hr 36 — no open branches</div>
+        <div class="task-item normal">Final verification: all 6 tools return correct format</div>
+        <div class="task-item normal">Verify no hard-coded API keys anywhere in codebase</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item critical">All UI PRs merged before Hr 36</div>
+        <div class="task-item normal">Final check: mode toggle, surface panel, conversation panel, report button — all working</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Pipeline Test #13 at Hr 35: final verification before freeze</div>
+        <div class="task-item critical">FEATURE FREEZE ANNOUNCED at Hr 36 — group chat message</div>
+        <div class="task-item critical">Any PRs not merged by Hr 36 are closed, not merged</div>
+      </div>
+      <div class="cell-gate"><div class="cell-gate-label">⚠ Feature Freeze — Hr 36</div>"Feature freeze is now active. No new code. Bug fixes for critical issues only — must be approved by me. Demo polish and practice from here."</div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item normal">Final demo script locked — print it out or have it on a second screen</div>
+        <div class="task-item normal">Pitch deck finalized</div>
+        <div class="task-item normal">Judge Q&A prep: 6 anticipated questions with prepared answers</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PHASE 3 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<div class="phase-header">
+  <div class="phase-badge p3">Phase 3</div>
+  <div class="phase-title">Demo — Practice, Polish, Present</div>
+  <div class="phase-hours">Hours 36 – 48</div>
+  <div class="phase-focus">Goal: Perfect demo execution. No new features. Presenter knows script cold.</div>
+</div>
+
+<!-- HOUR 36-39 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 36–39</div><div class="hour-time-sub">Demo prep</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Demo Script Rehearsal Begins — Person 5 Leads</div>
+      <div class="hour-roles"><span class="role-tag rt-docs">Docs</span><span class="role-tag rt-integ">Integration</span><span class="role-tag rt-ai">AI Lead</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Watch first demo run by Person 5 — evaluate every AI output</div>
+        <div class="task-item critical">If any output is generic: identify which prompt → fix it → this is the last prompt change allowed</div>
+        <div class="task-item normal">Prepare your 30-second explanation of how jarvis.json makes outputs project-specific</div>
+      </div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list"><div class="task-item idle">Rest if possible. On standby for critical bug fixes only.</div></div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list"><div class="task-item idle">Rest if possible. Monitor for critical UI bugs in demo runs.</div></div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo run #1: time it, document every failure point</div>
+        <div class="task-item critical">Demo run #2: document improvements</div>
+        <div class="task-item normal">Identify the single highest-risk moment in the demo — make sure fallback is ready</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo run #1: full script, timed. Note where you stumble.</div>
+        <div class="task-item critical">Demo run #2: practice transitions between acts</div>
+        <div class="task-item normal">Confirm: backup reports are accessible and correct. Traceback prepared. Mode toggle memorized.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 39-42 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 39–42</div><div class="hour-time-sub">Practice runs</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Demo Runs ×3 — Timing and Fallback Rehearsal</div>
+      <div class="hour-roles"><span class="role-tag rt-docs">Docs</span><span class="role-tag rt-integ">Integration</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list"><div class="task-item idle">Rest. Only intervene if demo output quality degrades.</div></div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list"><div class="task-item idle">Rest. Standby for critical bugs only.</div></div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list"><div class="task-item idle">Rest. Standby for critical UI bugs only.</div></div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo run #3, #4 — timer on every run</div>
+        <div class="task-item critical">Practice the fallback flow — Person 5 must be equally comfortable with both flows</div>
+        <div class="task-item critical">Identify the single sentence that explains the enterprise security angle — practice it</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo run #3: full script with fallback flow variant</div>
+        <div class="task-item critical">Demo run #4: back to primary flow — must be exactly 3:00</div>
+        <div class="task-item critical">Memorize the close: "Developers lose 3+ hours daily to context switching. Jarvis eliminates that. And in secure mode, zero bytes of code leave the machine — the only AI assistant enterprise security teams approve."</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 42-47 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 42–47</div><div class="hour-time-sub">Final rehearsal</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Final Demo Run + Handoff to Presenter</div>
+      <div class="hour-roles"><span class="role-tag rt-all">All 5</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item critical">Watch final demo run — this is your last chance to flag a quality issue</div>
+        <div class="task-item critical">If any output is generic during final run: decide whether to fix it or accept it. No more prompt changes after this point.</div>
+        <div class="task-item normal">Be ready for judge Q&A: technical questions come to you</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Ensure Jarvis is running and stable on demo machine</div>
+        <div class="task-item normal">Verify Ollama is running in background (for secure mode demo)</div>
+        <div class="task-item normal">Have .env ready with ANTHROPIC_API_KEY for cloud mode</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list">
+        <div class="task-item normal">Demo machine: Electron app running, window positioned correctly on screen</div>
+        <div class="task-item normal">Ctrl+Space tested and working</div>
+        <div class="task-item normal">Second monitor if available: show report HTML on one screen, Jarvis UI on main</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo run #5: the final verification. Watch the clock.</div>
+        <div class="task-item critical">Sign off: "Demo is ready. No more changes."</div>
+        <div class="task-item normal">Brief the whole team: what to do if something breaks live (who fixes what, fallback decision)</div>
+      </div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list">
+        <div class="task-item critical">Demo run #5: the final run — must be under 3 minutes, confident, no stumbles</div>
+        <div class="task-item critical">Backup reports confirmed accessible and readable</div>
+        <div class="task-item normal">Rest. The script is memorized. The fallback is memorized. Trust the preparation.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOUR 47-48 -->
+<div class="hour-block open" onclick="toggleBlock(this)">
+  <div class="hour-header">
+    <div class="hour-time"><div class="hour-time-val">Hr 47–48</div><div class="hour-time-sub">Lock</div></div>
+    <div class="hour-summary">
+      <div class="hour-title">Lock — No Changes. Rest. Trust the Work.</div>
+      <div class="hour-roles"><span class="role-tag rt-all">All 5</span></div>
+      <div class="hour-expand-hint">↕</div>
+    </div>
+  </div>
+  <div class="hour-detail">
+    <div class="role-cell active">
+      <div class="role-cell-header rch-ai">AI Lead — Rahul</div>
+      <div class="task-list">
+        <div class="task-item normal">No prompt changes. No tests. The prompts are what they are.</div>
+        <div class="task-item normal">Mentally prepare your judge Q&A answers — the technical questions come to you</div>
+        <div class="task-item normal">Remember: judges remember the demo moment, not the features list</div>
+      </div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-back">Backend Implementor</div>
+      <div class="task-list"><div class="task-item idle">Rest. Backend is done. No changes.</div></div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-front">Frontend Implementor</div>
+      <div class="task-list"><div class="task-item idle">Rest. Frontend is done. No changes.</div></div>
+    </div>
+    <div class="role-cell active">
+      <div class="role-cell-header rch-integ">Integration Lead</div>
+      <div class="task-list">
+        <div class="task-item normal">Brief the team on live failure protocol: who handles what if something breaks during the actual demo</div>
+        <div class="task-item normal">Confirm: demo machine charged, Jarvis running, Ollama running, API key in .env</div>
+      </div>
+    </div>
+    <div class="role-cell dim">
+      <div class="role-cell-header rch-docs">Research + Docs</div>
+      <div class="task-list"><div class="task-item idle">Rest. The script is memorized. The fallback is ready. Trust the preparation.</div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div class="ft-brand">JARVIS · 48-Hour Master Roadmap · All Roles</div>
+  <div class="ft-meta">Rahul · BVRIT · 2026 · Target 9/10</div>
+</footer>
+
+<script>
+function toggleBlock(block) {
+  block.classList.toggle('open');
+}
+
+function expandAll() {
+  document.querySelectorAll('.hour-block').forEach(b => b.classList.add('open'));
+}
+
+function collapseAll() {
+  document.querySelectorAll('.hour-block').forEach(b => b.classList.remove('open'));
+}
+
+let activeFilter = null;
+
+function filterRole(role) {
+  activeFilter = role;
+
+  document.querySelectorAll('.role-cell').forEach(cell => {
+    cell.style.display = '';
+    cell.style.opacity = '';
+  });
+
+  if (!role) {
+    document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.ctrl-btn').classList.add('active');
+    return;
+  }
+
+  document.querySelectorAll('.ctrl-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  document.querySelectorAll('.hour-detail').forEach(detail => {
+    detail.style.gridTemplateColumns = '1fr';
+    const cells = detail.querySelectorAll('.role-cell');
+    cells.forEach(cell => {
+      const header = cell.querySelector('.role-cell-header');
+      if (!header) return;
+      const cls = header.className.replace('role-cell-header ', '');
+      if (cls !== `rch-${role}`) {
+        cell.style.display = 'none';
+      }
+    });
+  });
+}
+
+// Start with all expanded
+expandAll();
+</script>
+</body>
+</html>

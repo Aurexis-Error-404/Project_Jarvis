@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JARVIS — Frontend Implementor Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0c0e12;
+  --bg2:      #111318;
+  --bg3:      #181b22;
+  --bg4:      #1e2230;
+  --border:   rgba(255,255,255,.07);
+  --border2:  rgba(255,255,255,.13);
+  --ink:      #e8eaf0;
+  --ink2:     #9299ad;
+  --ink3:     #555d72;
+  --cyan:     #38bdf8;
+  --cyan-d:   #0e7490;
+  --cyan-bg:  rgba(56,189,248,.08);
+  --green:    #4ade80;
+  --green-bg: rgba(74,222,128,.08);
+  --amber:    #fbbf24;
+  --amber-bg: rgba(251,191,36,.08);
+  --red:      #f87171;
+  --red-bg:   rgba(248,113,113,.08);
+  --purple:   #a78bfa;
+  --purple-bg:rgba(167,139,250,.08);
+  --mono:     'Space Mono', monospace;
+  --sans:     'DM Sans', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.65;-webkit-font-smoothing:antialiased}
+
+/* NOISE OVERLAY */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.4}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:100;background:rgba(12,14,18,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 48px;display:flex;align-items:center;justify-content:space-between;height:52px}
+.nav-brand{font-family:var(--mono);font-size:11px;color:var(--cyan);letter-spacing:.12em}
+.nav-brand span{color:var(--ink3);margin:0 6px}
+.nav-links{display:flex;gap:2px}
+.nav-link{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--ink3);text-decoration:none;padding:6px 12px;border-radius:4px;transition:all .15s}
+.nav-link:hover{color:var(--ink);background:var(--bg3)}
+
+/* HERO */
+.hero{padding:72px 48px 56px;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;top:-120px;right:-80px;width:500px;height:500px;background:radial-gradient(circle,rgba(56,189,248,.06) 0%,transparent 70%);pointer-events:none}
+.hero-tag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--cyan);text-transform:uppercase;margin-bottom:18px;opacity:.8}
+h1{font-family:var(--sans);font-size:clamp(34px,5vw,56px);font-weight:600;line-height:1.08;letter-spacing:-.02em;margin-bottom:16px}
+h1 em{font-style:normal;color:var(--cyan)}
+.hero-sub{font-size:15px;color:var(--ink2);max-width:560px;line-height:1.8;font-weight:300}
+.hero-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.meta-pill{font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:5px 14px;border:1px solid var(--border2);color:var(--ink3);border-radius:3px}
+.meta-pill.hi{border-color:rgba(56,189,248,.3);color:var(--cyan);background:var(--cyan-bg)}
+
+/* MAIN */
+main{max-width:980px;margin:0 auto;padding:0 48px 100px}
+@media(max-width:700px){nav,main,.hero{padding-left:20px;padding-right:20px}}
+
+/* SECTION */
+.sec{padding:56px 0;border-bottom:1px solid var(--border)}
+.sec-label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;margin-bottom:10px;opacity:.7}
+h2{font-size:clamp(22px,3vw,30px);font-weight:600;letter-spacing:-.02em;margin-bottom:28px;line-height:1.2}
+h3{font-size:15px;font-weight:600;letter-spacing:-.01em;margin-bottom:12px;color:var(--ink)}
+
+/* CALLOUT */
+.callout{border-left:3px solid var(--cyan);background:var(--cyan-bg);padding:14px 18px;margin:20px 0;font-size:13px;color:var(--ink2);line-height:1.7;border-radius:0 6px 6px 0}
+.callout.warn{border-color:var(--amber);background:var(--amber-bg)}
+.callout.ok{border-color:var(--green);background:var(--green-bg)}
+.callout.danger{border-color:var(--red);background:var(--red-bg)}
+.callout strong{color:var(--ink)}
+
+/* GRID */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}
+@media(max-width:680px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:20px}
+.card-label{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px}
+.card-title{font-size:14px;font-weight:600;margin-bottom:6px}
+.card-body{font-size:12.5px;color:var(--ink2);line-height:1.65}
+.card.cyan{border-color:rgba(56,189,248,.2);background:var(--cyan-bg)}
+.card.green{border-color:rgba(74,222,128,.2);background:var(--green-bg)}
+.card.amber{border-color:rgba(251,191,36,.2);background:var(--amber-bg)}
+.card.purple{border-color:rgba(167,139,250,.2);background:var(--purple-bg)}
+
+/* CODE */
+pre{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:20px;overflow-x:auto;margin:16px 0;position:relative}
+pre code{font-family:var(--mono);font-size:12px;line-height:1.7;color:#c9d1d9}
+.kw{color:#ff7b72}
+.fn{color:#d2a8ff}
+.str{color:#a5d6ff}
+.cm{color:#8b949e;font-style:italic}
+.num{color:#79c0ff}
+.prop{color:#ffa657}
+.tag{color:#7ee787}
+.lang{position:absolute;top:10px;right:14px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--ink3);text-transform:uppercase}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;margin:20px 0;font-size:13px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border2)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);color:var(--ink2);vertical-align:top}
+td:first-child{font-family:var(--mono);font-size:11px;color:var(--cyan)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+
+/* CHECKLIST */
+.checklist{list-style:none;margin:16px 0}
+.checklist li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--ink2)}
+.checklist li:last-child{border-bottom:none}
+.check{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:3px;flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.check.done{background:var(--green);border-color:var(--green)}
+.check.done::after{content:'✓';font-size:10px;color:#000;font-weight:700}
+.check-text{line-height:1.5}
+.check-text .tag-inline{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;background:var(--bg3);color:var(--ink3);margin-left:6px;border:1px solid var(--border)}
+
+/* TIMELINE */
+.tl{margin:20px 0}
+.tl-row{display:flex;gap:0;margin-bottom:0}
+.tl-time{font-family:var(--mono);font-size:10px;color:var(--ink3);width:90px;flex-shrink:0;padding-top:14px;letter-spacing:.06em}
+.tl-line{width:1px;background:var(--border2);flex-shrink:0;position:relative;margin:0 20px}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);position:absolute;top:17px;left:-4px;box-shadow:0 0 8px rgba(56,189,248,.5)}
+.tl-body-w{flex:1;padding:10px 0 24px}
+.tl-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.tl-desc{font-size:12.5px;color:var(--ink2);line-height:1.6}
+
+/* COMPONENT PREVIEW */
+.preview-wrap{background:var(--bg3);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:20px 0}
+.preview-bar{background:var(--bg4);border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:8px}
+.preview-dot{width:10px;height:10px;border-radius:50%}
+.preview-label{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.08em;margin-left:4px}
+.preview-body{padding:24px}
+
+/* OVERLAY MOCK */
+.overlay-mock{background:#1a1d25;border:1px solid rgba(56,189,248,.25);border-radius:10px;padding:16px;font-family:var(--mono);box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(56,189,248,.05)}
+.overlay-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.overlay-logo{font-size:11px;color:var(--cyan);letter-spacing:.1em}
+.overlay-badge{font-size:9px;padding:3px 8px;border-radius:20px;letter-spacing:.08em}
+.badge-local{background:rgba(74,222,128,.15);color:var(--green);border:1px solid rgba(74,222,128,.3)}
+.badge-cloud{background:rgba(56,189,248,.15);color:var(--cyan);border:1px solid rgba(56,189,248,.3)}
+.overlay-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--ink);width:100%;margin-bottom:14px;outline:none}
+.overlay-input::placeholder{color:var(--ink3)}
+.surface-card{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.15);border-radius:6px;padding:12px;margin-bottom:8px}
+.surface-card-label{font-size:9px;letter-spacing:.12em;color:var(--cyan);text-transform:uppercase;margin-bottom:6px;opacity:.7}
+.surface-bullet{font-size:11px;color:var(--ink2);line-height:1.6;padding:2px 0}
+.surface-bullet::before{content:'•';color:var(--cyan);margin-right:7px}
+.overlay-stream{font-size:12px;color:var(--ink2);line-height:1.7;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.cursor{display:inline-block;width:2px;height:13px;background:var(--cyan);margin-left:2px;animation:blink .8s step-end infinite;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* BADGE TOGGLE */
+.toggle-row{display:flex;align-items:center;gap:12px;padding:12px 0}
+.toggle{width:36px;height:20px;background:var(--bg4);border:1px solid var(--border2);border-radius:20px;cursor:pointer;position:relative;transition:background .2s}
+.toggle.on{background:var(--green-bg);border-color:rgba(74,222,128,.4)}
+.toggle-thumb{width:14px;height:14px;border-radius:50%;background:var(--ink3);position:absolute;top:2px;left:2px;transition:all .2s}
+.toggle.on .toggle-thumb{left:18px;background:var(--green)}
+.toggle-label{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+
+/* EVENT TABLE */
+.event-row{display:grid;grid-template-columns:180px 1fr;gap:0;border-bottom:1px solid var(--border)}
+.event-row:last-child{border-bottom:none}
+.event-name{font-family:var(--mono);font-size:11px;color:var(--cyan);padding:12px 14px;border-right:1px solid var(--border)}
+.event-desc{padding:12px 14px;font-size:12.5px;color:var(--ink2)}
+
+/* FOOTER */
+footer{background:var(--bg2);border-top:1px solid var(--border);padding:28px 48px;display:flex;justify-content:space-between;align-items:center}
+.ft-l{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.1em}
+.ft-r{font-family:var(--mono);font-size:10px;color:var(--ink3);letter-spacing:.06em;text-align:right}
+</style>
+</head>
+<body>
+
+<nav>
+  <span class="nav-brand">JARVIS<span>/</span>frontend-brief</span>
+  <div class="nav-links">
+    <a class="nav-link" href="#your-job">Your Job</a>
+    <a class="nav-link" href="#components">Components</a>
+    <a class="nav-link" href="#websocket">WebSocket</a>
+    <a class="nav-link" href="#ipc">Electron IPC</a>
+    <a class="nav-link" href="#checklist">Checklist</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">Person 3 · Frontend Implementor</div>
+  <h1>Your build brief for<br><em>JARVIS</em></h1>
+  <p class="hero-sub">Everything you need to build the Electron + React frontend. WebSocket contracts, component specs, IPC bridge, state shape, and what good output looks like.</p>
+  <div class="hero-meta">
+    <span class="meta-pill hi">Electron + React</span>
+    <span class="meta-pill">RTX 3050</span>
+    <span class="meta-pill">WebSocket ws://localhost:8765</span>
+    <span class="meta-pill">48-hour build</span>
+  </div>
+</div>
+
+<main>
+
+<!-- YOUR JOB -->
+<section class="sec" id="your-job">
+  <div class="sec-label">Section 01</div>
+  <h2>Your job in one paragraph</h2>
+  <p style="color:var(--ink2);font-size:14px;line-height:1.8;max-width:700px;margin-bottom:24px">
+    You own everything the developer sees. That's three things: the hotkey overlay (Ctrl+Space), the proactive surface card that appears automatically when Jarvis detects relevant context, and the SECURE MODE badge that shows which AI engine is active. You receive everything over WebSocket from the FastAPI backend — you never call the Claude API directly.
+  </p>
+
+  <div class="grid-3">
+    <div class="card cyan">
+      <div class="card-label">Component 1</div>
+      <div class="card-title">Hotkey Overlay</div>
+      <div class="card-body">Ctrl+Space opens a floating panel. Input box, streaming response, history. Primary interface. Must open in &lt;100ms.</div>
+    </div>
+    <div class="card amber">
+      <div class="card-label">Component 2</div>
+      <div class="card-title">Surface Card</div>
+      <div class="card-body">Auto-appears bottom-right when proactive engine fires. 2-3 bullet points. Dismissable. Never interrupts typing.</div>
+    </div>
+    <div class="card green">
+      <div class="card-label">Component 3</div>
+      <div class="card-title">Secure Mode Badge</div>
+      <div class="card-body">Toggle in overlay header. Shows LOCAL / CLOUD. Toggle sends mode change to backend over WebSocket. Visible in demo.</div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>What you don't own:</strong> The Claude API, tool execution, file watching, Ollama. Those all live in the Python backend. You consume events, you don't produce AI outputs.
+  </div>
+</section>
+
+<!-- COMPONENT PREVIEW -->
+<section class="sec" id="components">
+  <div class="sec-label">Section 02</div>
+  <h2>What it should look like</h2>
+
+  <p style="color:var(--ink2);font-size:13px;margin-bottom:20px">This is the reference visual. Build to match this structure — styling is your call but these elements must all be present.</p>
+
+  <div class="preview-wrap">
+    <div class="preview-bar">
+      <div class="preview-dot" style="background:#ff5f57"></div>
+      <div class="preview-dot" style="background:#febc2e"></div>
+      <div class="preview-dot" style="background:#28c840"></div>
+      <span class="preview-label">JARVIS Overlay — Ctrl+Space</span>
+    </div>
+    <div class="preview-body">
+      <div style="max-width:460px;margin:0 auto">
+        <div class="overlay-mock">
+          <div class="overlay-header">
+            <span class="overlay-logo">J·A·R·V·I·S</span>
+            <span class="overlay-badge badge-local" id="mode-badge">● LOCAL</span>
+          </div>
+          <input class="overlay-input" placeholder="Ask anything about your project..." value="Why is NDVI returning NaN on cloud tiles?"/>
+          <div class="surface-card">
+            <div class="surface-card-label">Proactive · preprocessor.py</div>
+            <div class="surface-bullet">cloud_mask.py last modified — median imputation path not handled</div>
+            <div class="surface-bullet">NDVI NaN pattern not yet guarded in apply_cloud_filter()</div>
+          </div>
+          <div class="overlay-stream">
+            Line 89 in preprocessor.py — <code style="color:var(--cyan)">cloud_threshold</code> is float but <code style="color:var(--cyan)">filter_tiles()</code> expects int. Introduced in Tuesday's commit to audio_capture.py. Fix: cast to <code style="color:var(--cyan)">int(cloud_threshold)</code> before passing.<span class="cursor"></span>
+          </div>
+          <div class="toggle-row">
+            <div class="toggle on" id="demo-toggle" onclick="toggleMode()">
+              <div class="toggle-thumb"></div>
+            </div>
+            <span class="toggle-label" id="toggle-label">Secure Mode (Local)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:32px">State shape — this is what your React state looks like</h3>
+  <pre><code><span class="cm">// useJarvis.js — top-level state</span>
+<span class="kw">const</span> [state, dispatch] = useReducer(reducer, {
+  <span class="prop">overlay</span>: {
+    <span class="prop">open</span>: <span class="kw">false</span>,               <span class="cm">// toggled by Ctrl+Space</span>
+    <span class="prop">input</span>: <span class="str">''</span>,
+    <span class="prop">streamingText</span>: <span class="str">''</span>,        <span class="cm">// appended on every chunk event</span>
+    <span class="prop">isStreaming</span>: <span class="kw">false</span>,
+  },
+  <span class="prop">surface</span>: {
+    <span class="prop">visible</span>: <span class="kw">false</span>,            <span class="cm">// auto-show when gate fires</span>
+    <span class="prop">bullets</span>: [],               <span class="cm">// string[] — 2-3 items from backend</span>
+    <span class="prop">file</span>: <span class="str">''</span>,                  <span class="cm">// which file triggered this</span>
+    <span class="prop">dismissedAt</span>: <span class="kw">null</span>,
+  },
+  <span class="prop">mode</span>: <span class="str">'local'</span>,              <span class="cm">// 'local' | 'cloud'</span>
+  <span class="prop">ws</span>: <span class="kw">null</span>,                    <span class="cm">// WebSocket instance</span>
+  <span class="prop">connected</span>: <span class="kw">false</span>,
+});<span class="lang">React</span></code></pre>
+
+  <h3>Surface card — auto-dismiss logic</h3>
+  <pre><code><span class="cm">// Auto-dismiss surface card after 8 seconds</span>
+<span class="cm">// Reset timer if user hovers (they're reading it)</span>
+<span class="kw">useEffect</span>(() => {
+  <span class="kw">if</span> (!state.surface.visible) <span class="kw">return</span>;
+  <span class="kw">const</span> timer = setTimeout(() => {
+    dispatch({ <span class="prop">type</span>: <span class="str">'DISMISS_SURFACE'</span> });
+  }, <span class="num">8000</span>);
+  <span class="kw">return</span> () => clearTimeout(timer);
+}, [state.surface.visible]);<span class="lang">React</span></code></pre>
+</section>
+
+<!-- WEBSOCKET -->
+<section class="sec" id="websocket">
+  <div class="sec-label">Section 03</div>
+  <h2>WebSocket contract</h2>
+
+  <div class="callout">
+    <strong>Endpoint:</strong> ws://localhost:8765 — connect once on app start, reconnect on disconnect with 2s backoff. All messages are JSON.
+  </div>
+
+  <h3 style="margin-top:28px">Events you RECEIVE from backend</h3>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px">
+    <div class="event-row">
+      <div class="event-name">jarvis_stream_chunk</div>
+      <div class="event-desc">Streaming text from Claude. Append <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">event.text</code> to streamingText. When <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">event.done === true</code>, stop streaming indicator.</div>
+    </div>
+    <div class="event-row">
+      <div class="event-name">jarvis_surface</div>
+      <div class="event-desc">Proactive engine fired. Show surface card with <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">event.bullets[]</code> and <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">event.file</code>. Auto-dismiss after 8s.</div>
+    </div>
+    <div class="event-row">
+      <div class="event-name">jarvis_response</div>
+      <div class="event-desc">Non-streamed response (used during tool_use loop). Replace full response area. Not streaming.</div>
+    </div>
+    <div class="event-row">
+      <div class="event-name">jarvis_mode_ack</div>
+      <div class="event-desc">Backend confirmed mode switch. Update badge. Payload: <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">{mode: 'local' | 'cloud'}</code></div>
+    </div>
+    <div class="event-row">
+      <div class="event-name">jarvis_error</div>
+      <div class="event-desc">Backend error. Show inline in overlay — never crash the UI. Payload: <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">{message: string}</code></div>
+    </div>
+  </div>
+
+  <h3>Events you SEND to backend</h3>
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px">
+    <div class="event-row">
+      <div class="event-name">user_query</div>
+      <div class="event-desc">User submitted a query from the overlay. Payload: <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">{text: string, mode: 'local'|'cloud'}</code></div>
+    </div>
+    <div class="event-row">
+      <div class="event-name">mode_change</div>
+      <div class="event-desc">User toggled secure mode. Payload: <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">{mode: 'local' | 'cloud'}</code>. Wait for jarvis_mode_ack before updating badge.</div>
+    </div>
+    <div class="event-row">
+      <div class="event-name">surface_dismissed</div>
+      <div class="event-desc">User dismissed the surface card. Payload: <code style="font-family:var(--mono);font-size:11px;color:var(--cyan)">{file: string}</code>. Backend uses this for cooldown tracking.</div>
+    </div>
+  </div>
+
+  <h3>WebSocket hook — copy this exactly</h3>
+  <pre><code><span class="cm">// hooks/useWebSocket.js</span>
+<span class="kw">import</span> { useEffect, useRef } <span class="kw">from</span> <span class="str">'react'</span>;
+
+<span class="kw">export function</span> <span class="fn">useWebSocket</span>(dispatch) {
+  <span class="kw">const</span> ws = useRef(<span class="kw">null</span>);
+  <span class="kw">const</span> reconnectTimer = useRef(<span class="kw">null</span>);
+
+  <span class="kw">const</span> <span class="fn">connect</span> = () => {
+    ws.current = <span class="kw">new</span> WebSocket(<span class="str">'ws://localhost:8765'</span>);
+
+    ws.current.onopen = () => {
+      dispatch({ <span class="prop">type</span>: <span class="str">'WS_CONNECTED'</span> });
+    };
+
+    ws.current.onmessage = (e) => {
+      <span class="kw">const</span> event = JSON.parse(e.data);
+      <span class="kw">switch</span> (event.event) {
+        <span class="kw">case</span> <span class="str">'jarvis_stream_chunk'</span>:
+          <span class="kw">if</span> (event.done) {
+            dispatch({ <span class="prop">type</span>: <span class="str">'STREAM_DONE'</span> });
+          } <span class="kw">else</span> {
+            dispatch({ <span class="prop">type</span>: <span class="str">'STREAM_CHUNK'</span>, <span class="prop">text</span>: event.text });
+          }
+          <span class="kw">break</span>;
+        <span class="kw">case</span> <span class="str">'jarvis_surface'</span>:
+          dispatch({ <span class="prop">type</span>: <span class="str">'SHOW_SURFACE'</span>, <span class="prop">bullets</span>: event.bullets, <span class="prop">file</span>: event.file });
+          <span class="kw">break</span>;
+        <span class="kw">case</span> <span class="str">'jarvis_mode_ack'</span>:
+          dispatch({ <span class="prop">type</span>: <span class="str">'MODE_CONFIRMED'</span>, <span class="prop">mode</span>: event.mode });
+          <span class="kw">break</span>;
+        <span class="kw">case</span> <span class="str">'jarvis_error'</span>:
+          dispatch({ <span class="prop">type</span>: <span class="str">'SET_ERROR'</span>, <span class="prop">message</span>: event.message });
+          <span class="kw">break</span>;
+      }
+    };
+
+    ws.current.onclose = () => {
+      dispatch({ <span class="prop">type</span>: <span class="str">'WS_DISCONNECTED'</span> });
+      <span class="cm">// Reconnect after 2s</span>
+      reconnectTimer.current = setTimeout(connect, <span class="num">2000</span>);
+    };
+  };
+
+  useEffect(() => {
+    connect();
+    <span class="kw">return</span> () => {
+      ws.current?.close();
+      clearTimeout(reconnectTimer.current);
+    };
+  }, []);
+
+  <span class="kw">return</span> ws;
+}<span class="lang">React</span></code></pre>
+</section>
+
+<!-- ELECTRON IPC -->
+<section class="sec" id="ipc">
+  <div class="sec-label">Section 04</div>
+  <h2>Electron IPC bridge</h2>
+
+  <div class="callout danger">
+    <strong>Critical:</strong> The surface card event comes from the Python backend → WebSocket → Electron main process. It will NOT reach React automatically. You must forward it via IPC or it silently disappears.
+  </div>
+
+  <h3 style="margin-top:24px">main.js — global hotkey + IPC forwarding</h3>
+  <pre><code><span class="cm">// main.js (Electron main process)</span>
+<span class="kw">const</span> { app, BrowserWindow, globalShortcut, ipcMain } = require(<span class="str">'electron'</span>);
+<span class="kw">const</span> WebSocket = require(<span class="str">'ws'</span>);
+
+<span class="kw">let</span> mainWindow;
+<span class="kw">let</span> ws;
+
+<span class="fn">app</span>.on(<span class="str">'ready'</span>, () => {
+  mainWindow = <span class="kw">new</span> BrowserWindow({
+    <span class="prop">width</span>: <span class="num">680</span>,
+    <span class="prop">height</span>: <span class="num">480</span>,
+    <span class="prop">frame</span>: <span class="kw">false</span>,           <span class="cm">// frameless window for overlay feel</span>
+    <span class="prop">alwaysOnTop</span>: <span class="kw">true</span>,      <span class="cm">// floats above IDE</span>
+    <span class="prop">show</span>: <span class="kw">false</span>,             <span class="cm">// hidden until Ctrl+Space</span>
+    <span class="prop">webPreferences</span>: {
+      <span class="prop">contextIsolation</span>: <span class="kw">true</span>,
+      <span class="prop">preload</span>: __dirname + <span class="str">'/preload.js'</span>
+    }
+  });
+
+  <span class="cm">// Ctrl+Space toggles the overlay</span>
+  globalShortcut.register(<span class="str">'Control+Space'</span>, () => {
+    <span class="kw">if</span> (mainWindow.isVisible()) {
+      mainWindow.hide();
+    } <span class="kw">else</span> {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  <span class="cm">// Forward backend surface events to React</span>
+  <span class="cm">// This is the line most people forget</span>
+  ws = <span class="kw">new</span> WebSocket(<span class="str">'ws://localhost:8765'</span>);
+  ws.on(<span class="str">'message'</span>, (data) => {
+    <span class="kw">const</span> event = JSON.parse(data);
+    <span class="kw">if</span> (event.event === <span class="str">'jarvis_surface'</span>) {
+      mainWindow.webContents.send(<span class="str">'context_surface'</span>, event);
+    }
+  });
+});<span class="lang">JS</span></code></pre>
+
+  <h3 style="margin-top:24px">preload.js — expose IPC to React safely</h3>
+  <pre><code><span class="cm">// preload.js</span>
+<span class="kw">const</span> { contextBridge, ipcRenderer } = require(<span class="str">'electron'</span>);
+
+contextBridge.exposeInMainWorld(<span class="str">'jarvis'</span>, {
+  <span class="cm">// React calls this to listen for surface events from main</span>
+  onSurface: (callback) =>
+    ipcRenderer.on(<span class="str">'context_surface'</span>, (_e, data) => callback(data)),
+
+  <span class="cm">// React calls this to remove listener on unmount</span>
+  offSurface: (callback) =>
+    ipcRenderer.removeListener(<span class="str">'context_surface'</span>, callback),
+});<span class="lang">JS</span></code></pre>
+
+  <h3 style="margin-top:24px">In React — listen for surface events from main process</h3>
+  <pre><code><span class="cm">// In your App or SurfaceCard component</span>
+useEffect(() => {
+  <span class="kw">const</span> handler = (event) => {
+    dispatch({
+      <span class="prop">type</span>: <span class="str">'SHOW_SURFACE'</span>,
+      <span class="prop">bullets</span>: event.bullets,
+      <span class="prop">file</span>: event.file
+    });
+  };
+
+  window.jarvis.onSurface(handler);
+  <span class="kw">return</span> () => window.jarvis.offSurface(handler);
+}, []);<span class="lang">React</span></code></pre>
+</section>
+
+<!-- QUALITY GATES -->
+<section class="sec" id="quality">
+  <div class="sec-label">Section 05</div>
+  <h2>What good output looks like</h2>
+
+  <div class="grid-2">
+    <div>
+      <h3 style="color:var(--red);margin-bottom:12px">BAD — do not ship</h3>
+      <div style="background:var(--bg2);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:16px;font-size:12.5px;color:var(--ink2);line-height:1.8">
+        <div style="margin-bottom:8px">✗ Overlay takes 500ms+ to open after Ctrl+Space</div>
+        <div style="margin-bottom:8px">✗ Surface card appears in the middle of the screen — interrupts typing</div>
+        <div style="margin-bottom:8px">✗ SECURE MODE badge is hidden — not visible in demo without hunting for it</div>
+        <div style="margin-bottom:8px">✗ Streaming text appears all at once (buffering somewhere)</div>
+        <div>✗ WebSocket disconnects and never reconnects — needs app restart</div>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:var(--green);margin-bottom:12px">GOOD — ship this</h3>
+      <div style="background:var(--bg2);border:1px solid rgba(74,222,128,.2);border-radius:8px;padding:16px;font-size:12.5px;color:var(--ink2);line-height:1.8">
+        <div style="margin-bottom:8px">✓ Overlay opens in under 100ms — feels instant</div>
+        <div style="margin-bottom:8px">✓ Surface card slides in from bottom-right, stays out of the way</div>
+        <div style="margin-bottom:8px">✓ SECURE MODE badge visible immediately, toggles live during demo</div>
+        <div style="margin-bottom:8px">✓ Text streams word-by-word with a blinking cursor</div>
+        <div>✓ Auto-reconnects silently if backend restarts</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:28px">Demo-critical requirement — the toggle</h3>
+  <div class="callout ok">
+    The judge will ask to see SECURE MODE toggled live. The badge must visibly change between <strong>LOCAL</strong> and <strong>CLOUD</strong> and the backend must confirm the switch before the badge updates. Don't fake this — it needs to actually change the mode over WebSocket.
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="sec">
+  <div class="sec-label">Section 06</div>
+  <h2>Your 48-hour timeline</h2>
+
+  <div class="tl">
+    <div class="tl-row">
+      <div class="tl-time">Hr 0–2</div>
+      <div class="tl-line"><div class="tl-dot"></div></div>
+      <div class="tl-body-w">
+        <div class="tl-title">Contracts + skeleton</div>
+        <div class="tl-desc">Agree on WebSocket event names with Backend (use the names in this doc). Scaffold the Electron window with Ctrl+Space toggle. WebSocket hook connecting but not doing anything yet. Show a blank overlay.</div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">Hr 2–6</div>
+      <div class="tl-line"><div class="tl-dot" style="background:var(--amber);box-shadow:0 0 8px rgba(251,191,36,.5)"></div></div>
+      <div class="tl-body-w">
+        <div class="tl-title">First pipeline test — "Hello Jarvis"</div>
+        <div class="tl-desc">Input box → send user_query → receive jarvis_response → display in overlay. This end-to-end working by Hour 6 is the team gate. If WebSocket isn't connecting, tell Rahul — he'll help debug within 15 minutes.</div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">Hr 6–18</div>
+      <div class="tl-line"><div class="tl-dot" style="background:var(--amber);box-shadow:0 0 8px rgba(251,191,36,.5)"></div></div>
+      <div class="tl-body-w">
+        <div class="tl-title">Streaming + surface card</div>
+        <div class="tl-desc">Swap jarvis_response for streaming chunks. Add blinking cursor. Build surface card component — position bottom-right, auto-dismiss, hover-to-keep. Wire IPC bridge so surface events from main.js reach React.</div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">Hr 18–36</div>
+      <div class="tl-line"><div class="tl-dot" style="background:var(--purple);box-shadow:0 0 8px rgba(167,139,250,.5)"></div></div>
+      <div class="tl-body-w">
+        <div class="tl-title">SECURE MODE toggle + polish</div>
+        <div class="tl-desc">Add mode toggle with badge. Wire to mode_change / jarvis_mode_ack. Add connection status indicator. Handle jarvis_error inline. Keyboard navigation (Esc to close overlay). Visual polish — this is what judges see.</div>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">Hr 36–48</div>
+      <div class="tl-line"><div class="tl-dot" style="background:var(--green);box-shadow:0 0 8px rgba(74,222,128,.5)"></div></div>
+      <div class="tl-body-w">
+        <div class="tl-title">Feature freeze + demo prep</div>
+        <div class="tl-desc">No new features after Hr 36. Practice the demo flow ×5 on your machine. Verify the surface card appears within 5 seconds of a file save in the proactive scenario. If anything breaks: tell Rahul, he owns the fallback plan.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CHECKLIST -->
+<section class="sec" id="checklist">
+  <div class="sec-label">Section 07</div>
+  <h2>Ship checklist</h2>
+  <p style="color:var(--ink2);font-size:13px;margin-bottom:20px">Check these off before Hour 36. If any are not done, tell the team immediately.</p>
+
+  <ul class="checklist" id="cl">
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Ctrl+Space opens overlay in &lt;100ms<span class="tag-inline">Hr 2</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">WebSocket connects to ws://localhost:8765 and auto-reconnects on close<span class="tag-inline">Hr 2</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">"Hello Jarvis" end-to-end working — query in, response out<span class="tag-inline">Hr 6</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Streaming chunks append word-by-word with blinking cursor<span class="tag-inline">Hr 12</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Surface card appears bottom-right when jarvis_surface event fires<span class="tag-inline">Hr 18</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Surface card auto-dismisses after 8s, stays open on hover<span class="tag-inline">Hr 18</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">surface_dismissed event sent to backend on dismiss<span class="tag-inline">Hr 18</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">IPC bridge works — surface event reaches React from main.js<span class="tag-inline">Hr 18</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">SECURE MODE badge visible, toggles between LOCAL and CLOUD<span class="tag-inline">Hr 30</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Mode toggle waits for jarvis_mode_ack before updating badge<span class="tag-inline">Hr 30</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">jarvis_error displayed inline — overlay does not crash or go blank<span class="tag-inline">Hr 30</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Esc closes the overlay<span class="tag-inline">Hr 32</span></div></li>
+    <li><div class="check" onclick="toggle(this)"></div><div class="check-text">Demo run ×5 — proactive surface card appears without any manual trigger<span class="tag-inline">Hr 42</span></div></li>
+  </ul>
+</section>
+
+<!-- CONTACTS -->
+<section class="sec" style="border-bottom:none">
+  <div class="sec-label">Section 08</div>
+  <h2>Who to call when stuck</h2>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-label">WebSocket / AI responses broken</div>
+      <div class="card-title">→ Rahul (AI Lead)</div>
+      <div class="card-body">If events are not arriving or response format looks wrong — this is an AI/backend contract issue. Message immediately, don't spend more than 30 min debugging it alone.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Backend not starting / tool errors</div>
+      <div class="card-title">→ Person 2 (Backend)</div>
+      <div class="card-body">If ws://localhost:8765 refuses connection or backend crashes — that's their domain. Pair with them, don't debug Python yourself.</div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <div class="card-label">Electron IPC / window not showing</div>
+      <div class="card-title">→ You + Person 4 (Integration)</div>
+      <div class="card-body">IPC bridge and Electron main process issues are shared with the Integration Lead. Pair on these during Hr 6–18.</div>
+    </div>
+    <div class="card" style="margin-top:0">
+      <div class="card-label">Demo script unclear</div>
+      <div class="card-title">→ Person 5 (Research + Docs)</div>
+      <div class="card-body">If you're not sure what the UI should show during the demo — Person 5 owns the demo script. Ask them for the exact sequence.</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="ft-l">JARVIS · Frontend Brief · Person 3</div>
+  <div class="ft-r">Target: 9/10 · 48 hours · Team of 5</div>
+</footer>
+
+<script>
+function toggle(el) {
+  el.classList.toggle('done');
+  const li = el.closest('li');
+  const text = li.querySelector('.check-text');
+  text.style.textDecoration = el.classList.contains('done') ? 'line-through' : 'none';
+  text.style.opacity = el.classList.contains('done') ? '0.4' : '1';
+}
+
+let isLocal = true;
+function toggleMode() {
+  isLocal = !isLocal;
+  const toggle = document.getElementById('demo-toggle');
+  const badge = document.getElementById('mode-badge');
+  const label = document.getElementById('toggle-label');
+  toggle.classList.toggle('on', isLocal);
+  badge.textContent = isLocal ? '● LOCAL' : '● CLOUD';
+  badge.className = 'overlay-badge ' + (isLocal ? 'badge-local' : 'badge-cloud');
+  label.textContent = isLocal ? 'Secure Mode (Local)' : 'Cloud Mode';
+}
+</script>
+</body>
+</html>
