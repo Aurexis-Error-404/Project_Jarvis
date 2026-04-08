@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JARVIS — Backend Implementor Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #080b10;
+  --bg2: #0d1219;
+  --bg3: #121820;
+  --bg4: #1a2230;
+  --teal: #00e5c3;
+  --teal-d: #00b89c;
+  --teal-l: rgba(0,229,195,.08);
+  --teal-m: rgba(0,229,195,.18);
+  --gold: #f5c842;
+  --gold-l: rgba(245,200,66,.08);
+  --red: #ff4d6a;
+  --red-l: rgba(255,77,106,.08);
+  --blue: #4d9fff;
+  --blue-l: rgba(77,159,255,.08);
+  --purple: #b47dff;
+  --purple-l: rgba(180,125,255,.08);
+  --green: #3de07a;
+  --green-l: rgba(61,224,122,.08);
+  --white: #e2eaf5;
+  --white2: #7a8fa8;
+  --white3: #3a4a5c;
+  --white4: #1e2b3a;
+  --rule: rgba(226,234,245,.05);
+  --font-b: 'Syne', sans-serif;
+  --font-m: 'Space Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--font-b);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── GRID BACKGROUND ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,229,195,.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,195,.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ── */
+.header {
+  position: relative;
+  z-index: 10;
+  background: linear-gradient(180deg, rgba(0,229,195,.06) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(0,229,195,.15);
+  padding: 48px 56px 40px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 40px;
+  align-items: start;
+}
+@media(max-width:800px) { .header { grid-template-columns: 1fr; padding: 32px 20px; } }
+
+.header-eyebrow {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .25em;
+  color: var(--teal);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.header-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 1px;
+  background: var(--teal);
+}
+
+h1 {
+  font-family: var(--font-b);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 800;
+  line-height: 1.05;
+  color: var(--white);
+  margin-bottom: 16px;
+  letter-spacing: -.02em;
+}
+h1 .accent { color: var(--teal); }
+
+.header-desc {
+  font-size: 13px;
+  color: var(--white2);
+  max-width: 520px;
+  line-height: 1.8;
+}
+
+.header-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 180px;
+}
+.hstat {
+  background: var(--bg3);
+  border: 1px solid var(--rule);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.hstat-label { font-family: var(--font-m); font-size: 9px; letter-spacing: .1em; color: var(--white3); text-transform: uppercase; }
+.hstat-val { font-family: var(--font-m); font-size: 13px; color: var(--teal); font-weight: 700; }
+
+/* ── PROGRESS BAR ── */
+.progress-bar-wrap {
+  position: relative;
+  z-index: 10;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 56px;
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  gap: 0;
+}
+@media(max-width:800px) { .progress-bar-wrap { padding: 0 16px; } }
+
+.progress-phase {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 20px;
+  border-right: 1px solid var(--rule);
+  cursor: default;
+  position: relative;
+  transition: background .2s;
+}
+.progress-phase:last-child { border-right: none; }
+
+.phase-label {
+  font-family: var(--font-m);
+  font-size: 8px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--white3);
+  margin-bottom: 4px;
+}
+.phase-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--white2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.phase-hours {
+  font-family: var(--font-m);
+  font-size: 9px;
+  color: var(--white3);
+  margin-top: 2px;
+}
+
+.progress-phase.p1 { border-bottom: 2px solid var(--teal); }
+.progress-phase.p1 .phase-name { color: var(--teal); }
+.progress-phase.p2 { border-bottom: 2px solid var(--gold); }
+.progress-phase.p2 .phase-name { color: var(--gold); }
+.progress-phase.p3 { border-bottom: 2px solid var(--blue); }
+.progress-phase.p3 .phase-name { color: var(--blue); }
+.progress-phase.p4 { border-bottom: 2px solid var(--purple); }
+.progress-phase.p4 .phase-name { color: var(--purple); }
+
+/* ── MAIN ── */
+main {
+  position: relative;
+  z-index: 5;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 56px 80px;
+}
+@media(max-width:800px) { main { padding: 0 16px 60px; } }
+
+/* ── PHASE HEADER ── */
+.phase-section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 32px 0 16px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 4px;
+}
+.phase-pill {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  border-radius: 2px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.pill-teal  { background: var(--teal-l);   color: var(--teal);   border: 1px solid rgba(0,229,195,.25); }
+.pill-gold  { background: var(--gold-l);   color: var(--gold);   border: 1px solid rgba(245,200,66,.25); }
+.pill-blue  { background: var(--blue-l);   color: var(--blue);   border: 1px solid rgba(77,159,255,.25); }
+.pill-purple { background: var(--purple-l); color: var(--purple); border: 1px solid rgba(180,125,255,.25); }
+
+.phase-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+}
+.phase-section-hours {
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--white3);
+}
+.phase-section-goal {
+  margin-left: auto;
+  font-family: var(--font-m);
+  font-size: 9px;
+  color: var(--white2);
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+/* ── HOUR BLOCKS ── */
+.hour-block {
+  border-bottom: 1px solid var(--rule);
+}
+.hour-block.gate { border: 1px solid rgba(245,200,66,.25); background: rgba(245,200,66,.02); margin: 8px 0; }
+.hour-block.freeze { border: 2px solid rgba(255,77,106,.3); background: rgba(255,77,106,.02); margin: 8px 0; }
+
+.hour-header {
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
+  align-items: center;
+  padding: 0;
+  cursor: pointer;
+  transition: background .15s;
+  gap: 0;
+}
+.hour-header:hover { background: rgba(255,255,255,.015); }
+
+.hour-time-col {
+  padding: 18px 20px;
+  border-right: 1px solid var(--rule);
+  text-align: center;
+}
+.hour-val {
+  font-family: var(--font-m);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1;
+}
+.hour-sub {
+  font-family: var(--font-m);
+  font-size: 8px;
+  color: var(--white3);
+  letter-spacing: .08em;
+  margin-top: 4px;
+}
+
+.hour-title-col {
+  padding: 18px 24px;
+}
+.hour-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 4px;
+}
+.hour-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tag {
+  font-family: var(--font-m);
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+.tag-gate  { background: var(--gold-l);   color: var(--gold);   border: 1px solid rgba(245,200,66,.2); }
+.tag-sync  { background: var(--red-l);    color: var(--red);    border: 1px solid rgba(255,77,106,.2); }
+.tag-ship  { background: var(--teal-l);   color: var(--teal);   border: 1px solid rgba(0,229,195,.2); }
+.tag-build { background: var(--blue-l);   color: var(--blue);   border: 1px solid rgba(77,159,255,.2); }
+.tag-test  { background: var(--purple-l); color: var(--purple); border: 1px solid rgba(180,125,255,.2); }
+.tag-lock  { background: var(--red-l);    color: var(--red);    border: 1px solid rgba(255,77,106,.3); }
+.tag-idle  { background: transparent;     color: var(--white3); border: 1px solid var(--white4); }
+
+.hour-chevron {
+  padding: 18px 20px;
+  font-family: var(--font-m);
+  font-size: 11px;
+  color: var(--white3);
+  transition: transform .2s;
+}
+.hour-block.open .hour-chevron { transform: rotate(180deg); }
+
+/* ── HOUR DETAIL ── */
+.hour-detail {
+  display: none;
+  padding: 0 24px 20px 124px;
+  border-top: 1px solid var(--rule);
+  background: var(--bg2);
+}
+.hour-block.open .hour-detail { display: block; }
+
+.task-group {
+  padding-top: 16px;
+}
+.task-group-label {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.task-group-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--teal-l);
+}
+
+.task-list { display: flex; flex-direction: column; gap: 7px; }
+
+.task {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: baseline;
+}
+.task-check {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--white3);
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  position: relative;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.task-check:hover { border-color: var(--teal); }
+.task-check.done { background: var(--teal); border-color: var(--teal); }
+.task-check.done::after {
+  content: '✓';
+  position: absolute;
+  top: -1px;
+  left: 1px;
+  font-size: 10px;
+  color: var(--bg);
+  font-weight: 700;
+  line-height: 1;
+}
+.task-text {
+  font-size: 12.5px;
+  color: var(--white2);
+  line-height: 1.6;
+}
+.task-text code {
+  font-family: var(--font-m);
+  font-size: 11px;
+  color: var(--teal);
+  background: var(--teal-l);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.task.critical .task-text { color: var(--white); font-weight: 600; }
+.task.critical .task-check { border-color: rgba(0,229,195,.4); }
+
+.task-note {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--teal-l);
+  border-left: 2px solid var(--teal);
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--white2);
+  line-height: 1.7;
+}
+.task-note .note-label {
+  font-size: 8px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+
+.task-warn {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: var(--gold-l);
+  border-left: 2px solid var(--gold);
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--white2);
+  line-height: 1.7;
+}
+.task-warn .warn-label {
+  font-size: 8px;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.task-code {
+  margin-top: 12px;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.tc-header {
+  background: var(--bg3);
+  border-bottom: 1px solid var(--rule);
+  padding: 6px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tc-lang { font-family: var(--font-m); font-size: 8px; letter-spacing: .12em; text-transform: uppercase; color: var(--white3); }
+.tc-file { font-family: var(--font-m); font-size: 9px; color: var(--teal); }
+.tc-body { padding: 14px; overflow-x: auto; }
+.tc-body pre {
+  font-family: var(--font-m);
+  font-size: 11px;
+  line-height: 1.9;
+  color: var(--white2);
+  white-space: pre;
+}
+.kw { color: #ff79c6; }
+.fn { color: var(--teal); }
+.str { color: #a8ff78; }
+.cm { color: var(--white3); font-style: italic; }
+.hl { background: rgba(0,229,195,.06); display: block; margin: 0 -14px; padding: 0 14px; }
+
+/* ── CONFLICT RULES ── */
+.conflict-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 8px 0;
+}
+@media(max-width:700px) { .conflict-grid { grid-template-columns: 1fr; } }
+
+.conflict-card {
+  padding: 14px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+.cc-role {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.cc-rule {
+  font-size: 11.5px;
+  color: var(--white2);
+  line-height: 1.65;
+}
+
+/* ── CHEATSHEET ── */
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 8px 0;
+}
+@media(max-width:700px) { .cs-grid { grid-template-columns: 1fr; } }
+
+.cs-card {
+  background: var(--bg3);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 14px 16px;
+}
+.cs-title {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--teal);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.cs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,.02);
+}
+.cs-row:last-child { border-bottom: none; }
+.cs-key { font-size: 11px; color: var(--white2); }
+.cs-val { font-family: var(--font-m); font-size: 10px; color: var(--teal); text-align: right; }
+
+/* ── GATE BANNER ── */
+.gate-banner {
+  background: rgba(245,200,66,.06);
+  border: 1px solid rgba(245,200,66,.25);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.gate-label {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 700;
+}
+.gate-desc {
+  font-size: 12px;
+  color: var(--white2);
+  flex: 1;
+}
+.gate-check {
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--gold);
+}
+
+/* ── FREEZE BANNER ── */
+.freeze-banner {
+  background: rgba(255,77,106,.06);
+  border: 1px solid rgba(255,77,106,.3);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 12px 0;
+}
+.freeze-label {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--red);
+  font-weight: 700;
+}
+.freeze-desc {
+  font-size: 12px;
+  color: var(--white2);
+  flex: 1;
+}
+
+/* ── CONTROLS ── */
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--rule);
+  padding: 12px 56px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+@media(max-width:800px) { .controls { padding: 10px 16px; } }
+
+.ctrl-btn {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border: 1px solid var(--rule);
+  background: var(--bg3);
+  color: var(--white2);
+  cursor: pointer;
+  transition: all .15s;
+  border-radius: 2px;
+}
+.ctrl-btn:hover { background: var(--bg4); color: var(--white); border-color: var(--white3); }
+.ctrl-btn.active { background: var(--teal-l); color: var(--teal); border-color: rgba(0,229,195,.3); }
+
+.progress-wrap {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.progress-label {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--white3);
+}
+.progress-track {
+  width: 120px;
+  height: 4px;
+  background: var(--bg4);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 2px;
+  width: 0%;
+  transition: width .4s ease;
+}
+.progress-pct {
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--teal);
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── FOOTER ── */
+footer {
+  position: relative;
+  z-index: 10;
+  background: var(--bg2);
+  border-top: 1px solid var(--rule);
+  padding: 20px 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ft-brand { font-family: var(--font-m); font-size: 11px; color: var(--teal); }
+.ft-meta { font-family: var(--font-m); font-size: 9px; letter-spacing: .06em; color: var(--white3); text-align: right; }
+
+@keyframes fadeDown { from { opacity:0; transform: translateY(-10px); } to { opacity:1; transform: none; } }
+.header { animation: fadeDown .4s ease both; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-eyebrow">Backend Implementor · Personal Roadmap</div>
+    <h1>JARVIS <span class="accent">Backend</span><br>48-Hour Build.</h1>
+    <div class="header-desc">Your complete implementation plan — every hour, every deliverable, every interface contract with other roles. Keep this open while building.</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><span class="hstat-label">Your Hours</span><span class="hstat-val">~32</span></div>
+    <div class="hstat"><span class="hstat-label">Active Hours</span><span class="hstat-val">0–36</span></div>
+    <div class="hstat"><span class="hstat-label">Tools to build</span><span class="hstat-val">6</span></div>
+    <div class="hstat"><span class="hstat-label">Feature Freeze</span><span class="hstat-val">Hr 36</span></div>
+    <div class="hstat"><span class="hstat-label">Your Stack</span><span class="hstat-val">FastAPI · Claude</span></div>
+  </div>
+</div>
+
+<!-- PHASE PROGRESS BAR -->
+<div class="progress-bar-wrap">
+  <div class="progress-phase p1">
+    <div class="phase-label">Phase 1</div>
+    <div class="phase-name">Foundation</div>
+    <div class="phase-hours">Hr 0–18</div>
+  </div>
+  <div class="progress-phase p2">
+    <div class="phase-label">Phase 2</div>
+    <div class="phase-name">Intelligence</div>
+    <div class="phase-hours">Hr 18–28</div>
+  </div>
+  <div class="progress-phase p3">
+    <div class="phase-label">Phase 3</div>
+    <div class="phase-name">Polish</div>
+    <div class="phase-hours">Hr 28–36</div>
+  </div>
+  <div class="progress-phase p4">
+    <div class="phase-label">Phase 4</div>
+    <div class="phase-name">Demo Standby</div>
+    <div class="phase-hours">Hr 36–48</div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="ctrl-btn active" onclick="expandAll()">Expand All</button>
+  <button class="ctrl-btn" onclick="collapseAll()">Collapse All</button>
+  <div class="progress-wrap">
+    <span class="progress-label">Progress</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+</div>
+
+<main>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 1 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="phase-section-header">
+  <div class="phase-pill pill-teal">Phase 1</div>
+  <div class="phase-section-title">Foundation — Core Pipeline</div>
+  <div class="phase-section-hours">Hours 0–18</div>
+  <div class="phase-section-goal">Goal: WebSocket + Claude tool-use loop + all 6 tools + Ollama router</div>
+</div>
+
+<!-- HR 0-1 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">0–1</div><div class="hour-sub">Setup</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Environment Setup + Read Contracts</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span><span class="tag tag-sync">Sync</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Create Python 3.11 virtual environment: <code>python -m venv .venv && source .venv/bin/activate</code></div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Install all deps: <code>pip install fastapi uvicorn anthropic httpx gitpython playwright watchdog pandas openpyxl jinja2</code> then <code>playwright install chromium</code></div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Read the WebSocket protocol Google Doc with AI Lead — ask all questions NOW, not at Hour 8</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Clone repo and create <code>backend/main.py</code>, <code>backend/ai/</code>, <code>backend/tools/</code>, <code>backend/memory/</code>, <code>backend/context/</code></div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Copy <code>.env.example</code> → <code>.env</code>, fill in <code>ANTHROPIC_API_KEY</code>, set <code>AI_MODE=local</code></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 1-2 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">1–2</div><div class="hour-sub">Contracts</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Lock Contracts With AI Lead</div>
+      <div class="hour-tags"><span class="tag tag-sync">Sync</span><span class="tag tag-gate">Gate</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Review all 6 tool schemas with AI Lead — confirm every parameter is implementable by you</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Agree on final WebSocket event names. These are LOCKED after this hour.</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Understand <code>jarvis.json</code> schema — backend reads it, AI Lead + Docs fill it. Never rename fields.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Create empty folder structure and commit: <code>backend/ai/__init__.py</code>, etc. Integration Lead needs this to set up the repo</div></div>
+      </div>
+    </div>
+    <div class="task-warn"><div class="warn-label">Contract rule</div>You own <code>backend/</code> entirely. AI Lead owns prompt content. If you need a schema change, ask AI Lead — never unilaterally change a tool definition.</div>
+  </div>
+</div>
+
+<!-- HR 2-4 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">2–4</div><div class="hour-sub">Server</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">FastAPI Server + WebSocket Echo</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span><span class="tag tag-ship">Ship</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/main.py</code>: FastAPI app with CORS, <code>lifespan</code> context manager, WebSocket at <code>/ws</code></div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Echo server: receive JSON → send back <code>{ "event": "jarvis_reply", "text": &lt;query&gt;, "timestamp": "" }</code></div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Run: <code>uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload</code> — server must start without errors</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Notify Frontend and Integration Lead: "WebSocket echo is live at ws://localhost:8000/ws"</div></div>
+      </div>
+    </div>
+    <div class="task-code">
+      <div class="tc-header"><span class="tc-lang">python</span><span class="tc-file">backend/main.py</span></div>
+      <div class="tc-body"><pre>
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI, WebSocket
+<span class="kw">from</span> fastapi.middleware.cors <span class="kw">import</span> CORSMiddleware
+<span class="kw">from</span> contextlib <span class="kw">import</span> asynccontextmanager
+
+<span class="hl">@asynccontextmanager</span>
+<span class="kw">async def</span> <span class="fn">lifespan</span>(app):
+    <span class="cm"># startup: launch file watcher here later</span>
+    <span class="kw">yield</span>
+    <span class="cm"># shutdown: cleanup</span>
+
+app = <span class="fn">FastAPI</span>(lifespan=lifespan)
+app.<span class="fn">add_middleware</span>(CORSMiddleware, allow_origins=[<span class="str">"*"</span>], allow_methods=[<span class="str">"*"</span>])
+
+@app.<span class="fn">websocket</span>(<span class="str">"/ws"</span>)
+<span class="kw">async def</span> <span class="fn">ws_endpoint</span>(websocket: WebSocket):
+    <span class="kw">await</span> websocket.<span class="fn">accept</span>()
+    <span class="kw">while True</span>:
+        data = <span class="kw">await</span> websocket.<span class="fn">receive_json</span>()
+        <span class="kw">await</span> websocket.<span class="fn">send_json</span>({
+            <span class="str">"event"</span>: <span class="str">"jarvis_reply"</span>,
+            <span class="str">"text"</span>: data.get(<span class="str">"query"</span>),
+            <span class="str">"timestamp"</span>: <span class="str">""</span>
+        })</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 4-7 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">4–7</div><div class="hour-sub">Claude</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Claude Call + Prompt Caching</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span><span class="tag tag-gate">Gate</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/ai/claude_client.py</code>: <code>async def run(query, mode, ws)</code> — single Claude call, no tools yet</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Add <code>cache_control: { "type": "ephemeral" }</code> to system prompt block — do this from the FIRST call, not later</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Send <code>status_update</code> event ("Thinking...") before calling Claude</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Show AI Lead: send a test query, Claude replies in UI. Verify <code>cache_read_input_tokens > 0</code> on second call.</div></div>
+      </div>
+    </div>
+    <div class="task-note"><div class="note-label">Non-negotiable</div>Cache control must be added to every Claude call. Skipping this means you pay full token cost on every request. Add it once, add it right.</div>
+  </div>
+</div>
+
+<!-- HR 7-9 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">7–9</div><div class="hour-sub">Loop</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Tool-Use Loop (Agentic Core)</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build the full agentic loop: <code>send → if tool_use → execute → send tool_result → repeat until end_turn</code></div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text"><code>tool_use_id</code> ALWAYS from <code>block.id</code> — never hardcode, never generate. This causes 400 errors if wrong.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Wire stub tools (return mock data) first — confirm the loop works before adding real implementations</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Send <code>tool_call_status</code> events (start + done) to WebSocket for each tool execution</div></div>
+      </div>
+    </div>
+    <div class="task-code">
+      <div class="tc-header"><span class="tc-lang">python</span><span class="tc-file">tool-use loop skeleton</span></div>
+      <div class="tc-body"><pre>
+<span class="kw">while True</span>:
+    response = <span class="kw">await</span> <span class="fn">call_claude</span>(messages, tools)
+
+    <span class="kw">if</span> response.stop_reason == <span class="str">"end_turn"</span>:
+        <span class="kw">return</span> <span class="fn">extract_text</span>(response)
+
+    tool_results = []
+    <span class="kw">for</span> block <span class="kw">in</span> response.content:
+        <span class="kw">if</span> block.type != <span class="str">"tool_use"</span>: <span class="kw">continue</span>
+        <span class="kw">await</span> ws.<span class="fn">send_json</span>({<span class="str">"event"</span>: <span class="str">"tool_call_status"</span>, <span class="str">"tool"</span>: block.name, <span class="str">"status"</span>: <span class="str">"start"</span>})
+        result = <span class="kw">await</span> <span class="fn">execute_tool</span>(block.name, block.input)
+        <span class="kw">await</span> ws.<span class="fn">send_json</span>({<span class="str">"event"</span>: <span class="str">"tool_call_status"</span>, <span class="str">"tool"</span>: block.name, <span class="str">"status"</span>: <span class="str">"done"</span>})
+        tool_results.<span class="fn">append</span>({
+            <span class="str">"type"</span>: <span class="str">"tool_result"</span>,
+<span class="hl">            <span class="str">"tool_use_id"</span>: block.id,  <span class="cm"># ← ALWAYS block.id</span></span>
+            <span class="str">"content"</span>: str(result)
+        })
+    messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: response.content})
+    messages.<span class="fn">append</span>({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: tool_results})</pre></div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 9-11 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">9–11</div><div class="hour-sub">Tools</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Codebase Reader + Git Interface</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span><span class="tag tag-gate">Gate</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/tools/codebase_reader.py</code>: pathlib walk, skip <code>node_modules/.git/.venv/__pycache__/dist/build</code>, 50-file cap, 200-line cap per file</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/tools/git_interface.py</code>: gitpython <code>repo.iter_commits(max_count=n)</code>, head diff, branch info</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Both tools: NEVER raise — always return <code>{ "error": "message" }</code> on failure. Tools that crash break the loop.</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Show AI Lead the raw output of both tools — they need to see real output to write good prompts for them</div></div>
+      </div>
+    </div>
+    <div class="task-note"><div class="note-label">Gate</div>Ask "what files are in this project?" — Claude should call <code>read_codebase</code> and give a project-specific answer. If it answers from memory, the tool isn't being called.</div>
+  </div>
+</div>
+
+<!-- HR 11-13 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">11–13</div><div class="hour-sub">Memory</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Memory + Session Tools</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/memory/jarvis_json.py</code>: <code>read()</code> that loads and validates <code>jarvis.json</code> from repo root</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/memory/session_log.py</code>: append-only JSON log. <code>append_summary(summary, tags)</code> and <code>read_recent(n=5)</code></div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Wire both into the tool dispatcher. Test: ask "what is this project about?" — Claude must read <code>jarvis.json</code> and answer correctly</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 13-15 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">13–15</div><div class="hour-sub">Router</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">AI Router + Ollama Gate</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/ai/ollama_client.py</code>: POST to <code>http://localhost:11434/api/generate</code>, parse confidence score from response</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/ai/router.py</code>: <code>mode=local</code> → try Ollama → check confidence vs <code>OLLAMA_GATE_THRESHOLD</code> → escalate if below</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Fallback: if Ollama not running → log warning → auto-route to Claude. Never crash on Ollama absence.</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">AI mode decision is AI Lead's call — you implement the router, they tune the threshold</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 15-17 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">15–17</div><div class="hour-sub">Watcher</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">File Watcher (Proactive Engine)</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/context/file_watcher.py</code>: watchdog observer watching <code>PROJECT_PATH</code>, debounce 5 seconds per file</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">On change: ask Claude "File changed: [path]. Is this relevant to the current session? Answer yes/no + reason."</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Send <code>context_surface</code> event ONLY if Claude says relevant. Do not spam the user on every file save.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Launch in background: <code>asyncio.create_task(file_watcher.start())</code> in the lifespan startup</div></div>
+      </div>
+    </div>
+    <div class="task-warn"><div class="warn-label">Highest-risk feature</div>Keep this simple. If the file watcher is unstable, disable it before the demo — the other 5 tools are more important. Do not let this block Phase 1 gate.</div>
+  </div>
+</div>
+
+<!-- GATE 1 -->
+<div class="gate-banner">
+  <span class="gate-label">⬡ Gate 1 — Hour 18</span>
+  <span class="gate-desc">Integration Lead runs pipeline test. All 6 tools callable. All 6 WebSocket events fire correctly. <code>AI_MODE=local</code> routes to Ollama.</span>
+  <span class="gate-check">Notify Integration Lead when ready →</span>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 2 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="phase-section-header">
+  <div class="phase-pill pill-gold">Phase 2</div>
+  <div class="phase-section-title">Intelligence Layer</div>
+  <div class="phase-section-hours">Hours 18–28</div>
+  <div class="phase-section-goal">Goal: Web research, report gen, streaming, error hardening</div>
+</div>
+
+<!-- HR 18-20 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">18–20</div><div class="hour-sub">Playwright</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Web Research Tool</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/tools/web_research.py</code>: <code>async_playwright()</code>, launch chromium headless, <code>page.goto(url, timeout=10000)</code></div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Extract: <code>page.inner_text(selector or "body")</code>. Always close browser in <code>finally:</code>. Return <code>{ "url", "content", "error" }</code></div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Test URLs from AI Lead: GitHub README, dev.to article, Google Scholar result</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 20-22 -->
+<div class="hour-block open">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">20–22</div><div class="hour-sub">Reports</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Report Generator Tool</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span><span class="tag tag-sync">Sync w/ Docs</span></div>
+    </div>
+    <div class="hour-chevron">▲</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Coordinate with Research+Docs on Jinja2 template variables BEFORE writing <code>report_generator.py</code></div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Build <code>backend/tools/report_generator.py</code>: accept <code>{ title, sections, output_path }</code>, render template, write file, return path</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Send <code>report_generated</code> event with <code>{ path, html }</code> after generation completes</div></div>
+      </div>
+    </div>
+    <div class="task-warn"><div class="warn-label">Role boundary</div>You call the template. Docs writes the template. Do not modify <code>backend/templates/report.html</code> — if you need a new variable, tell Docs and agree on the name first.</div>
+  </div>
+</div>
+
+<!-- HR 22-24 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">22–24</div><div class="hour-sub">Stream</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Streaming Responses</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Switch <code>messages.create()</code> to <code>messages.stream()</code>. Stream text tokens to WebSocket as <code>status_update</code> while Claude types.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Full response still sent as <code>jarvis_reply</code> at the end. Frontend expects both.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Test: long query — confirm text appears progressively in the UI before the final reply arrives</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 24-26 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">24–26</div><div class="hour-sub">Harden</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Error Hardening + Rate Limit Handling</div>
+      <div class="hour-tags"><span class="tag tag-build">Build</span><span class="tag tag-test">Test</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Wrap every tool execution in try/except — tools never crash the main loop</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Add exponential backoff for 429: wait 2s → 4s → 8s. After 3 retries, return error event.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Graceful WebSocket disconnect: clean up session state, stop any in-flight tool calls</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Log all errors to <code>backend/logs/error.log</code> with timestamp and stack trace</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 26-28 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">26–28</div><div class="hour-sub">Tuning</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Ollama Gate Tuning (With AI Lead)</div>
+      <div class="hour-tags"><span class="tag tag-sync">Sync w/ AI Lead</span><span class="tag tag-test">Test</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Work with AI Lead on the Ollama confidence gate prompt. You tune the implementation, they tune the prompt.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Test 10 queries: 5 simple (should stay local), 5 complex (should escalate to Claude). Target: correct routing on 8+/10.</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Share routing results with AI Lead before finalizing threshold value in <code>.env</code></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 3 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="phase-section-header">
+  <div class="phase-pill pill-blue">Phase 3</div>
+  <div class="phase-section-title">Polish & Demo Prep</div>
+  <div class="phase-section-hours">Hours 28–36</div>
+  <div class="phase-section-goal">Goal: Full demo pipeline. Performance. Demo machine ready. Feature freeze at Hr 36.</div>
+</div>
+
+<!-- HR 28-30 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">28–30</div><div class="hour-sub">Integration</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Full Pipeline Integration Test</div>
+      <div class="hour-tags"><span class="tag tag-sync">Sync</span><span class="tag tag-test">Test</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Integration Lead runs full pipeline — every demo scenario end-to-end. Fix any issues that block the demo.</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">All WebSocket events arrive in correct order. Frontend receives every event type.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Verify secure mode (local Ollama) works on the demo machine, not just your dev machine</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 30-33 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">30–33</div><div class="hour-sub">Perf</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Performance Pass</div>
+      <div class="hour-tags"><span class="tag tag-build">Optimize</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Measure response time: target &lt; 3s for simple queries, &lt; 8s for tool-use queries</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">If <code>codebase_reader</code> is slow: reduce default depth to 1, add file count cap at 30</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">If Playwright is slow: reuse a persistent browser instance between calls instead of launching fresh each time</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Fix one bottleneck, measure again. Do not optimize everything — polish what the demo shows.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 33-36 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">33–36</div><div class="hour-sub">Demo</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Demo Machine Setup</div>
+      <div class="hour-tags"><span class="tag tag-ship">Ship</span><span class="tag tag-gate">Final Gate</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Ensure <code>backend/</code> runs clean on the demo machine — not just your laptop</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Ollama running: <code>ollama serve</code> in background, <code>ollama pull codellama</code> completed</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text"><code>.env</code> has <code>ANTHROPIC_API_KEY</code> for cloud mode demo. <code>AI_MODE=local</code> is default.</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text"><code>uvicorn backend.main:app --host 0.0.0.0 --port 8000</code> starts clean, no errors</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FREEZE BANNER -->
+<div class="freeze-banner">
+  <span class="freeze-label">⬛ Feature Freeze — Hour 36</span>
+  <span class="freeze-desc">No new features after this point. Bug fixes only. Backend is done at Hour 36.</span>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- PHASE 4 -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="phase-section-header">
+  <div class="phase-pill pill-purple">Phase 4</div>
+  <div class="phase-section-title">Demo Standby</div>
+  <div class="phase-section-hours">Hours 36–48</div>
+  <div class="phase-section-goal">Goal: Rest. Standby only. No new code.</div>
+</div>
+
+<!-- HR 36-42 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">36–42</div><div class="hour-sub">Rest</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Rest + Critical Bug Standby</div>
+      <div class="hour-tags"><span class="tag tag-idle">Standby</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Role</div>
+      <div class="task-list">
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Rest if possible. Be reachable for critical backend bugs only.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Only intervene if Integration Lead or AI Lead explicitly calls you with a backend blocker</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Do NOT add features. Do NOT refactor. Demo-mode only.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 42-47 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">42–47</div><div class="hour-sub">Final</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Final Verification on Demo Machine</div>
+      <div class="hour-tags"><span class="tag tag-test">Verify</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Tasks</div>
+      <div class="task-list">
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Ensure Jarvis backend is running and stable on the demo machine</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Verify Ollama is running in background (for secure mode demo)</div></div>
+        <div class="task critical"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Have <code>.env</code> ready with <code>ANTHROPIC_API_KEY</code> for cloud mode demo</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HR 47-48 -->
+<div class="hour-block">
+  <div class="hour-header" onclick="toggleBlock(this)">
+    <div class="hour-time-col"><div class="hour-val">47–48</div><div class="hour-sub">Lock</div></div>
+    <div class="hour-title-col">
+      <div class="hour-title">Lock — No Changes. Rest.</div>
+      <div class="hour-tags"><span class="tag tag-lock">Locked</span></div>
+    </div>
+    <div class="hour-chevron">▼</div>
+  </div>
+  <div class="hour-detail">
+    <div class="task-group">
+      <div class="task-group-label">Your Role</div>
+      <div class="task-list">
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Backend is done. No changes. Rest.</div></div>
+        <div class="task"><div class="task-check" onclick="toggleCheck(this)"></div><div class="task-text">Mentally prepare for judge Q&A — technical questions about the backend may come to you</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- CONFLICT RULES -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="phase-section-header" style="margin-top: 40px;">
+  <div class="phase-pill pill-teal">Ref</div>
+  <div class="phase-section-title">Conflict Rules — Who Owns What</div>
+</div>
+
+<div class="conflict-grid">
+  <div class="conflict-card">
+    <div class="cc-role" style="color: var(--gold)">AI Lead → You</div>
+    <div class="cc-rule">AI Lead owns all prompt content and tool schemas. You implement exactly what the schema says. If a schema needs to change, ask AI Lead — never change unilaterally.</div>
+  </div>
+  <div class="conflict-card">
+    <div class="cc-role" style="color: var(--blue)">You → Frontend</div>
+    <div class="cc-rule">You own event names and payloads. Frontend owns rendering. If Frontend needs a new event type, you and AI Lead agree on the name first — then implement.</div>
+  </div>
+  <div class="conflict-card">
+    <div class="cc-role" style="color: var(--red)">You → Integration Lead</div>
+    <div class="cc-rule">All your code goes in <code>backend/</code> only. PRs go through Integration Lead. Branch: <code>backend/[feature]</code>. Merge conflicts in <code>backend/</code> are yours to resolve.</div>
+  </div>
+  <div class="conflict-card">
+    <div class="cc-role" style="color: var(--purple)">You → Research+Docs</div>
+    <div class="cc-rule">Docs sets up <code>jarvis.json</code> and Jinja2 templates. You call the template, never edit it. If a new template variable is needed, tell Docs — they add it.</div>
+  </div>
+</div>
+
+<!-- CHEAT SHEET -->
+<div class="phase-section-header" style="margin-top: 40px;">
+  <div class="phase-pill pill-teal">Ref</div>
+  <div class="phase-section-title">Backend Cheat Sheet</div>
+</div>
+
+<div class="cs-grid">
+  <div class="cs-card">
+    <div class="cs-title">pip install</div>
+    <div class="cs-row"><span class="cs-key">Web framework</span><span class="cs-val">fastapi uvicorn</span></div>
+    <div class="cs-row"><span class="cs-key">Claude API</span><span class="cs-val">anthropic</span></div>
+    <div class="cs-row"><span class="cs-key">Async HTTP</span><span class="cs-val">httpx</span></div>
+    <div class="cs-row"><span class="cs-key">Web scraping</span><span class="cs-val">playwright</span></div>
+    <div class="cs-row"><span class="cs-key">Git</span><span class="cs-val">gitpython</span></div>
+    <div class="cs-row"><span class="cs-key">File watcher</span><span class="cs-val">watchdog</span></div>
+    <div class="cs-row"><span class="cs-key">Excel</span><span class="cs-val">pandas openpyxl</span></div>
+    <div class="cs-row"><span class="cs-key">Templates</span><span class="cs-val">jinja2</span></div>
+  </div>
+  <div class="cs-card">
+    <div class="cs-title">WebSocket events you send</div>
+    <div class="cs-row"><span class="cs-key">Claude reply</span><span class="cs-val">jarvis_reply</span></div>
+    <div class="cs-row"><span class="cs-key">Tool start/done</span><span class="cs-val">tool_call_status</span></div>
+    <div class="cs-row"><span class="cs-key">Loading text</span><span class="cs-val">status_update</span></div>
+    <div class="cs-row"><span class="cs-key">Report saved</span><span class="cs-val">report_generated</span></div>
+    <div class="cs-row"><span class="cs-key">File surfaced</span><span class="cs-val">context_surface</span></div>
+    <div class="cs-row"><span class="cs-key">Any failure</span><span class="cs-val">error</span></div>
+  </div>
+  <div class="cs-card">
+    <div class="cs-title">Common error → fix</div>
+    <div class="cs-row"><span class="cs-key">no current event loop</span><span class="cs-val">run_in_executor</span></div>
+    <div class="cs-row"><span class="cs-key">coroutine never awaited</span><span class="cs-val">add await</span></div>
+    <div class="cs-row"><span class="cs-key">400 from Claude API</span><span class="cs-val">tool_use_id mismatch</span></div>
+    <div class="cs-row"><span class="cs-key">429 rate limit</span><span class="cs-val">exponential backoff</span></div>
+    <div class="cs-row"><span class="cs-key">Claude ignores tools</span><span class="cs-val">pass tools= every call</span></div>
+    <div class="cs-row"><span class="cs-key">Playwright timeout</span><span class="cs-val">increase timeout= value</span></div>
+  </div>
+  <div class="cs-card">
+    <div class="cs-title">Build order (do not skip)</div>
+    <div class="cs-row"><span class="cs-key">Hr 2</span><span class="cs-val">FastAPI + WS echo</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 4</span><span class="cs-val">Basic Claude call</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 6</span><span class="cs-val">Prompt caching</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 7</span><span class="cs-val">Tool-use loop</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 9</span><span class="cs-val">codebase + git tools</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 11</span><span class="cs-val">memory + session</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 13</span><span class="cs-val">file watcher + router</span></div>
+    <div class="cs-row"><span class="cs-key">Hr 18</span><span class="cs-val">web research + report</span></div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div class="ft-brand">JARVIS · Backend Implementor Roadmap · Person 2</div>
+  <div class="ft-meta">BVRIT · 2026 · Build order matters. Tools before prompts.</div>
+</footer>
+
+<script>
+function toggleBlock(btn) {
+  const block = btn.closest('.hour-block');
+  block.classList.toggle('open');
+}
+
+function expandAll() {
+  document.querySelectorAll('.hour-block').forEach(b => b.classList.add('open'));
+  document.querySelector('.ctrl-btn').classList.add('active');
+}
+
+function collapseAll() {
+  document.querySelectorAll('.hour-block').forEach(b => b.classList.remove('open'));
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('done');
+  updateProgress();
+}
+
+function updateProgress() {
+  const all = document.querySelectorAll('.task-check');
+  const done = document.querySelectorAll('.task-check.done');
+  const pct = all.length > 0 ? Math.round((done.length / all.length) * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+expandAll();
+updateProgress();
+</script>
+</body>
+</html>
