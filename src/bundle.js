@@ -12792,7 +12792,7 @@
           return;
         }
         const h = handlersRef.current;
-        switch (data.type) {
+        switch (data.event) {
           case "jarvis_stream_chunk":
             h.onStreamChunk?.(data);
             break;
@@ -12808,8 +12808,17 @@
           case "jarvis_error":
             h.onError?.(data);
             break;
+          case "report_generated":
+            h.onReportGenerated?.(data);
+            break;
+          case "status_update":
+            h.onStatusUpdate?.(data);
+            break;
+          case "tool_call_status":
+            h.onToolCallStatus?.(data);
+            break;
           default:
-            console.warn("[WS] Unknown event type:", data.type);
+            console.warn("[WS] Unknown event:", data.event, data);
         }
       };
       ws.onclose = (event) => {
@@ -12845,7 +12854,7 @@
     const sendMessage = (0, import_react.useCallback)((payload) => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify(payload));
-        console.log("[WS] Sent:", payload.type);
+        console.log("[WS] Sent:", payload.event);
       } else {
         console.warn("[WS] Cannot send \u2014 not connected. Payload:", payload.type);
       }
@@ -13112,6 +13121,7 @@
     const isStreamingRef = (0, import_react4.useRef)(false);
     const [mode, setMode] = (0, import_react4.useState)("local");
     const [surfaceData, setSurfaceData] = (0, import_react4.useState)(null);
+    const [reportReady, setReportReady] = (0, import_react4.useState)(null);
     const [showStartup, setShowStartup] = (0, import_react4.useState)(true);
     const inputRef = (0, import_react4.useRef)(null);
     const messagesEndRef = (0, import_react4.useRef)(null);
@@ -13147,6 +13157,11 @@
       onError: (event) => {
         dispatch({ type: "ADD_ERROR", message: event.message });
         setIsStreaming(false);
+      },
+      onReportGenerated: (event) => {
+        setReportReady({ path: event.path });
+      },
+      onStatusUpdate: () => {
       }
     });
     (0, import_react4.useEffect)(() => {
@@ -13167,16 +13182,16 @@
     const handleSend = (0, import_react4.useCallback)((text) => {
       if (!text.trim() || isStreaming) return;
       dispatch({ type: "ADD_USER_MESSAGE", text: text.trim() });
-      sendMessage({ type: "user_query", text: text.trim(), mode });
+      sendMessage({ event: "user_query", query: text.trim(), mode });
     }, [isStreaming, mode, sendMessage]);
     const handleModeToggle = (0, import_react4.useCallback)(() => {
       const next = mode === "cloud" ? "local" : "cloud";
       setMode(next);
-      sendMessage({ type: "mode_change", mode: next });
+      sendMessage({ event: "mode_change", mode: next });
     }, [mode, sendMessage]);
     const handleDismissSurface = (0, import_react4.useCallback)(() => {
       if (surfaceData) {
-        sendMessage({ type: "surface_dismissed", file: surfaceData.file });
+        sendMessage({ event: "surface_dismissed", file: surfaceData.file });
         setSurfaceData(null);
       }
     }, [surfaceData, sendMessage]);
@@ -13191,6 +13206,24 @@
     }
     return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "app-container", children: [
       surfaceData && /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SurfaceCard, { surfaceData, onDismiss: handleDismissSurface }),
+      reportReady && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "report-toast", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: reportReady.error ?? "Report ready." }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+          "button",
+          {
+            onClick: async () => {
+              try {
+                await window.jarvis?.openLocalFile(reportReady.path);
+                setReportReady(null);
+              } catch (e) {
+                setReportReady((prev) => ({ ...prev, error: `Could not open \u2014 ${reportReady.path}` }));
+              }
+            },
+            children: "Open Report"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "surface-dismiss", onClick: () => setReportReady(null), children: "\u2715" })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarLeft, { mode, onGoHome: () => setShowStartup(true) }),
       /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
         ChatArea,

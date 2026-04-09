@@ -70,7 +70,7 @@ export default function useWebSocket(url, handlers = {}) {
       // ─── Centralized inbound event switch ─────────────
       // One place to update if the contract changes
       const h = handlersRef.current;
-      switch (data.type) {
+      switch (data.event) {
         case 'jarvis_stream_chunk':
           h.onStreamChunk?.(data);
           break;
@@ -91,8 +91,20 @@ export default function useWebSocket(url, handlers = {}) {
           h.onError?.(data);
           break;
 
+        case 'report_generated':
+          h.onReportGenerated?.(data);
+          break;
+
+        case 'status_update':
+          h.onStatusUpdate?.(data);
+          break;
+
+        case 'tool_call_status':
+          h.onToolCallStatus?.(data);
+          break;
+
         default:
-          console.warn('[WS] Unknown event type:', data.type);
+          console.warn('[WS] Unknown event:', data.event, data);
       }
     };
 
@@ -145,7 +157,7 @@ export default function useWebSocket(url, handlers = {}) {
   const sendMessage = useCallback((payload) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(payload));
-      console.log('[WS] Sent:', payload.type);
+      console.log('[WS] Sent:', payload.event);
     } else {
       console.warn('[WS] Cannot send — not connected. Payload:', payload.type);
     }

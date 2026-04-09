@@ -128,7 +128,7 @@ async def run(query: str, mode: str, send_event,
             )
         except RuntimeError as e:
             logger.error(str(e))
-            await send_event({"event": "error", "message": str(e), "recoverable": False})
+            await send_event({"event": "jarvis_error", "message": str(e), "recoverable": False})
             return f"API error: {e}"
 
         choice = response.choices[0]

@@ -13,6 +13,7 @@ export default function App() {
   const isStreamingRef = useRef(false);
   const [mode, setMode] = useState('local');
   const [surfaceData, setSurfaceData] = useState(null);
+  const [reportReady, setReportReady] = useState(null); // { path }
   const [showStartup, setShowStartup] = useState(true);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -39,6 +40,8 @@ export default function App() {
     onSurface: (event) => { setSurfaceData({ bullets: event.bullets, file: event.file }); },
     onModeAck: (event) => { setMode(event.mode); },
     onError: (event) => { dispatch({ type: 'ADD_ERROR', message: event.message }); setIsStreaming(false); },
+    onReportGenerated: (event) => { setReportReady({ path: event.path }); },
+    onStatusUpdate: () => { /* transient — backend signals thinking start, no UI action needed */ },
   });
 
   useEffect(() => {
@@ -62,18 +65,18 @@ export default function App() {
   const handleSend = useCallback((text) => {
     if (!text.trim() || isStreaming) return;
     dispatch({ type: 'ADD_USER_MESSAGE', text: text.trim() });
-    sendMessage({ type: 'user_query', text: text.trim(), mode });
+    sendMessage({ event: 'user_query', query: text.trim(), mode });
   }, [isStreaming, mode, sendMessage]);
 
   const handleModeToggle = useCallback(() => {
     const next = mode === 'cloud' ? 'local' : 'cloud';
     setMode(next);
-    sendMessage({ type: 'mode_change', mode: next });
+    sendMessage({ event: 'mode_change', mode: next });
   }, [mode, sendMessage]);
 
   const handleDismissSurface = useCallback(() => {
     if (surfaceData) {
-      sendMessage({ type: 'surface_dismissed', file: surfaceData.file });
+      sendMessage({ event: 'surface_dismissed', file: surfaceData.file });
       setSurfaceData(null);
     }
   }, [surfaceData, sendMessage]);
@@ -91,6 +94,25 @@ export default function App() {
     <div className="app-container">
       {surfaceData && (
         <SurfaceCard surfaceData={surfaceData} onDismiss={handleDismissSurface} />
+      )}
+
+      {reportReady && (
+        <div className="report-toast">
+          <span>{reportReady.error ?? 'Report ready.'}</span>
+          <button
+            onClick={async () => {
+              try {
+                await window.jarvis?.openLocalFile(reportReady.path);
+                setReportReady(null);
+              } catch (e) {
+                setReportReady(prev => ({ ...prev, error: `Could not open — ${reportReady.path}` }));
+              }
+            }}
+          >
+            Open Report
+          </button>
+          <button className="surface-dismiss" onClick={() => setReportReady(null)}>✕</button>
+        </div>
       )}
       <SidebarLeft mode={mode} onGoHome={() => setShowStartup(true)} />
       <ChatArea
