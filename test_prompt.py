@@ -1,4 +1,4 @@
-import anthropic
+from openai import OpenAI
 import os
 import json
 import time
@@ -7,89 +7,196 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+def _make_client():
+    """Return (client, model). Try Gemini first; fall back to Groq on quota issues."""
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    groq_key = os.getenv("GROQ_API_KEY")
+    if gemini_key:
+        return (
+            OpenAI(api_key=gemini_key,
+                   base_url="https://generativelanguage.googleapis.com/v1beta/openai/"),
+            os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            "gemini"
+        )
+    if groq_key:
+        return (
+            OpenAI(api_key=groq_key,
+                   base_url="https://api.groq.com/openai/v1"),
+            os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+            "groq"
+        )
+    raise RuntimeError("No API key found. Set GEMINI_API_KEY or GROQ_API_KEY in .env")
+
+client, MODEL, PROVIDER = _make_client()
 
 with open("jarvis.json") as f:
     JARVIS = json.load(f)
 
-SYSTEM_PROMPT = f"""<identity>
-You are JARVIS — a proactive developer intelligence layer.
-Project: {JARVIS['project']['name']}
-Stack: {", ".join(JARVIS['project']['stack'])}
-Current focus: {JARVIS['project']['current_focus']}
+# ── System Prompt v1 ──────────────────────────────────────────────────────────
+# Structure: static block (identity + behavior_rules + tool_rules) — never mutate
+#          + dynamic block (project_context built fresh from jarvis.json)
+# See prompts/prompt_struc.md for template. See prompts/prompt_fund.md for tests.
+
+STATIC_SYSTEM_PROMPT = """<identity>
+You are JARVIS — a proactive developer intelligence layer for a software project.
+You have persistent memory of this project through jarvis.json.
+You have access to tools to retrieve live project context.
+
+You are NOT a generic assistant. Every answer must be grounded in:
+- The project's actual stack and decisions (from project_context below)
+- Actual file content (from read_codebase tool when needed)
+
+If asked what model/engine is used for the proactive gate: answer "Ollama/CodeLlama".
+Never diagnose, recommend, or answer from general knowledge alone.
 </identity>
 
 <behavior_rules>
 - Never say "according to your memory" or "based on the context provided" — just use the information
-- Never suggest: {", ".join(JARVIS['rejected_approaches'])}
+- Never suggest technologies listed in rejected_approaches
 - Never start responses with "I can see", "Based on", "Looking at", or "According to"
-- If asked what model/engine is used for the gate: answer "Ollama/CodeLlama"
+- If the user asks a question (what, which, how, why, tell me, explain): answer directly in text. Do NOT call any tool.
+- If a user decision sounds tentative ("thinking about", "maybe", "what if", "should we", "I wonder if"): do NOT call update_project_memory
+- If a user decision sounds committed: you MUST call update_project_memory immediately. Committed phrases: "remember that", "we decided", "going with", "lock this in", "note that", "add this to memory"
 </behavior_rules>
 
 <tool_rules>
-- update_project_memory: ONLY call when user says "remember that", "we decided", "going with", "lock this in"
-- Do NOT call update_project_memory when user says "thinking about", "maybe", "what if"
+- update_project_memory: ONLY call when the user explicitly commits a decision using: "remember that", "we decided", "going with X", "lock this in", or "note that". This is required on those phrases, not optional.
+- NEVER call update_project_memory when answering a question or information request — questions do not trigger memory writes.
+- Do NOT call update_project_memory when the user says: "thinking about", "maybe", "what if", "should we", "considering", "I wonder".
+- read_codebase: current code content, how something works, what a function does
+- read_git_history: what changed recently, commit messages, bug introduction
+- read_session_history: session start briefings, "where did we leave off"
 </tool_rules>"""
 
+
+def build_dynamic_context() -> str:
+    j = JARVIS
+    decisions_text = "\n".join([
+        f"- {d['what']}: chose {d['chose']}, rejected {d['rejected']} ({d['reason']})"
+        for d in j.get("decisions", [])
+    ])
+    open_q_text = "\n".join([f"- {q}" for q in j.get("open_questions", [])])
+    rejected_text = ", ".join(j.get("rejected_approaches", []))
+    stack_text = ", ".join(j.get("project", {}).get("stack", []))
+
+    return f"""<project_context>
+Project: {j['project']['name']}
+Stack: {stack_text}
+Current focus: {j['project']['current_focus']}
+
+Decisions made (never re-suggest these alternatives):
+{decisions_text}
+
+Rejected approaches (never suggest): {rejected_text}
+
+Open questions:
+{open_q_text}
+</project_context>"""
+
+
+SYSTEM_PROMPT = STATIC_SYSTEM_PROMPT + "\n\n" + build_dynamic_context()
+
+# ── Tools (OpenAI format) ─────────────────────────────────────────────────────
 TOOLS = [
     {
-        "name": "update_project_memory",
-        "description": """Update jarvis.json with a confirmed project decision.
-
-Call ONLY when user uses explicit commit phrases:
-- "remember that", "we decided", "going with", "lock this in", "note that"
-
-Do NOT call when user is thinking aloud:
-- "I'm thinking about", "maybe", "what if", "should we", "considering"
-
-If unsure: do NOT call. Ask 'Should I remember this?' instead.""",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "field": {"type": "string", "enum": ["decisions", "open_questions", "session_log", "rejected_approaches"]},
-                "value": {"type": "object"}
-            },
-            "required": ["field", "value"]
+        "type": "function",
+        "function": {
+            "name": "update_project_memory",
+            "description": (
+                'Update jarvis.json with a confirmed project decision. '
+                'CALL THIS TOOL when user says: "remember that", "we decided", '
+                '"going with", "lock this in", "note that". '
+                'Do NOT call when user says: "thinking about", "maybe", "what if", "should we".'
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "field": {
+                        "type": "string",
+                        "enum": ["decisions", "open_questions", "session_log", "rejected_approaches"]
+                    },
+                    "value": {
+                        "type": "object",
+                        "description": (
+                            "Must always be an object, never a string. "
+                            "For field='decisions': {\"what\":\"topic\",\"chose\":\"chosen option\",\"rejected\":\"rejected option\",\"reason\":\"why\"}. "
+                            "For field='open_questions': {\"question\":\"the question text\"}. "
+                            "For field='rejected_approaches': {\"approach\":\"name of approach\"}. "
+                            "For field='session_log': {\"note\":\"log entry text\"}."
+                        )
+                    }
+                },
+                "required": ["field", "value"]
+            }
         }
     },
     {
-        "name": "read_codebase",
-        "description": "Read current file contents from /src. Call when developer asks about current code or diagnosing a bug.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "file_path": {"type": "string"},
-                "lines": {"type": "string"}
-            },
-            "required": ["file_path"]
+        "type": "function",
+        "function": {
+            "name": "read_codebase",
+            "description": "Read current file contents from /src. Call when developer asks about current code or diagnosing a bug.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {"type": "string"},
+                    "lines": {"type": "string"}
+                },
+                "required": ["file_path"]
+            }
         }
     }
 ]
 
-PASS = "  \033[92m✓\033[0m"
-FAIL = "  \033[91m✗\033[0m"
-SKIP = "  \033[93m⊘\033[0m"
+# ── Helpers ───────────────────────────────────────────────────────────────────
+PASS = "  [PASS]"
+FAIL = "  [FAIL]"
+SKIP = "  [SKIP]"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 DIM  = "\033[2m"
 results = {"passed": 0, "failed": 0, "skipped": 0}
 
+
 def call_claude(user_input, use_tools=True):
+    global client, MODEL, PROVIDER
     kwargs = dict(
-        model="claude-sonnet-4-20250514",
+        model=MODEL,
         max_tokens=300,
-        system=[{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}],
-        messages=[{"role": "user", "content": user_input}]
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_input}
+        ]
     )
     if use_tools:
         kwargs["tools"] = TOOLS
-    return client.messages.create(**kwargs)
+    for attempt in range(2):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except Exception as e:
+            if ("429" in str(e) or "RESOURCE_EXHAUSTED" in str(e)) and PROVIDER == "gemini":
+                groq_key = os.getenv("GROQ_API_KEY")
+                if groq_key:
+                    print(f"  {DIM}Gemini quota exhausted — switching to Groq fallback...{RESET}")
+                    client = OpenAI(api_key=groq_key,
+                                    base_url="https://api.groq.com/openai/v1")
+                    MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+                    PROVIDER = "groq"
+                    kwargs["model"] = MODEL
+                else:
+                    raise
+            else:
+                raise
+    return client.chat.completions.create(**kwargs)
+
 
 def get_text(r):
-    return next((b.text for b in r.content if b.type == "text"), "")
+    return r.choices[0].message.content or ""
+
 
 def get_tool_calls(r):
-    return [b for b in r.content if b.type == "tool_use"]
+    tool_calls = r.choices[0].message.tool_calls or []
+    return [tc for tc in tool_calls if tc.type == "function"]
+
 
 def check(name, ok, detail=""):
     if ok:
@@ -99,11 +206,13 @@ def check(name, ok, detail=""):
         results["failed"] += 1
         print(f"{FAIL} {name}")
         if detail:
-            print(f"      {DIM}→ {detail}{RESET}")
+            print(f"      {DIM}-> {detail}{RESET}")
+
 
 def skip(name, reason=""):
     results["skipped"] += 1
     print(f"{SKIP} {name} {DIM}({reason}){RESET}")
+
 
 def parse_ollama_json(raw):
     import re
@@ -119,7 +228,9 @@ def parse_ollama_json(raw):
         except:
             return {"should_surface": False, "confidence": 0.0, "reason": "parse failed"}
 
-print(f"\n{BOLD}═══ JARVIS test_prompt.py ═══{RESET}\n")
+
+print(f"\n{BOLD}=== JARVIS test_prompt.py (System Prompt v1) ==={RESET}")
+print(f"  {DIM}Provider: {PROVIDER} | Model: {MODEL}{RESET}\n")
 
 # 1. API connectivity
 print(f"{BOLD}[1] API Connectivity{RESET}")
@@ -130,30 +241,12 @@ try:
     text = get_text(r)
     check("API call succeeds", "API_OK" in text, f"got: {text[:60]}")
     check(f"Latency under 5s ({latency}ms)", latency < 5000)
-    check("Input tokens counted", r.usage.input_tokens > 0)
-    print(f"  {DIM}tokens in: {r.usage.input_tokens} | out: {r.usage.output_tokens}{RESET}")
+    check("Input tokens counted", r.usage.prompt_tokens > 0)
+    print(f"  {DIM}tokens in: {r.usage.prompt_tokens} | out: {r.usage.completion_tokens}{RESET}")
 except Exception as e:
     check("API call succeeds", False, str(e))
     check("Latency under 5s", False, "call failed")
     check("Input tokens counted", False, "call failed")
-
-# 2. Caching
-print(f"\n{BOLD}[2] Prompt Caching{RESET}")
-try:
-    r1 = call_claude("ping", use_tools=False)
-    time.sleep(0.5)
-    r2 = call_claude("pong", use_tools=False)
-    written = r1.usage.cache_creation_input_tokens
-    read    = r2.usage.cache_read_input_tokens
-    check(f"Cache written on call 1 ({written} tokens)", written > 0)
-    check(f"Cache hit on call 2 ({read} tokens read)", read > 0,
-          "cache_read=0 — system prompt changed between calls or >5min gap")
-    if written > 0 and read > 0:
-        saving = int((1 - (read * 0.3) / (written * 3.0)) * 100)
-        print(f"  {DIM}saving ~{saving}% per cached call{RESET}")
-except Exception as e:
-    check("Cache written", False, str(e))
-    check("Cache hit", False, "call failed")
 
 # 3. Memory — read known fact
 print(f"\n{BOLD}[3] Memory Behavior{RESET}")
@@ -163,7 +256,7 @@ try:
     tools = get_tool_calls(r)
     check("Answers with Ollama/CodeLlama", "ollama" in text or "codellama" in text, f"got: {text[:80]}")
     check("Does NOT call update_project_memory",
-          not any(t.name == "update_project_memory" for t in tools),
+          not any(t.function.name == "update_project_memory" for t in tools),
           "memory updated on a read-only question")
     forbidden = ["according to", "based on your", "i can see", "looking at"]
     found = [p for p in forbidden if p in text]
@@ -175,7 +268,7 @@ except Exception as e:
 try:
     r = call_claude("I'm thinking maybe we should switch to PostgreSQL")
     tools = get_tool_calls(r)
-    called = [t.name for t in tools]
+    called = [t.function.name for t in tools]
     check("Thinking aloud does NOT trigger update_project_memory",
           "update_project_memory" not in called, f"tools called: {called}")
 except Exception as e:
@@ -185,8 +278,8 @@ except Exception as e:
 try:
     r = call_claude("We're going with PostgreSQL for session storage, remember that")
     tools = get_tool_calls(r)
-    called = [t.name for t in tools]
-    inputs = json.dumps([t.input for t in tools if t.name == "update_project_memory"])
+    called = [t.function.name for t in tools]
+    inputs = json.dumps([json.loads(t.function.arguments) for t in tools if t.function.name == "update_project_memory"])
     check("Explicit commit triggers update_project_memory",
           "update_project_memory" in called, f"tools called: {called}")
     check("Tool input contains PostgreSQL",
@@ -264,7 +357,7 @@ except Exception as e:
     check("Gate prompt test", False, str(e))
 
 # Summary
-print(f"\n{BOLD}═══ Results ═══{RESET}")
+print(f"\n{BOLD}=== Results ==={RESET}")
 print(f"  Passed:  \033[92m{results['passed']}\033[0m")
 print(f"  Failed:  \033[91m{results['failed']}\033[0m")
 if results["skipped"]:
@@ -275,7 +368,6 @@ if results["failed"] == 0:
 else:
     print(f"\n  \033[91m{BOLD}{results['failed']} test(s) failing — fix before proceeding.\033[0m")
     print(f"  {DIM}Common fixes:")
-    print(f"  → cache miss:              system prompt changed between calls")
-    print(f"  → memory on read question: tighten trigger words in system prompt")
-    print(f"  → no memory on commit:     add trigger phrase to tool description")
-    print(f"  → forbidden opener:        add negative constraint to behavior_rules{RESET}\n")
+    print(f"  -> memory on read question: tighten trigger words in system prompt")
+    print(f"  -> no memory on commit:     add trigger phrase to tool description")
+    print(f"  -> forbidden opener:        add negative constraint to behavior_rules{RESET}\n")

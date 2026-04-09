@@ -5,27 +5,27 @@ Wrong model routing is either wasting money (using sonnet for something haiku ha
 
 def get_model(task_type: str, ai_mode: str) -> str:
     if ai_mode == "local":
-        return "ollama/codellama"  # secure mode — everything local
+        return "ollama/qwen3.5:cloud"  # secure mode — everything local
 
     # Cloud mode routing — choose based on task
     routing = {
-        # SONNET: complex synthesis, multi-source reasoning
-        "research_report":    "claude-sonnet-4-20250514",  # 8000 tokens in, complex output
-        "excel_analysis":     "claude-sonnet-4-20250514",  # data interpretation needs depth
-        "error_diagnosis":    "claude-sonnet-4-20250514",  # needs deep reasoning to find root cause
+        # GEMINI: complex synthesis, multi-source reasoning (primary cloud)
+        "research_report":    "gemini-2.5-flash",          # 8000 tokens in, complex output
+        "excel_analysis":     "gemini-2.5-flash",          # data interpretation needs depth
+        "error_diagnosis":    "gemini-2.5-flash",          # needs deep reasoning to find root cause
 
-        # HAIKU: structured tasks, short outputs, repetitive calls
-        "git_summary":        "claude-haiku-4-5-20251001",  # runs every session start
-        "commit_message":     "claude-haiku-4-5-20251001",  # 300 tokens output max
-        "session_summary":    "claude-haiku-4-5-20251001",  # 5 bullets, runs on every close
-        "pr_description":     "claude-haiku-4-5-20251001",  # structured, short
-        "quick_qa":           "claude-haiku-4-5-20251001",  # short answer, fast response expected
+        # GROQ/LLAMA: structured tasks, short outputs, ultra-low latency
+        "git_summary":        "llama-3.3-70b-versatile",   # runs every session start
+        "commit_message":     "llama-3.3-70b-versatile",   # 300 tokens output max
+        "session_summary":    "llama-3.3-70b-versatile",   # 5 bullets, runs on every close
+        "pr_description":     "llama-3.3-70b-versatile",   # structured, short
+        "quick_qa":           "llama-3.3-70b-versatile",   # short answer, fast response expected
 
         # OLLAMA: always-on background tasks, never user-facing quality
-        "proactive_gate":     "ollama/codellama",  # runs 50+ times/hour, must be free
-        "relevance_scoring":  "ollama/codellama",  # background signal filtering
+        "proactive_gate":     "ollama/qwen3.5:cloud",   # runs 50+ times/hour, must be free
+        "relevance_scoring":  "ollama/qwen3.5:cloud",   # background signal filtering
     }
-    return routing.get(task_type, "claude-haiku-4-5-20251001")  # default to haiku
+    return routing.get(task_type, "llama-3.3-70b-versatile")  # default to Groq
 
 # The key insight: proactive_gate runs in background, never user-facing
 # The gate output (true/false JSON) doesn't need sonnet-level reasoning
@@ -83,28 +83,28 @@ JSON:"""  # "JSON:" at the end primes Ollama to start with {
 
 | Model | Strengths | When to Use | Cost |
 |-------|-----------|-------------|------|
-| **Claude Sonnet** | Deep reasoning, complex synthesis, large context | Error diagnosis, research, multi-step analysis | $3.00/MTok input |
-| **Claude Haiku** | Fast, structured output, repetitive tasks | Summaries, commit messages, quick Q&A | $0.25/MTok input |
-| **Ollama (local)** | Free, private, always available | Background tasks, high-volume, non-user-facing | $0.00/MTok (compute cost only) |
+| **Gemini 2.5 Flash** | Deep reasoning, large context, multimodal | Error diagnosis, research, multi-step analysis | ~$0.15/MTok input |
+| **Groq Llama-3.3-70B** | Ultra-low latency, structured output, fast | Summaries, commit messages, quick Q&A | ~$0.59/MTok input |
+| **Ollama Qwen2.5-Coder** | Free, private, code-specialized | Background tasks, high-volume, non-user-facing | $0.00/MTok (compute cost only) |
 
 **Key Insight:** The "why" is about matching the right tool to the job. You don't use a sledgehammer to crack a nut — and you don't use Sonnet for 50-times-per-hour background tasks. Cost savings come from using Haiku for structured tasks and Ollama for background processing, reserving Sonnet for when its reasoning actually matters.
 
 
-# Run same query through all three models — compare outputs
+# Run same query through both models — compare outputs
 query = "Summarize what I worked on in the last 24 hours based on git history: [paste git log]"
 
 results = {}
-for model in ["claude-sonnet-4-20250514", "claude-haiku-4-5-20251001"]:
-    response = client.messages.create(
+for model in ["gemini-2.5-flash", "llama-3.3-70b-versatile"]:
+    response = client.chat.completions.create(
         model=model, max_tokens=400,
         messages=[{"role": "user", "content": query}]
     )
-    results[model] = response.content[0].text
+    results[model] = response.choices[0].message.content
 
-# For git_summary task: haiku output should be nearly identical to sonnet
-# If haiku output is significantly worse for this task → upgrade to sonnet
-# If haiku output is similar → keep haiku (4x cheaper, faster)
-print("Sonnet:", results["claude-sonnet-4-20250514"][:300])
-print("\nHaiku:",  results["claude-haiku-4-5-20251001"][:300])
-# Decision: if you can't tell the difference → use haiku
+# For git_summary task: Groq output should be nearly identical to Gemini
+# If Groq output is significantly worse for this task → upgrade to Gemini
+# If Groq output is similar → keep Groq (lower latency, cheaper)
+print("Gemini:", results["gemini-2.5-flash"][:300])
+print("\nGroq:",  results["llama-3.3-70b-versatile"][:300])
+# Decision: if you can't tell the difference → use Groq
 

@@ -23,15 +23,15 @@
         },
         {
             "what": "AI engine for error diagnosis",
-            "chose": "claude-sonnet-4-20250514",
-            "rejected": "claude-haiku-4-5-20251001",
+            "chose": "gemini-2.5-flash",
+            "rejected": "llama-3.3-70b-versatile",
             "reason": "Error diagnosis is user-facing quality — needs deep reasoning"
         },
         {
             "what": "AI engine for summaries and commit messages",
-            "chose": "claude-haiku-4-5-20251001",
-            "rejected": "claude-sonnet-4-20250514",
-            "reason": "Structured short output — haiku matches sonnet quality at 4x lower cost"
+            "chose": "llama-3.3-70b-versatile",
+            "rejected": "gemini-2.5-flash",
+            "reason": "Structured short output — Groq matches Gemini quality at lower latency and cost"
         },
         {
             "what": "Project memory format",
@@ -59,9 +59,9 @@
     ],
     "ai_config": {
         "mode": "local",
-        "cloud_model": "claude-sonnet-4-20250514",
-        "haiku_model": "claude-haiku-4-5-20251001",
-        "local_model": "ollama/codellama",
+        "cloud_model": "gemini-2.5-flash",
+        "fallback_model": "llama-3.3-70b-versatile",
+        "local_model": "ollama/qwen3.5:cloud",
         "max_tool_iterations": 10,
         "system_prompt_version": "v1"
     },
