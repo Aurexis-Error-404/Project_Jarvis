@@ -12,7 +12,7 @@ This is a **48-hour sprint project** with strict feature freeze at Hour 36. See 
 
 - **Frontend**: Electron + React
 - **Backend**: Python FastAPI + WebSocket server
-- **AI Cloud**: Claude API (sonnet-4-20250514 for reasoning, haiku-4-5-20251001 for structured output)
+- **AI Cloud**: Gemini 2.5 Flash (primary) + Groq Llama-3.3-70B (fallback)
 - **AI Local**: Ollama + CodeLlama (for gate and secure mode)
 - **Project Memory**: jarvis.json (structured schema at repo root)
 
@@ -101,7 +101,7 @@ npm start
 ## Configuration
 
 ### Environment Variables
-- `ANTHROPIC_API_KEY`: Required for Claude API calls (error diagnosis, summaries)
+- `GEMINI_API_KEY`: Required for Claude API calls (error diagnosis, summaries)
 - `AI_MODE`: Set to `local` by default (Ollama during development). Switch to `cloud` only for testing research report pipeline.
 - See `.env.example` for template.
 
@@ -110,9 +110,9 @@ npm start
 {
   "ai_config": {
     "mode": "local",
-    "cloud_model": "claude-sonnet-4-20250514",
-    "haiku_model": "claude-haiku-4-5-20251001",
-    "local_model": "ollama/codellama",
+    "cloud_model": "gemini-2.5-flash",
+    "haiku_model": "llama-3.3-70b-versatile (Groq)",
+    "local_model": "ollama/qwen3.5:cloud",
     "max_tool_iterations": 10,
     "system_prompt_version": "v1"
   }
@@ -182,7 +182,7 @@ These are hard deadlines with owners:
 
 ### Setting up development
 1. Clone the repository
-2. Copy `.env.example` to `.env` and add `ANTHROPIC_API_KEY`
+2. Copy `.env.example` to `.env` and add `GEMINI_API_KEY`
 3. Pull the relevant branch (e.g., `ai`, `backend`, `frontend`)
 4. Install dependencies in `backend/` and `frontend/` as they're added
 5. Follow startup order (Ollama → backend → frontend)

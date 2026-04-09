@@ -46,24 +46,23 @@ If recent_sessions exceeds 500 tokens: keep last 2 sessions only.
 ## Cache Strategy
 
 ```python
-system = [
-    # BLOCK 1 — STATIC — cached (identity + tool rules never change)
+messages = [
+    # Single system message — static rules + dynamic context concatenated
     {
-        "type": "text",
-        "text": STATIC_SYSTEM_PROMPT,       # sections 4 + 5 only
-        "cache_control": {"type": "ephemeral"}
+        "role": "system",
+        "content": STATIC_SYSTEM_PROMPT + "\n\n" + dynamic_context
+        # Gemini handles caching internally — keep content stable between calls
+        # Static (sections 4+5): identity + tool rules — never mutate these
+        # Dynamic (sections 1-3): built fresh from jarvis.json each call
     },
-    # BLOCK 2 — DYNAMIC — NOT cached (changes every session)
-    {
-        "type": "text",
-        "text": dynamic_context             # sections 1 + 2 + 3, built from jarvis.json
-        # no cache_control here
-    }
+    {"role": "user", "content": user_input}
 ]
 ```
 
-Why this split: Sections 4+5 (rules) never change → cache them.
-Sections 1+2+3 (context) change as project evolves → don't cache, inject fresh each call.
+Why keep static + dynamic separate in code even without explicit cache_control:
+Gemini performs internal automatic caching. A stable, non-mutating system prompt across calls
+means Gemini can reuse it. Concatenate in the order: static first, dynamic second — static
+content at the prefix position is most likely to be cache-hit.
 
 ---
 
@@ -204,18 +203,19 @@ SYSTEM_PROMPT_VERSION = "v1"
 ## Token Check — Run This After Every Prompt Edit
 
 ```python
-response = client.messages.create(
-    model="claude-sonnet-4-20250514",
+response = client.chat.completions.create(
+    model="gemini-2.5-flash",
     max_tokens=100,
-    system=system_blocks,
-    messages=[{"role": "user", "content": "ping"}]
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": "ping"}
+    ]
 )
 
-print(f"System prompt tokens:  {response.usage.input_tokens}")
-print(f"Cache created:         {response.usage.cache_creation_input_tokens}")
-print(f"Cache read:            {response.usage.cache_read_input_tokens}")
+print(f"Total tokens in:   {response.usage.prompt_tokens}")
+print(f"Tokens out:        {response.usage.completion_tokens}")
 print(f"Target: system prompt should be under 5,000 tokens")
 
-if response.usage.input_tokens > 5000:
+if response.usage.prompt_tokens > 5000:
     print("WARNING: System prompt over budget — trim codebase_map or recent_sessions")
 ```

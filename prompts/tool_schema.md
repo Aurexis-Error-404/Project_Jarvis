@@ -297,15 +297,17 @@ When in doubt which tool to call, use this table:
 ## Never Do This
 
 ```python
-# WRONG — constructing tool_use_id yourself
-tool_results.append({
-    "tool_use_id": f"tool_{tool_name}_{i}",  # ← WILL CAUSE 400 ERROR
-    "content": result
+# WRONG — constructing tool_call_id yourself
+messages.append({
+    "role": "tool",
+    "tool_call_id": f"tool_{tool_name}_{i}",  # ← WILL CAUSE 400 ERROR
+    "content": str(result)
 })
 
-# RIGHT — always use block.id from Claude's response
-tool_results.append({
-    "tool_use_id": block.id,  # ← always this
-    "content": result
+# RIGHT — always use tool_call.id from the response
+messages.append({
+    "role": "tool",
+    "tool_call_id": tool_call.id,  # ← always this
+    "content": str(result)
 })
 ```

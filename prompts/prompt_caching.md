@@ -1,76 +1,85 @@
-# Core:
-Every subsequent call that uses the exact system prompt reads it from cache at 10% of the normal cost .Ex:The system prompt cost for jarvis is ~4000 tokens.with caching each call costs  $0.0012.over 100 calls $1.20 saved.
+# prompt_caching.md — Caching Strategy for Gemini + Groq
 
+## Status: Anthropic cache_control removed
 
-**BEFORE — full price every call
-system=[{
-    "type": "text",
-    "text": system_prompt
-}]
+The previous `cache_control: {"type": "ephemeral"}` block was Anthropic-specific.
+Gemini via the OpenAI compatibility layer does NOT expose explicit prompt caching.
+Groq has no prompt caching. This file documents what replaced it.
 
- **AFTER — 90% cheaper after first call
-system=[{
-    "type": "text",
-    "text": system_prompt,
-    "cache_control": {"type": "ephemeral"}  # ← this one line
+---
 
-}]
+## What Gemini Does Automatically
 
-** "ephemeral" = 5 minute TTL (time to live)
-** The cache resets if your system prompt content changes
-**The cache resets after 5 minutes of no calls
-**During development: very active, cache stays warm
-** During the demo: warm up the cache with one test call before presenting.
+Gemini performs automatic context caching server-side when:
+- The system prompt prefix is identical across calls (byte-for-byte)
+- Calls are made within a short window (~minutes)
 
+You do not control it — you benefit from it by keeping the system prompt stable.
 
-How to verify caching is working — always check this:
+**Rule: never mutate the static portion of the system prompt between calls.**
 
-python
-Cache verification
-response = client.messages.create(...)
+```python
+# ✓ CORRECT — static rules are built once at startup, never rebuilt per call
+STATIC_SYSTEM_PROMPT = build_static_prompt()   # built once at module load
 
-# On first call — cache miss, you pay full price to write it
-print(response.usage.cache_creation_input_tokens)  # e.g. 3800 (system prompt size)
-print(response.usage.cache_read_input_tokens)       # 0
+def call_ai(user_input: str, jarvis_json_path: str) -> str:
+    dynamic = build_dynamic_context(jarvis_json_path)   # rebuilt each call (fine)
+    system  = STATIC_SYSTEM_PROMPT + "\n\n" + dynamic   # static prefix stays identical
+    ...
+```
 
-# On second call with same system prompt — cache hit!
-print(response.usage.cache_creation_input_tokens)  # 0
-print(response.usage.cache_read_input_tokens)       # 3800 ← reading from cache
+```python
+# ✗ WRONG — rebuilding the static block per call breaks any internal caching
+def call_ai(user_input: str) -> str:
+    system = build_static_prompt() + "\n\n" + build_dynamic_context()
+    # build_static_prompt() called every time → output identical but Gemini can't know that
+```
 
-# If cache_read is 0 on second call:
-# → Your system prompt changed (even one character breaks the cache)
-# → More than 5 minutes between calls
-# → You forgot the cache_control field
+---
 
-# Cache pricing breakdown:
-# Cache write: $3.75/MTok (1.25x normal — you pay a small premium to cache it)
-# Cache read:  $0.30/MTok  (10% of normal — you pay almost nothing)
-# Normal:      $3.00/MTok
-# Break-even:  after 1.25 reads, caching is net profitable
+## What Breaks Caching
 
+```python
+# ✗ BREAKS — timestamp in static section changes every call
+STATIC = f"System built at: {datetime.now()}\n\nYou are JARVIS..."
 
-JARVIS-specific setup: Before the hackathon demo, make one warm-up call to get the cache loaded. The demo then runs on cached system prompts. If the demo machine was idle for 5+ minutes before presenting, make another warm-up call while setting up the projector.
+# ✓ KEEPS — timestamp only in dynamic section (already not cached)
+dynamic = f"Session started: {datetime.now()}\n\n<project_context>..."
+```
 
-# ❌ BREAKS CACHE — jarvis.json timestamp changes on every load
-system_prompt = f"Project: {project_name}. Last updated: {datetime.now()}"
+---
 
-# ✓ KEEPS CACHE — timestamp excluded from cached section
-system_prompt = f"Project: {project_name}."  # no timestamp in cached content
+## Demo Warm-Up (still applies)
 
-# ❌ BREAKS CACHE — session summary changes every call
-system_prompt = f"...\nSession notes: {current_session_notes}"
+Gemini's automatic caching warms up after the first call. Before a live demo:
 
-# ✓ KEEPS CACHE — separate static from dynamic content
-# Cached static section (jarvis.json decisions, codebase map)
-system=[
-    {
-        "type": "text",
-        "text": static_context,  # never changes between calls
-        "cache_control": {"type": "ephemeral"}
-    },
-    {
-        "type": "text",
-        "text": dynamic_context  # current session notes — not cached, that's fine
-        # no cache_control here
-    }
-]
+```python
+# Make one warm-up call 30 seconds before presenting
+client.chat.completions.create(
+    model="gemini-2.5-flash",
+    max_tokens=10,
+    messages=[
+        {"role": "system", "content": STATIC_SYSTEM_PROMPT + "\n\n" + build_dynamic_context()},
+        {"role": "user", "content": "ready"}
+    ]
+)
+# Demo calls after this will be faster
+```
+
+---
+
+## Token Budget (unchanged)
+
+```
+System prompt budget: 5,000 tokens total
+  - static (identity + tool rules):  1,500 tokens  ← keep stable
+  - dynamic (project context):        1,500 tokens  ← rebuilt each call
+  - codebase_map:                     1,500 tokens  ← injected at session start
+  - recent_sessions:                    500 tokens  ← injected at session start
+```
+
+Check tokens with:
+```python
+print(f"prompt_tokens: {response.usage.prompt_tokens}")
+# Target: under 5,000
+```
