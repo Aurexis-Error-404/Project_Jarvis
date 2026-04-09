@@ -25,7 +25,9 @@ export default function App() {
         setIsStreaming(true);
         dispatch({ type: 'START_STREAM' });
       }
-      dispatch({ type: 'APPEND_CHUNK', text: event.text });
+      if (event.text) {
+        dispatch({ type: 'APPEND_CHUNK', text: event.text });
+      }
       if (event.done) { isStreamingRef.current = false; dispatch({ type: 'FINISH_STREAM' }); setIsStreaming(false); }
     },
     onResponse: (event) => {
@@ -39,7 +41,12 @@ export default function App() {
     },
     onSurface: (event) => { setSurfaceData({ bullets: event.bullets, file: event.file }); },
     onModeAck: (event) => { setMode(event.mode); },
-    onError: (event) => { dispatch({ type: 'ADD_ERROR', message: event.message }); setIsStreaming(false); },
+    onError: (event) => {
+      if (isStreamingRef.current) { dispatch({ type: 'FINISH_STREAM' }); }
+      dispatch({ type: 'ADD_ERROR', message: event.message });
+      isStreamingRef.current = false;
+      setIsStreaming(false);
+    },
     onReportGenerated: (event) => { setReportReady({ path: event.path }); },
     onStatusUpdate: () => { /* transient — backend signals thinking start, no UI action needed */ },
   });
@@ -59,18 +66,28 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (connectionStatus === 'disconnected' && isStreamingRef.current) {
+      isStreamingRef.current = false;
+      setIsStreaming(false);
+    }
+  }, [connectionStatus]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSend = useCallback((text) => {
     if (!text.trim() || isStreaming) return;
     dispatch({ type: 'ADD_USER_MESSAGE', text: text.trim() });
+    dispatch({ type: 'START_STREAM' });
+    isStreamingRef.current = true;
+    setIsStreaming(true);
     sendMessage({ event: 'user_query', query: text.trim(), mode });
   }, [isStreaming, mode, sendMessage]);
 
   const handleModeToggle = useCallback(() => {
     const next = mode === 'cloud' ? 'local' : 'cloud';
-    setMode(next);
+    setMode('pending');
     sendMessage({ event: 'mode_change', mode: next });
   }, [mode, sendMessage]);
 
@@ -105,7 +122,7 @@ export default function App() {
                 await window.jarvis?.openLocalFile(reportReady.path);
                 setReportReady(null);
               } catch (e) {
-                setReportReady(prev => ({ ...prev, error: `Could not open — ${reportReady.path}` }));
+                setReportReady(prev => ({ ...prev, error: `Could not open — ${prev.path}` }));
               }
             }}
           >

@@ -9,6 +9,7 @@ Critical rules (violations cause 400 errors or silent failures):
   - Assistant message with tool_calls MUST be appended to history before tool results
 """
 
+import asyncio
 import datetime
 import json as _json
 import logging
@@ -99,6 +100,23 @@ async def _call_with_fallback(
     )
 
 
+async def _stream_text(text: str, send_event) -> None:
+    """Send text as a series of word-level streaming chunks to the frontend."""
+    if not text:
+        await send_event({"event": "jarvis_stream_chunk", "text": "", "done": True})
+        return
+
+    words = text.split(" ")
+    for i, word in enumerate(words):
+        chunk = word if i == len(words) - 1 else word + " "
+        await send_event(
+            {"event": "jarvis_stream_chunk", "text": chunk, "done": False}
+        )
+        await asyncio.sleep(0.015)
+
+    await send_event({"event": "jarvis_stream_chunk", "text": "", "done": True})
+
+
 async def run(query: str, mode: str, send_event,
               codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.") -> str:
     """
@@ -135,13 +153,7 @@ async def run(query: str, mode: str, send_event,
 
         if choice.finish_reason == "stop":
             text = choice.message.content or ""
-            await send_event(
-                {
-                    "event": "jarvis_response",
-                    "text": text,
-                    "timestamp": _utcnow(),
-                }
-            )
+            await _stream_text(text, send_event)
             return text
 
         if choice.finish_reason == "tool_calls":

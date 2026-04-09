@@ -12873,8 +12873,11 @@
         return [...state, { id: action.id || Date.now(), role: "jarvis", text: "", timestamp: /* @__PURE__ */ new Date(), streaming: true }];
       case "APPEND_CHUNK":
         return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg);
-      case "FINISH_STREAM":
+      case "FINISH_STREAM": {
+        const last = state[state.length - 1];
+        if (last?.streaming && !last.text) return state.slice(0, -1);
         return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, streaming: false } : msg);
+      }
       case "REPLACE_RESPONSE":
         return state.map((msg, i) => i === state.length - 1 && msg.role === "jarvis" ? { ...msg, text: action.text, streaming: false } : msg);
       case "ADD_ERROR":
@@ -13132,7 +13135,9 @@
           setIsStreaming(true);
           dispatch({ type: "START_STREAM" });
         }
-        dispatch({ type: "APPEND_CHUNK", text: event.text });
+        if (event.text) {
+          dispatch({ type: "APPEND_CHUNK", text: event.text });
+        }
         if (event.done) {
           isStreamingRef.current = false;
           dispatch({ type: "FINISH_STREAM" });
@@ -13155,7 +13160,11 @@
         setMode(event.mode);
       },
       onError: (event) => {
+        if (isStreamingRef.current) {
+          dispatch({ type: "FINISH_STREAM" });
+        }
         dispatch({ type: "ADD_ERROR", message: event.message });
+        isStreamingRef.current = false;
         setIsStreaming(false);
       },
       onReportGenerated: (event) => {
@@ -13177,16 +13186,25 @@
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
     (0, import_react4.useEffect)(() => {
+      if (connectionStatus === "disconnected" && isStreamingRef.current) {
+        isStreamingRef.current = false;
+        setIsStreaming(false);
+      }
+    }, [connectionStatus]);
+    (0, import_react4.useEffect)(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
     const handleSend = (0, import_react4.useCallback)((text) => {
       if (!text.trim() || isStreaming) return;
       dispatch({ type: "ADD_USER_MESSAGE", text: text.trim() });
+      dispatch({ type: "START_STREAM" });
+      isStreamingRef.current = true;
+      setIsStreaming(true);
       sendMessage({ event: "user_query", query: text.trim(), mode });
     }, [isStreaming, mode, sendMessage]);
     const handleModeToggle = (0, import_react4.useCallback)(() => {
       const next = mode === "cloud" ? "local" : "cloud";
-      setMode(next);
+      setMode("pending");
       sendMessage({ event: "mode_change", mode: next });
     }, [mode, sendMessage]);
     const handleDismissSurface = (0, import_react4.useCallback)(() => {
@@ -13216,7 +13234,7 @@
                 await window.jarvis?.openLocalFile(reportReady.path);
                 setReportReady(null);
               } catch (e) {
-                setReportReady((prev) => ({ ...prev, error: `Could not open \u2014 ${reportReady.path}` }));
+                setReportReady((prev) => ({ ...prev, error: `Could not open \u2014 ${prev.path}` }));
               }
             },
             children: "Open Report"
