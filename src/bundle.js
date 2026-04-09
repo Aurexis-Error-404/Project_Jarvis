@@ -29,18 +29,18 @@
   var require_react_production = __commonJS({
     "node_modules/react/cjs/react.production.js"(exports) {
       "use strict";
-      var REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element");
-      var REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal");
-      var REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment");
-      var REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode");
-      var REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler");
-      var REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer");
-      var REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context");
-      var REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref");
-      var REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense");
-      var REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo");
-      var REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
-      var REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity");
+      var REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element");
+      var REACT_PORTAL_TYPE = Symbol.for("react.portal");
+      var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+      var REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode");
+      var REACT_PROFILER_TYPE = Symbol.for("react.profiler");
+      var REACT_CONSUMER_TYPE = Symbol.for("react.consumer");
+      var REACT_CONTEXT_TYPE = Symbol.for("react.context");
+      var REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref");
+      var REACT_SUSPENSE_TYPE = Symbol.for("react.suspense");
+      var REACT_MEMO_TYPE = Symbol.for("react.memo");
+      var REACT_LAZY_TYPE = Symbol.for("react.lazy");
+      var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
       var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
       function getIteratorFn(maybeIterable) {
         if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
@@ -767,7 +767,7 @@
   var require_react_dom_production = __commonJS({
     "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
-      var React6 = require_react();
+      var React3 = require_react();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -796,7 +796,7 @@
         p: 0,
         findDOMNode: null
       };
-      var REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal");
+      var REACT_PORTAL_TYPE = Symbol.for("react.portal");
       function createPortal$1(children, containerInfo, implementation) {
         var key = 3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
         return {
@@ -807,7 +807,7 @@
           implementation
         };
       }
-      var ReactSharedInternals = React6.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React3.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       function getCrossOriginStringAs(as, input) {
         if ("font" === as) return "";
         if ("string" === typeof input)
@@ -943,7 +943,7 @@
     "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
       "use strict";
       var Scheduler = require_scheduler();
-      var React6 = require_react();
+      var React3 = require_react();
       var ReactDOM = require_react_dom();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
@@ -1067,28 +1067,32 @@
         return null;
       }
       var assign = Object.assign;
-      var REACT_LEGACY_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.element");
-      var REACT_ELEMENT_TYPE = /* @__PURE__ */ Symbol.for("react.transitional.element");
-      var REACT_PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal");
-      var REACT_FRAGMENT_TYPE = /* @__PURE__ */ Symbol.for("react.fragment");
-      var REACT_STRICT_MODE_TYPE = /* @__PURE__ */ Symbol.for("react.strict_mode");
-      var REACT_PROFILER_TYPE = /* @__PURE__ */ Symbol.for("react.profiler");
-      var REACT_CONSUMER_TYPE = /* @__PURE__ */ Symbol.for("react.consumer");
-      var REACT_CONTEXT_TYPE = /* @__PURE__ */ Symbol.for("react.context");
-      var REACT_FORWARD_REF_TYPE = /* @__PURE__ */ Symbol.for("react.forward_ref");
-      var REACT_SUSPENSE_TYPE = /* @__PURE__ */ Symbol.for("react.suspense");
-      var REACT_SUSPENSE_LIST_TYPE = /* @__PURE__ */ Symbol.for("react.suspense_list");
-      var REACT_MEMO_TYPE = /* @__PURE__ */ Symbol.for("react.memo");
-      var REACT_LAZY_TYPE = /* @__PURE__ */ Symbol.for("react.lazy");
-      var REACT_ACTIVITY_TYPE = /* @__PURE__ */ Symbol.for("react.activity");
-      var REACT_MEMO_CACHE_SENTINEL = /* @__PURE__ */ Symbol.for("react.memo_cache_sentinel");
+      var REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element");
+      var REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element");
+      var REACT_PORTAL_TYPE = Symbol.for("react.portal");
+      var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+      var REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode");
+      var REACT_PROFILER_TYPE = Symbol.for("react.profiler");
+      var REACT_CONSUMER_TYPE = Symbol.for("react.consumer");
+      var REACT_CONTEXT_TYPE = Symbol.for("react.context");
+      var REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref");
+      var REACT_SUSPENSE_TYPE = Symbol.for("react.suspense");
+      var REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list");
+      var REACT_MEMO_TYPE = Symbol.for("react.memo");
+      var REACT_LAZY_TYPE = Symbol.for("react.lazy");
+      Symbol.for("react.scope");
+      var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
+      Symbol.for("react.legacy_hidden");
+      Symbol.for("react.tracing_marker");
+      var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
+      Symbol.for("react.view_transition");
       var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
       function getIteratorFn(maybeIterable) {
         if (null === maybeIterable || "object" !== typeof maybeIterable) return null;
         maybeIterable = MAYBE_ITERATOR_SYMBOL && maybeIterable[MAYBE_ITERATOR_SYMBOL] || maybeIterable["@@iterator"];
         return "function" === typeof maybeIterable ? maybeIterable : null;
       }
-      var REACT_CLIENT_REFERENCE = /* @__PURE__ */ Symbol.for("react.client.reference");
+      var REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference");
       function getComponentNameFromType(type) {
         if (null == type) return null;
         if ("function" === typeof type)
@@ -1134,7 +1138,7 @@
         return null;
       }
       var isArrayImpl = Array.isArray;
-      var ReactSharedInternals = React6.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React3.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var sharedNotPendingObject = {
         pending: false,
@@ -12580,7 +12584,7 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_1840 = React6.version;
+      var isomorphicReactPackageVersion$jscomp$inline_1840 = React3.version;
       if ("19.2.4" !== isomorphicReactPackageVersion$jscomp$inline_1840)
         throw Error(
           formatProdErrorMessage(
@@ -12706,162 +12710,264 @@
   });
 
   // src/index.jsx
-  var import_react5 = __toESM(require_react());
+  var import_react3 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // src/App.jsx
-  var import_react4 = __toESM(require_react());
-
-  // src/components/ConversationPanel.jsx
-  var import_react = __toESM(require_react());
-  function ConversationPanel({ messages, isStreaming }) {
-    const panelRef = (0, import_react.useRef)(null);
-    (0, import_react.useEffect)(() => {
-      if (panelRef.current) {
-        panelRef.current.scrollTop = panelRef.current.scrollHeight;
-      }
-    }, [messages, isStreaming]);
-    if (messages.length === 0 && !isStreaming) {
-      return /* @__PURE__ */ import_react.default.createElement("div", { className: "conversation-panel" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "empty-state" }, /* @__PURE__ */ import_react.default.createElement("div", { className: "empty-state-icon" }, "\u26A1"), /* @__PURE__ */ import_react.default.createElement("div", { className: "empty-state-text" }, "What are you working on?"), /* @__PURE__ */ import_react.default.createElement("div", { className: "empty-state-hint" }, "Type a message below or press Ctrl+Space to toggle")));
-    }
-    return /* @__PURE__ */ import_react.default.createElement("div", { className: "conversation-panel", ref: panelRef }, messages.map((msg) => /* @__PURE__ */ import_react.default.createElement(
-      "div",
-      {
-        key: msg.id,
-        className: `message message--${msg.role === "user" ? "user" : msg.role === "error" ? "error" : "jarvis"}`
-      },
-      msg.text
-    )), isStreaming && /* @__PURE__ */ import_react.default.createElement("div", { className: "typing-indicator" }, /* @__PURE__ */ import_react.default.createElement("span", null), /* @__PURE__ */ import_react.default.createElement("span", null), /* @__PURE__ */ import_react.default.createElement("span", null)));
-  }
-
-  // src/components/InputField.jsx
   var import_react2 = __toESM(require_react());
-  var InputField = (0, import_react2.forwardRef)(function InputField2({ onSend, disabled }, ref) {
-    const [text, setText] = (0, import_react2.useState)("");
-    const handleSubmit = () => {
-      if (!text.trim() || disabled) return;
-      onSend(text);
-      setText("");
-    };
-    const handleKeyDown = (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit();
-      }
-    };
-    return /* @__PURE__ */ import_react2.default.createElement("div", { className: "input-area" }, /* @__PURE__ */ import_react2.default.createElement("div", { className: "input-wrapper" }, /* @__PURE__ */ import_react2.default.createElement(
-      "input",
-      {
-        ref,
-        type: "text",
-        className: "input-field",
-        placeholder: disabled ? "JARVIS is thinking\u2026" : "Ask JARVIS anything\u2026",
-        value: text,
-        onChange: (e) => setText(e.target.value),
-        onKeyDown: handleKeyDown,
-        disabled,
-        autoFocus: true
-      }
-    ), /* @__PURE__ */ import_react2.default.createElement(
-      "button",
-      {
-        className: "send-button",
-        onClick: handleSubmit,
-        disabled: disabled || !text.trim(),
-        title: "Send message"
-      },
-      /* @__PURE__ */ import_react2.default.createElement("svg", { width: "18", height: "18", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2.5", strokeLinecap: "round", strokeLinejoin: "round" }, /* @__PURE__ */ import_react2.default.createElement("line", { x1: "22", y1: "2", x2: "11", y2: "13" }), /* @__PURE__ */ import_react2.default.createElement("polygon", { points: "22 2 15 22 11 13 2 9 22 2" }))
-    )));
-  });
-  var InputField_default = InputField;
 
-  // src/components/ModeBadge.jsx
-  var import_react3 = __toESM(require_react());
-  function ModeBadge({ mode, onToggle }) {
-    const label = mode === "pending" ? "\u2026" : mode.toUpperCase();
-    return /* @__PURE__ */ import_react3.default.createElement(
-      "button",
-      {
-        className: `mode-badge mode-badge--${mode}`,
-        onClick: onToggle,
-        disabled: mode === "pending",
-        title: mode === "pending" ? "Switching mode\u2026" : `Click to switch to ${mode === "local" ? "CLOUD" : "LOCAL"}`
-      },
-      /* @__PURE__ */ import_react3.default.createElement("span", { className: `mode-dot mode-dot--${mode}` }),
-      label
-    );
+  // src/hooks/useWebSocket.js
+  var import_react = __toESM(require_react());
+  var RECONNECT_DELAY_MS = 2e3;
+  function useWebSocket(url, handlers = {}) {
+    const [connectionStatus, setConnectionStatus] = (0, import_react.useState)("disconnected");
+    const wsRef = (0, import_react.useRef)(null);
+    const reconnectTimerRef = (0, import_react.useRef)(null);
+    const handlersRef = (0, import_react.useRef)(handlers);
+    const mountedRef = (0, import_react.useRef)(true);
+    (0, import_react.useEffect)(() => {
+      handlersRef.current = handlers;
+    });
+    const connect = (0, import_react.useCallback)(() => {
+      if (!mountedRef.current) return;
+      if (wsRef.current?.readyState === WebSocket.OPEN) return;
+      setConnectionStatus("connecting");
+      console.log("[WS] Connecting to", url);
+      const ws = new WebSocket(url);
+      wsRef.current = ws;
+      ws.onopen = () => {
+        if (!mountedRef.current) return;
+        setConnectionStatus("connected");
+        console.log("[WS] Connected");
+      };
+      ws.onmessage = (event) => {
+        if (!mountedRef.current) return;
+        let data;
+        try {
+          data = JSON.parse(event.data);
+        } catch (e) {
+          console.warn("[WS] Malformed JSON received:", event.data);
+          return;
+        }
+        const h = handlersRef.current;
+        switch (data.type) {
+          case "jarvis_stream_chunk":
+            h.onStreamChunk?.(data);
+            break;
+          case "jarvis_response":
+            h.onResponse?.(data);
+            break;
+          case "jarvis_surface":
+            h.onSurface?.(data);
+            break;
+          case "jarvis_mode_ack":
+            h.onModeAck?.(data);
+            break;
+          case "jarvis_error":
+            h.onError?.(data);
+            break;
+          default:
+            console.warn("[WS] Unknown event type:", data.type);
+        }
+      };
+      ws.onclose = (event) => {
+        if (!mountedRef.current) return;
+        setConnectionStatus("disconnected");
+        console.log("[WS] Disconnected (code:", event.code, ")");
+        wsRef.current = null;
+        reconnectTimerRef.current = setTimeout(() => {
+          console.log("[WS] Reconnecting...");
+          connect();
+        }, RECONNECT_DELAY_MS);
+      };
+      ws.onerror = (error) => {
+        console.warn("[WS] Error:", error.message || "WebSocket error");
+      };
+    }, [url]);
+    (0, import_react.useEffect)(() => {
+      mountedRef.current = true;
+      connect();
+      return () => {
+        mountedRef.current = false;
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
+        }
+        if (wsRef.current) {
+          wsRef.current.onclose = null;
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+      };
+    }, [connect]);
+    const sendMessage = (0, import_react.useCallback)((payload) => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify(payload));
+        console.log("[WS] Sent:", payload.type);
+      } else {
+        console.warn("[WS] Cannot send \u2014 not connected. Payload:", payload.type);
+      }
+    }, []);
+    return { sendMessage, connectionStatus };
   }
 
   // src/App.jsx
+  function messageReducer(state, action) {
+    switch (action.type) {
+      case "ADD_USER_MESSAGE":
+        return [...state, {
+          id: Date.now(),
+          role: "user",
+          text: action.text,
+          timestamp: /* @__PURE__ */ new Date()
+        }];
+      case "ADD_JARVIS_MESSAGE":
+        return [...state, {
+          id: Date.now(),
+          role: "jarvis",
+          text: action.text,
+          timestamp: /* @__PURE__ */ new Date()
+        }];
+      case "START_STREAM":
+        return [...state, {
+          id: action.id || Date.now(),
+          role: "jarvis",
+          text: "",
+          timestamp: /* @__PURE__ */ new Date(),
+          streaming: true
+        }];
+      case "APPEND_CHUNK":
+        return state.map(
+          (msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg
+        );
+      case "FINISH_STREAM":
+        return state.map(
+          (msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, streaming: false } : msg
+        );
+      case "REPLACE_RESPONSE":
+        return state.map(
+          (msg, i) => i === state.length - 1 && msg.role === "jarvis" ? { ...msg, text: action.text, streaming: false } : msg
+        );
+      case "ADD_ERROR":
+        return [...state, {
+          id: Date.now(),
+          role: "error",
+          text: action.message,
+          timestamp: /* @__PURE__ */ new Date()
+        }];
+      case "CLEAR":
+        return [];
+      default:
+        return state;
+    }
+  }
   function App() {
-    const [messages, setMessages] = (0, import_react4.useState)([]);
-    const [isStreaming, setIsStreaming] = (0, import_react4.useState)(false);
-    const [mode, setMode] = (0, import_react4.useState)("local");
-    const [connectionStatus, setConnectionStatus] = (0, import_react4.useState)("disconnected");
-    const inputRef = (0, import_react4.useRef)(null);
-    (0, import_react4.useEffect)(() => {
-      if (window.jarvis && window.jarvis.onToggleOverlay) {
-        const cleanup = window.jarvis.onToggleOverlay(() => {
+    const [messages, dispatch] = (0, import_react2.useReducer)(messageReducer, []);
+    const [isStreaming, setIsStreaming] = (0, import_react2.useState)(false);
+    const [mode, setMode] = (0, import_react2.useState)("local");
+    const [surfaceData, setSurfaceData] = (0, import_react2.useState)(null);
+    const inputRef = (0, import_react2.useRef)(null);
+    const { sendMessage, connectionStatus } = useWebSocket("ws://localhost:8765", {
+      onStreamChunk: (event) => {
+        if (!isStreaming) {
+          setIsStreaming(true);
+          dispatch({ type: "START_STREAM" });
+        }
+        dispatch({ type: "APPEND_CHUNK", text: event.text });
+        if (event.done) {
+          dispatch({ type: "FINISH_STREAM" });
+          setIsStreaming(false);
+        }
+      },
+      onResponse: (event) => {
+        if (isStreaming) {
+          dispatch({ type: "REPLACE_RESPONSE", text: event.text });
+          setIsStreaming(false);
+        } else {
+          dispatch({ type: "ADD_JARVIS_MESSAGE", text: event.text });
+        }
+      },
+      onSurface: (event) => {
+        setSurfaceData({ bullets: event.bullets, file: event.file });
+      },
+      onModeAck: (event) => {
+        setMode(event.mode);
+      },
+      onError: (event) => {
+        dispatch({ type: "ADD_ERROR", message: event.message });
+        setIsStreaming(false);
+      }
+    });
+    (0, import_react2.useEffect)(() => {
+      if (window.jarvis?.onToggleOverlay) {
+        return window.jarvis.onToggleOverlay(() => {
           setTimeout(() => inputRef.current?.focus(), 50);
         });
-        return cleanup;
       }
     }, []);
-    const handleSend = (0, import_react4.useCallback)((text) => {
+    const handleSend = (0, import_react2.useCallback)((text) => {
       if (!text.trim() || isStreaming) return;
-      const userMsg = {
-        id: Date.now(),
-        role: "user",
+      dispatch({ type: "ADD_USER_MESSAGE", text: text.trim() });
+      sendMessage({
+        type: "user_query",
         text: text.trim(),
-        timestamp: /* @__PURE__ */ new Date()
-      };
-      setMessages((prev) => [...prev, userMsg]);
-      setIsStreaming(true);
-      setTimeout(() => {
-        const jarvisMsg = {
-          id: Date.now() + 1,
-          role: "jarvis",
-          text: `Echo: "${text.trim()}" \u2014 WebSocket not yet connected. This is a local echo for testing.`,
-          timestamp: /* @__PURE__ */ new Date()
-        };
-        setMessages((prev) => [...prev, jarvisMsg]);
-        setIsStreaming(false);
-      }, 800);
-    }, [isStreaming]);
-    const handleModeToggle = (0, import_react4.useCallback)(() => {
+        mode: mode === "pending" ? "local" : mode
+      });
+    }, [isStreaming, mode, sendMessage]);
+    const handleModeToggle = (0, import_react2.useCallback)(() => {
       if (mode === "pending") return;
       const newMode = mode === "local" ? "cloud" : "local";
       setMode("pending");
-      setTimeout(() => {
-        setMode(newMode);
-      }, 1e3);
-    }, [mode]);
-    return /* @__PURE__ */ import_react4.default.createElement("div", { className: "overlay" }, /* @__PURE__ */ import_react4.default.createElement("div", { className: "header" }, /* @__PURE__ */ import_react4.default.createElement("span", { className: "header-title" }, "JARVIS"), /* @__PURE__ */ import_react4.default.createElement("div", { className: "header-actions" }, /* @__PURE__ */ import_react4.default.createElement(
-      "div",
-      {
-        className: `connection-dot connection-dot--${connectionStatus}`,
-        title: `WebSocket: ${connectionStatus}`
+      sendMessage({ type: "mode_change", mode: newMode });
+    }, [mode, sendMessage]);
+    const handleDismissSurface = (0, import_react2.useCallback)(() => {
+      if (surfaceData) {
+        sendMessage({ type: "surface_dismissed", file: surfaceData.file });
+        setSurfaceData(null);
       }
-    ), /* @__PURE__ */ import_react4.default.createElement(ModeBadge, { mode, onToggle: handleModeToggle }))), /* @__PURE__ */ import_react4.default.createElement(
-      ConversationPanel,
-      {
-        messages,
-        isStreaming
+    }, [surfaceData, sendMessage]);
+    (0, import_react2.useEffect)(() => {
+      if (!surfaceData) return;
+      const timer = setTimeout(() => {
+        handleDismissSurface();
+      }, 8e3);
+      return () => clearTimeout(timer);
+    }, [surfaceData, handleDismissSurface]);
+    return /* @__PURE__ */ import_react2.default.createElement("div", { className: "overlay", style: {
+      width: "100%",
+      height: "100%",
+      background: "rgba(12, 12, 20, 0.95)",
+      borderRadius: "16px",
+      border: "1px solid rgba(100, 140, 255, 0.1)",
+      display: "flex",
+      flexDirection: "column",
+      fontFamily: "'Inter', sans-serif",
+      color: "#e8e8f0",
+      overflow: "hidden"
+    } }, /* @__PURE__ */ import_react2.default.createElement("div", { style: { padding: "16px", borderBottom: "1px solid rgba(100,140,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", WebkitAppRegion: "drag" } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { fontSize: "14px", fontWeight: 600, letterSpacing: "1.5px", background: "linear-gradient(135deg, #00d4ff, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } }, "JARVIS"), /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", gap: "8px", alignItems: "center", WebkitAppRegion: "no-drag" } }, /* @__PURE__ */ import_react2.default.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: connectionStatus === "connected" ? "#10b981" : connectionStatus === "connecting" ? "#f59e0b" : "#ef4444" }, title: connectionStatus }), /* @__PURE__ */ import_react2.default.createElement("button", { onClick: handleModeToggle, disabled: mode === "pending", style: { padding: "4px 12px", borderRadius: 20, border: "none", fontSize: "20px", fontWeight: 700, cursor: "pointer", background: mode === "local" ? "rgba(16,185,129,0.15)" : mode === "cloud" ? "rgba(59,130,246,0.15)" : "rgba(120,120,140,0.15)", color: mode === "local" ? "#10b981" : mode === "cloud" ? "#3b82f6" : "#9898b0", animation: mode === "pending" ? "pulse 1.5s infinite" : "none" } }, mode === "pending" ? "\u2026" : mode.toUpperCase()))), /* @__PURE__ */ import_react2.default.createElement("div", { style: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" } }, messages.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5, fontSize: "16px", color: "#9898b0" } }, "\u26A1 Ask JARVIS anything\u2026") : messages.map((msg) => /* @__PURE__ */ import_react2.default.createElement("div", { key: msg.id, style: {
+      alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+      maxWidth: "85%",
+      padding: "12px 16px",
+      borderRadius: "12px",
+      fontSize: "20px",
+      lineHeight: 1.5,
+      background: msg.role === "user" ? "linear-gradient(135deg, #3b82f6, #2563eb)" : msg.role === "error" ? "rgba(239,68,68,0.12)" : "rgba(22,22,35,0.9)",
+      color: msg.role === "error" ? "#f59e0b" : "#e8e8f0",
+      border: msg.role === "user" ? "none" : "1px solid rgba(100,140,255,0.1)"
+    } }, msg.text, msg.streaming ? "\u258A" : "")), isStreaming && messages[messages.length - 1]?.text === "" && /* @__PURE__ */ import_react2.default.createElement("div", { style: { alignSelf: "flex-start", padding: "14px 18px", background: "rgba(22,22,35,0.9)", borderRadius: "12px", border: "1px solid rgba(100,140,255,0.1)" } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { opacity: 0.6 } }, "Thinking\u2026"))), /* @__PURE__ */ import_react2.default.createElement("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(100,140,255,0.1)" } }, /* @__PURE__ */ import_react2.default.createElement("form", { onSubmit: (e) => {
+      e.preventDefault();
+      const input = inputRef.current;
+      if (input?.value) {
+        handleSend(input.value);
+        input.value = "";
       }
-    ), /* @__PURE__ */ import_react4.default.createElement(
-      InputField_default,
-      {
-        ref: inputRef,
-        onSend: handleSend,
-        disabled: isStreaming
-      }
-    ));
+    }, style: { display: "flex", gap: "8px", background: "rgba(30,30,48,0.85)", borderRadius: "12px", padding: "4px 4px 4px 16px", border: "1px solid rgba(100,140,255,0.1)" } }, /* @__PURE__ */ import_react2.default.createElement("input", { ref: inputRef, type: "text", placeholder: isStreaming ? "JARVIS is thinking\u2026" : "Ask JARVIS anything\u2026", disabled: isStreaming, autoFocus: true, style: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#e8e8f0", fontSize: "16px", fontFamily: "inherit", padding: "10px 0" } }), /* @__PURE__ */ import_react2.default.createElement("button", { type: "submit", disabled: isStreaming, style: { width: 40, height: 40, borderRadius: 8, border: "none", background: "linear-gradient(135deg, #00d4ff, #3b82f6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" } }, "\u2191"))), surfaceData && /* @__PURE__ */ import_react2.default.createElement("div", { style: { position: "absolute", bottom: "100%", right: 0, width: 320, marginBottom: 8, background: "rgba(12,12,20,0.95)", border: "1px solid rgba(100,140,255,0.25)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" } }, /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 8 } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: "#00d4ff", letterSpacing: 1, textTransform: "uppercase" } }, "Context"), /* @__PURE__ */ import_react2.default.createElement("button", { onClick: handleDismissSurface, style: { background: "transparent", border: "1px solid rgba(100,140,255,0.1)", borderRadius: 6, color: "#9898b0", cursor: "pointer", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, "\xD7")), /* @__PURE__ */ import_react2.default.createElement("ul", { style: { listStyle: "none", padding: 0 } }, surfaceData.bullets.map((b, i) => /* @__PURE__ */ import_react2.default.createElement("li", { key: i, style: { fontSize: 14, color: "#e8e8f0", paddingLeft: 16, position: "relative", lineHeight: 1.6 } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { position: "absolute", left: 0, color: "#00d4ff" } }, "\u25B8"), b))), /* @__PURE__ */ import_react2.default.createElement("span", { style: { display: "inline-block", marginTop: 8, padding: "3px 10px", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: 20, fontSize: 12, color: "#00d4ff", fontFamily: "Consolas, monospace" } }, surfaceData.file)));
   }
 
   // src/index.jsx
   var container = document.getElementById("root");
   var root = (0, import_client.createRoot)(container);
-  root.render(/* @__PURE__ */ import_react5.default.createElement(App, null));
+  root.render(/* @__PURE__ */ import_react3.default.createElement(App, null));
   console.log("[JARVIS] React app mounted");
 })();
 /*! Bundled license information:
