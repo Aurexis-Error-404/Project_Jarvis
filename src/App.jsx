@@ -1,155 +1,151 @@
-// src/App.jsx — Minimal root component
-// Infrastructure only: WebSocket hook + overlay focus + state management
-// YOU build the UI components — this just wires the data
-
-import React, { useState, useEffect, useCallback, useRef, useReducer } from 'react';
+import { useState, useEffect, useCallback, useRef, useReducer } from 'react';
 import useWebSocket from './hooks/useWebSocket';
 
+
 // ─── Message reducer ─────────────────────────────────────
-// Centralized state management for conversation messages
 function messageReducer(state, action) {
   switch (action.type) {
     case 'ADD_USER_MESSAGE':
-      return [...state, {
-        id: Date.now(),
-        role: 'user',
-        text: action.text,
-        timestamp: new Date(),
-      }];
-
+      return [...state, { id: Date.now(), role: 'user', text: action.text, timestamp: new Date() }];
     case 'ADD_JARVIS_MESSAGE':
-      return [...state, {
-        id: Date.now(),
-        role: 'jarvis',
-        text: action.text,
-        timestamp: new Date(),
-      }];
-
+      return [...state, { id: Date.now(), role: 'jarvis', text: action.text, timestamp: new Date() }];
     case 'START_STREAM':
-      // Add empty jarvis message that will be built up by chunks
-      return [...state, {
-        id: action.id || Date.now(),
-        role: 'jarvis',
-        text: '',
-        timestamp: new Date(),
-        streaming: true,
-      }];
-
+      return [...state, { id: action.id || Date.now(), role: 'jarvis', text: '', timestamp: new Date(), streaming: true }];
     case 'APPEND_CHUNK':
-      // Append text to the last (streaming) message
-      return state.map((msg, i) =>
-        i === state.length - 1 && msg.streaming
-          ? { ...msg, text: msg.text + action.text }
-          : msg
-      );
-
+      return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg);
     case 'FINISH_STREAM':
-      // Mark the streaming message as done
-      return state.map((msg, i) =>
-        i === state.length - 1 && msg.streaming
-          ? { ...msg, streaming: false }
-          : msg
-      );
-
+      return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, streaming: false } : msg);
     case 'REPLACE_RESPONSE':
-      // Replace entire last jarvis message (used during tool-use loops)
-      return state.map((msg, i) =>
-        i === state.length - 1 && msg.role === 'jarvis'
-          ? { ...msg, text: action.text, streaming: false }
-          : msg
-      );
-
+      return state.map((msg, i) => i === state.length - 1 && msg.role === 'jarvis' ? { ...msg, text: action.text, streaming: false } : msg);
     case 'ADD_ERROR':
-      return [...state, {
-        id: Date.now(),
-        role: 'error',
-        text: action.message,
-        timestamp: new Date(),
-      }];
-
+      return [...state, { id: Date.now(), role: 'error', text: action.message, timestamp: new Date() }];
     case 'CLEAR':
       return [];
-
     default:
       return state;
   }
 }
 
-/**
- * App — root component with all data wiring.
- * Exposes state + handlers via props or context — build your own UI on top.
- */
+// ─── SVG Icons ────────────────────────────────────────────
+
+const IconFilter = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="4" y1="6" x2="20" y2="6"/>
+    <line x1="8" y1="12" x2="16" y2="12"/>
+    <line x1="11" y1="18" x2="13" y2="18"/>
+  </svg>
+);
+
+const IconMore = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+    <circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/>
+  </svg>
+);
+
+
+const IconGrid = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+    <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+  </svg>
+);
+
+const IconSidebarRight = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="3" y="3" width="18" height="18" rx="2"/>
+    <line x1="15" y1="3" x2="15" y2="21"/>
+  </svg>
+);
+
+const IconSend = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13"/>
+    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+  </svg>
+);
+
+const IconPlus = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+
+// ─── Mode Toggle (single pill: Secure ↔ Cloud) ───────────
+function ModeToggle({ mode, onToggle }) {
+  const isCloud = mode === 'cloud';
+  const isPending = mode === 'pending';
+  return (
+    <div
+      className={`mode-pill${isPending ? ' disabled' : ''}`}
+      onClick={isPending ? undefined : onToggle}
+      title={isCloud ? 'Switch to Secure Mode' : 'Switch to Cloud Mode'}
+    >
+      <span className={`mode-label${!isCloud && !isPending ? ' active-secure' : ''}`}>Secure</span>
+      <div className={`mode-track${isCloud ? ' cloud' : isPending ? ' pending' : ' secure'}`}>
+        <div className="mode-dot" />
+      </div>
+      <span className={`mode-label${isCloud ? ' active-cloud' : ''}`}>Cloud</span>
+    </div>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────
 export default function App() {
   const [messages, dispatch] = useReducer(messageReducer, []);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [mode, setMode] = useState('local');            // 'local' | 'cloud' | 'pending'
-  const [surfaceData, setSurfaceData] = useState(null); // { bullets: [], file: string }
+  const isStreamingRef = useRef(false); // sync ref — avoids stale closure in WS handlers
+  const [mode, setMode] = useState('local');
+  const [surfaceData, setSurfaceData] = useState(null);
+  const [showStartup, setShowStartup] = useState(true);
   const inputRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
-  // ─── WebSocket ─────────────────────────────────────────
   const { sendMessage, connectionStatus } = useWebSocket('ws://localhost:8765', {
     onStreamChunk: (event) => {
-      if (!isStreaming) {
+      if (!isStreamingRef.current) {
+        isStreamingRef.current = true;
         setIsStreaming(true);
         dispatch({ type: 'START_STREAM' });
       }
       dispatch({ type: 'APPEND_CHUNK', text: event.text });
-      if (event.done) {
-        dispatch({ type: 'FINISH_STREAM' });
-        setIsStreaming(false);
-      }
+      if (event.done) { isStreamingRef.current = false; dispatch({ type: 'FINISH_STREAM' }); setIsStreaming(false); }
     },
     onResponse: (event) => {
-      if (isStreaming) {
+      if (isStreamingRef.current) {
+        isStreamingRef.current = false;
         dispatch({ type: 'REPLACE_RESPONSE', text: event.text });
         setIsStreaming(false);
       } else {
         dispatch({ type: 'ADD_JARVIS_MESSAGE', text: event.text });
       }
     },
-    onSurface: (event) => {
-      setSurfaceData({ bullets: event.bullets, file: event.file });
-    },
-    onModeAck: (event) => {
-      // ONLY now update the mode badge — no optimistic updates
-      setMode(event.mode);
-    },
-    onError: (event) => {
-      dispatch({ type: 'ADD_ERROR', message: event.message });
-      setIsStreaming(false);
-    },
+    onSurface: (event) => { setSurfaceData({ bullets: event.bullets, file: event.file }); },
+    onModeAck: (event) => { setMode(event.mode); },
+    onError: (event) => { dispatch({ type: 'ADD_ERROR', message: event.message }); setIsStreaming(false); },
   });
 
-  // ─── Focus input when overlay opens (Ctrl+Space) ──────
   useEffect(() => {
     if (window.jarvis?.onToggleOverlay) {
-      return window.jarvis.onToggleOverlay(() => {
-        setTimeout(() => inputRef.current?.focus(), 50);
-      });
+      return window.jarvis.onToggleOverlay(() => setTimeout(() => inputRef.current?.focus(), 50));
     }
   }, []);
 
-  // ─── Send user message ────────────────────────────────
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const handleSend = useCallback((text) => {
     if (!text.trim() || isStreaming) return;
     dispatch({ type: 'ADD_USER_MESSAGE', text: text.trim() });
-    sendMessage({
-      type: 'user_query',
-      text: text.trim(),
-      mode: mode === 'pending' ? 'local' : mode,
-    });
+    sendMessage({ type: 'user_query', text: text.trim(), mode });
   }, [isStreaming, mode, sendMessage]);
 
-  // ─── Toggle mode ──────────────────────────────────────
   const handleModeToggle = useCallback(() => {
-    if (mode === 'pending') return;
-    const newMode = mode === 'local' ? 'cloud' : 'local';
-    setMode('pending'); // Go to PENDING immediately
-    sendMessage({ type: 'mode_change', mode: newMode });
-    // Stay in PENDING until jarvis_mode_ack arrives — no optimistic update
+    const next = mode === 'cloud' ? 'local' : 'cloud';
+    setMode(next);
+    sendMessage({ type: 'mode_change', mode: next });
   }, [mode, sendMessage]);
 
-  // ─── Dismiss surface card ─────────────────────────────
   const handleDismissSurface = useCallback(() => {
     if (surfaceData) {
       sendMessage({ type: 'surface_dismissed', file: surfaceData.file });
@@ -157,112 +153,206 @@ export default function App() {
     }
   }, [surfaceData, sendMessage]);
 
-  // ─── Surface auto-dismiss (8 seconds) ─────────────────
   useEffect(() => {
     if (!surfaceData) return;
-    const timer = setTimeout(() => {
-      handleDismissSurface();
-    }, 8000);
-    return () => clearTimeout(timer); // Clean up on unmount or new surface
+    const timer = setTimeout(handleDismissSurface, 8000);
+    return () => clearTimeout(timer);
   }, [surfaceData, handleDismissSurface]);
 
-  // ════════════════════════════════════════════════════════
-  // YOUR UI GOES HERE
-  // All the data and handlers are ready — build your components
-  //
-  // Available state:
-  //   messages        — Array<{ id, role, text, timestamp, streaming? }>
-  //   isStreaming      — boolean (true while JARVIS is responding)
-  //   mode            — 'local' | 'cloud' | 'pending'
-  //   connectionStatus — 'connected' | 'disconnected' | 'connecting'
-  //   surfaceData     — { bullets: string[], file: string } | null
-  //
-  // Available handlers:
-  //   handleSend(text)       — send a user message
-  //   handleModeToggle()     — toggle local/cloud mode
-  //   handleDismissSurface() — dismiss the surface card
-  //
-  // Available refs:
-  //   inputRef — attach to your input element for auto-focus on Ctrl+Space
-  // ════════════════════════════════════════════════════════
+  // ─── Splash Screen ───────────────────────────────────────
+  if (showStartup) {
+    return (
+      <div className="splash-screen" style={{ WebkitAppRegion: 'drag' }}>
+        <div className="splash-system-badge">
+          <div className="splash-line" />
+          SYSTEM ONLINE
+          <div className="splash-line" />
+        </div>
 
+        <h1 className="splash-title">J.A.R.V.I.S</h1>
+
+        <p className="splash-subtitle">JUST A RATHER VERY INTELLIGENT SYSTEM</p>
+
+        <button
+          className="splash-btn"
+          onClick={() => setShowStartup(false)}
+          style={{ WebkitAppRegion: 'no-drag' }}
+        >
+          START YOUR CONVO
+        </button>
+
+        <div className="splash-status" style={{ WebkitAppRegion: 'no-drag' }}>
+          <div className={`splash-dot ${connectionStatus === 'connected' ? 'ready' : 'connecting'}`} />
+          {connectionStatus === 'connected' ? 'READY' : 'CONNECTING...'}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Main Layout ─────────────────────────────────────────
   return (
-    <div className="overlay" style={{
-      width: '100%',
-      height: '100%',
-      background: 'rgba(12, 12, 20, 0.95)',
-      borderRadius: '16px',
-      border: '1px solid rgba(100, 140, 255, 0.1)',
-      display: 'flex',
-      flexDirection: 'column',
-      fontFamily: "'Inter', sans-serif",
-      color: '#e8e8f0',
-      overflow: 'hidden',
-    }}>
-      {/* ─── Placeholder: replace with your UI ─────────── */}
-      <div style={{ padding: '16px', borderBottom: '1px solid rgba(100,140,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', WebkitAppRegion: 'drag' }}>
-        <span style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '1.5px', background: 'linear-gradient(135deg, #00d4ff, #a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>JARVIS</span>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', WebkitAppRegion: 'no-drag' }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: connectionStatus === 'connected' ? '#10b981' : connectionStatus === 'connecting' ? '#f59e0b' : '#ef4444' }} title={connectionStatus} />
-          <button onClick={handleModeToggle} disabled={mode === 'pending'} style={{ padding: '4px 12px', borderRadius: 20, border: 'none', fontSize: '20px', fontWeight: 700, cursor: 'pointer', background: mode === 'local' ? 'rgba(16,185,129,0.15)' : mode === 'cloud' ? 'rgba(59,130,246,0.15)' : 'rgba(120,120,140,0.15)', color: mode === 'local' ? '#10b981' : mode === 'cloud' ? '#3b82f6' : '#9898b0', animation: mode === 'pending' ? 'pulse 1.5s infinite' : 'none' }}>
-            {mode === 'pending' ? '…' : mode.toUpperCase()}
+    <div className="app-container">
+
+      {/* Proactive Surface Card */}
+      {surfaceData && (
+        <div className="surface-card">
+          <div className="surface-header">
+            <span className="surface-file">{surfaceData.file}</span>
+            <button className="surface-dismiss" onClick={handleDismissSurface}>✕</button>
+          </div>
+          {surfaceData.bullets.map((bullet, i) => (
+            <p key={i} className="surface-bullet">• {bullet}</p>
+          ))}
+        </div>
+      )}
+
+      {/* ══ Left Sidebar ══ */}
+      <div className="sidebar sidebar-left">
+        {/* Sidebar header — draggable */}
+        <div className="sidebar-header" style={{ WebkitAppRegion: 'drag' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, overflow: 'hidden' }}>
+            <div className="workspace-avatar">J</div>
+            <span className="workspace-title">Untitled workspace</span>
+          </div>
+          <div style={{ display: 'flex', gap: 2, WebkitAppRegion: 'no-drag', flexShrink: 0 }}>
+            <button className="icon-btn" onClick={() => setShowStartup(true)} title="Home">←</button>
+            <button className="icon-btn" title="Grid view"><IconGrid /></button>
+            <button className="icon-btn new-session-btn" title="New session">+ New session</button>
+          </div>
+        </div>
+
+        {/* Sidebar body */}
+        <div className="sidebar-body" style={{ WebkitAppRegion: 'no-drag' }}>
+          <div style={{ padding: '12px 14px 0' }}>
+            <div className="section-label">Previous Conversations</div>
+
+            <div className="conv-list">
+              <div style={{ color: '#555', fontSize: 11, padding: '8px 0', fontFamily: 'monospace' }}>
+                No conversations yet.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sidebar footer */}
+        <div className="sidebar-footer" style={{ WebkitAppRegion: 'no-drag' }}>
+          <div className="user-avatar" title="Profile">N</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className={`conn-dot ${mode === 'cloud' ? 'connected' : 'offline'}`} />
+            <span className="conn-label">
+              {mode === 'cloud' ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ══ Main Chat Area ══ */}
+      <div className="chat-area">
+
+        {/* Chat header — draggable */}
+        <div className="chat-header" style={{ WebkitAppRegion: 'drag' }}>
+          <span className="chat-title">Chat</span>
+
+          {/* Mode toggle */}
+          <div className="header-toggles" style={{ WebkitAppRegion: 'no-drag' }}>
+            <ModeToggle mode={mode} onToggle={handleModeToggle} />
+          </div>
+
+          {/* Header action icons */}
+          <div style={{ display: 'flex', gap: 2, WebkitAppRegion: 'no-drag' }}>
+            <button className="icon-btn" title="Filter conversations"><IconFilter /></button>
+            <button className="icon-btn" title="More options"><IconMore /></button>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="messages-area">
+          {messages.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-avatar">J</div>
+              <h2 className="empty-title">How can I help you today?</h2>
+              <p className="empty-subtitle">Ask questions, generate code, or analyze your workspace.</p>
+            </div>
+          ) : (
+            <div className="messages-list">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`message-row ${msg.role}`}>
+                  <div className={`message-bubble ${msg.role}`}>
+                    {msg.text}
+                    {msg.streaming && <span className="streaming-cursor">▊</span>}
+                  </div>
+                </div>
+              ))}
+              {isStreaming && messages[messages.length - 1]?.text === '' && (
+                <div className="thinking-indicator">JARVIS is thinking…</div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="input-area" style={{ WebkitAppRegion: 'no-drag' }}>
+          <div className="chat-input-wrapper">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const val = inputRef.current?.value?.trim();
+                if (val) { handleSend(val); inputRef.current.value = ''; }
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Message JARVIS..."
+                disabled={isStreaming}
+                className="chat-input"
+              />
+            </form>
+            <div className="input-footer">
+              <span className="input-disclaimer">JARVIS can be inaccurate, please double check its responses.</span>
+              <button
+                className="btn-send"
+                disabled={isStreaming}
+                onClick={() => {
+                  const val = inputRef.current?.value?.trim();
+                  if (val) { handleSend(val); inputRef.current.value = ''; }
+                }}
+                title="Send"
+              >
+                <IconSend />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ══ Right Sidebar ══ */}
+      <div className="sidebar sidebar-right">
+        <div className="sidebar-header" style={{ WebkitAppRegion: 'drag' }}>
+          <span className="chat-title">Reports</span>
+          <button className="icon-btn" style={{ WebkitAppRegion: 'no-drag' }} title="Collapse sidebar">
+            <IconSidebarRight />
+          </button>
+        </div>
+
+        <div className="sidebar-body" style={{ WebkitAppRegion: 'no-drag', padding: '16px 14px' }}>
+          <div className="section-label" style={{ marginBottom: 14 }}>Generated Reports</div>
+
+          <div className="reports-list">
+            <div style={{ color: '#555', fontSize: 11, padding: '8px 0', fontFamily: 'monospace' }}>
+              No reports generated yet.
+            </div>
+          </div>
+        </div>
+
+        <div className="sidebar-footer" style={{ WebkitAppRegion: 'no-drag', justifyContent: 'flex-end' }}>
+          <button className="btn-add-note">
+            <IconPlus /> Add note
           </button>
         </div>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {messages.length === 0 ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.5, fontSize: '16px', color: '#9898b0' }}>
-            ⚡ Ask JARVIS anything…
-          </div>
-        ) : messages.map((msg) => (
-          <div key={msg.id} style={{
-            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            maxWidth: '85%',
-            padding: '12px 16px',
-            borderRadius: '12px',
-            fontSize: '20px',
-            lineHeight: 1.5,
-            background: msg.role === 'user' ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : msg.role === 'error' ? 'rgba(239,68,68,0.12)' : 'rgba(22,22,35,0.9)',
-            color: msg.role === 'error' ? '#f59e0b' : '#e8e8f0',
-            border: msg.role === 'user' ? 'none' : '1px solid rgba(100,140,255,0.1)',
-          }}>
-            {msg.text}{msg.streaming ? '▊' : ''}
-          </div>
-        ))}
-        {isStreaming && messages[messages.length - 1]?.text === '' && (
-          <div style={{ alignSelf: 'flex-start', padding: '14px 18px', background: 'rgba(22,22,35,0.9)', borderRadius: '12px', border: '1px solid rgba(100,140,255,0.1)' }}>
-            <span style={{ opacity: 0.6 }}>Thinking…</span>
-          </div>
-        )}
-      </div>
-
-      {/* Input */}
-      <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(100,140,255,0.1)' }}>
-        <form onSubmit={(e) => { e.preventDefault(); const input = inputRef.current; if (input?.value) { handleSend(input.value); input.value = ''; } }} style={{ display: 'flex', gap: '8px', background: 'rgba(30,30,48,0.85)', borderRadius: '12px', padding: '4px 4px 4px 16px', border: '1px solid rgba(100,140,255,0.1)' }}>
-          <input ref={inputRef} type="text" placeholder={isStreaming ? 'JARVIS is thinking…' : 'Ask JARVIS anything…'} disabled={isStreaming} autoFocus style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#e8e8f0', fontSize: '16px', fontFamily: 'inherit', padding: '10px 0' }} />
-          <button type="submit" disabled={isStreaming} style={{ width: 40, height: 40, borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #00d4ff, #3b82f6)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>↑</button>
-        </form>
-      </div>
-
-      {/* Surface card */}
-      {surfaceData && (
-        <div style={{ position: 'absolute', bottom: '100%', right: 0, width: 320, marginBottom: 8, background: 'rgba(12,12,20,0.95)', border: '1px solid rgba(100,140,255,0.25)', borderRadius: 12, padding: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#00d4ff', letterSpacing: 1, textTransform: 'uppercase' }}>Context</span>
-            <button onClick={handleDismissSurface} style={{ background: 'transparent', border: '1px solid rgba(100,140,255,0.1)', borderRadius: 6, color: '#9898b0', cursor: 'pointer', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>×</button>
-          </div>
-          <ul style={{ listStyle: 'none', padding: 0 }}>
-            {surfaceData.bullets.map((b, i) => (
-              <li key={i} style={{ fontSize: 14, color: '#e8e8f0', paddingLeft: 16, position: 'relative', lineHeight: 1.6 }}>
-                <span style={{ position: 'absolute', left: 0, color: '#00d4ff' }}>▸</span>{b}
-              </li>
-            ))}
-          </ul>
-          <span style={{ display: 'inline-block', marginTop: 8, padding: '3px 10px', background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.2)', borderRadius: 20, fontSize: 12, color: '#00d4ff', fontFamily: 'Consolas, monospace' }}>{surfaceData.file}</span>
-        </div>
-      )}
     </div>
   );
 }

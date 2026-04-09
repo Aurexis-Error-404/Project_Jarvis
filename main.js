@@ -1,9 +1,18 @@
 // main.js — Electron main process
 // Frameless, transparent, always-on-top JARVIS overlay
-// Toggled by Ctrl+Space, hidden by default, system tray icon
+// Toggled by Ctrl+Space (fallback: Ctrl+Shift+Space), hidden by default, system tray icon
 
 const { app, BrowserWindow, globalShortcut, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
+
+// ─── Redirect userData before anything else ───────────────
+// Prevents "Access is denied" cache errors when the default
+// %APPDATA%\jarvis directory has a permission/lock conflict.
+app.setPath('userData', path.join(app.getPath('home'), '.jarvis-data'));
+
+// Disable GPU shader disk cache — avoids the secondary cache
+// error (gpu_disk_cache.cc:725) without affecting rendering.
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 
 // ─── Prevent multiple instances ──────────────────────────
 // Must run before whenReady() to avoid globalShortcut crash
@@ -15,10 +24,11 @@ if (!gotTheLock) {
 // ─── Globals ─────────────────────────────────────────────
 let mainWindow = null;
 let tray = null;
+let isQuitting = false;
 
-// ─── Window dimensions (bottom-right overlay) ───────────
-const OVERLAY_WIDTH = 480;
-const OVERLAY_HEIGHT = 640;
+// ─── Window dimensions (Notebook UI) ───────────
+const DEFAULT_WIDTH = 1280;
+const DEFAULT_HEIGHT = 800;
 
 /**
  * Create the main overlay window.
@@ -33,15 +43,13 @@ function createWindow() {
   const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
   mainWindow = new BrowserWindow({
-    width: OVERLAY_WIDTH,
-    height: OVERLAY_HEIGHT,
-    x: screenWidth - OVERLAY_WIDTH - 16,
-    y: screenHeight - OVERLAY_HEIGHT - 16,
+    width: DEFAULT_WIDTH,
+    height: DEFAULT_HEIGHT,
     frame: false,
     transparent: true,
-    alwaysOnTop: true,
-    resizable: false,
-    skipTaskbar: true,
+    alwaysOnTop: false,
+    resizable: true,
+    skipTaskbar: false,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -54,14 +62,16 @@ function createWindow() {
 
   // Intercept close — hide only, real quit from tray
   mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
+    if (!isQuitting) {
       event.preventDefault();
       mainWindow.hide();
     }
   });
 
   mainWindow.once('ready-to-show', () => {
-    console.log('[JARVIS] Overlay window ready (hidden)');
+    mainWindow.maximize();
+    mainWindow.show();
+    console.log('[JARVIS] Notebook window ready');
   });
 }
 
@@ -136,7 +146,7 @@ function createTray() {
     {
       label: 'Quit',
       click: () => {
-        app.isQuitting = true;
+        isQuitting = true;
         app.quit();
       },
     },
@@ -151,12 +161,15 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
 
-  // Register global hotkey: Ctrl+Space
-  const registered = globalShortcut.register('Ctrl+Space', toggleOverlay);
-  if (registered) {
-    console.log('[JARVIS] Ctrl+Space hotkey registered');
+  // Register global hotkey.
+  // Ctrl+Space is reserved by Windows IME on some systems — fall back
+  // to Ctrl+Shift+Space if the primary registration fails.
+  const HOTKEYS = ['Ctrl+Space', 'Ctrl+Shift+Space'];
+  const registeredKey = HOTKEYS.find((key) => globalShortcut.register(key, toggleOverlay));
+  if (registeredKey) {
+    console.log(`[JARVIS] Hotkey registered: ${registeredKey}`);
   } else {
-    console.error('[JARVIS] Failed to register Ctrl+Space hotkey');
+    console.error('[JARVIS] Failed to register hotkey — toggle via tray icon');
   }
 });
 
