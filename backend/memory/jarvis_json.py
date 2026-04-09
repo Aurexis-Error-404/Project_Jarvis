@@ -10,12 +10,17 @@ Backend reads only. jarvis.json field VALUES are owned by AI Lead + Docs team.
 
 import json
 import logging
+import time
 from pathlib import Path
 
 logger = logging.getLogger("jarvis.jarvis_json")
 
 # Resolve path relative to repo root (two levels up from this file)
 _DEFAULT_PATH = Path(__file__).parent.parent.parent / "jarvis.json"
+
+# Simple TTL read cache — avoids hitting disk on every file-watcher event
+_CACHE_TTL = 5.0  # seconds
+_cache: dict = {"data": None, "ts": 0.0}
 
 
 def _resolve_path(path: str = None) -> Path:
@@ -26,9 +31,19 @@ def _resolve_path(path: str = None) -> Path:
 
 def read(path: str = None) -> dict:
     """Read and return the full jarvis.json as a dict."""
+    # Only cache the default path — custom paths are used for tests
+    if path is None:
+        now = time.monotonic()
+        if _cache["data"] is not None and (now - _cache["ts"]) < _CACHE_TTL:
+            return _cache["data"]
+
     try:
         p = _resolve_path(path)
-        return json.loads(p.read_text(encoding="utf-8"))
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if path is None:
+            _cache["data"] = data
+            _cache["ts"] = time.monotonic()
+        return data
     except FileNotFoundError:
         logger.error(f"jarvis.json not found at {_resolve_path(path)}")
         return {"error": "jarvis.json not found"}
@@ -86,6 +101,10 @@ def update(field: str, action: str, value) -> dict:
 
         p = _resolve_path()
         p.write_text(json.dumps(j, indent=4), encoding="utf-8")
+
+        # Invalidate cache so the next read picks up the fresh data
+        _cache["data"] = None
+
         logger.info(f"jarvis.json updated: {field} ({action})")
         return {"status": "updated", "field": field, "action": action}
 

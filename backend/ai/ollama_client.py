@@ -29,6 +29,9 @@ Project focus: {current_focus}
 
 JSON:"""
 
+# Reused across all calls — avoids connection overhead on every gate check
+_http = httpx.AsyncClient()
+
 
 def parse_ollama_json(raw: str) -> dict:
     """
@@ -74,12 +77,12 @@ async def gate(signal_type: str, file_path: str, current_focus: str) -> dict:
     )
 
     try:
-        async with httpx.AsyncClient(timeout=10.0) as c:
-            r = await c.post(
-                f"{OLLAMA_BASE_URL}/api/generate",
-                json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
-            )
-            r.raise_for_status()
+        r = await _http.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
+            timeout=10.0,
+        )
+        r.raise_for_status()
         raw_response = r.json().get("response", "")
         result = parse_ollama_json(raw_response)
         logger.debug(f"Gate result for {file_path}: {result}")
@@ -103,9 +106,12 @@ async def chat(prompt: str, system: str = "") -> str:
         payload["system"] = system
 
     try:
-        async with httpx.AsyncClient(timeout=30.0) as c:
-            r = await c.post(f"{OLLAMA_BASE_URL}/api/generate", json=payload)
-            r.raise_for_status()
+        r = await _http.post(
+            f"{OLLAMA_BASE_URL}/api/generate",
+            json=payload,
+            timeout=30.0,
+        )
+        r.raise_for_status()
         return r.json().get("response", "")
     except httpx.ConnectError:
         return "Error: Ollama is not running. Start with: ollama serve"

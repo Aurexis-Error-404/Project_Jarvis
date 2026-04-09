@@ -11,6 +11,8 @@ Task routing (from providers.py):
   "proactive_surface" in local mode → ollama
 """
 
+import asyncio
+import functools
 import logging
 
 from backend.ai.claude_client import _call_with_fallback
@@ -71,7 +73,11 @@ async def generate(file_path: str, gate_reason: str, mode: str) -> list:
         f"{d['what']}: chose {d['chose']}" for d in decisions[:3]
     ) or "None yet."
 
-    git_result = git_run(since="24h", include_diff=False, file_path=file_path)
+    # git_run is sync/CPU-bound — run in executor to avoid blocking the event loop
+    loop = asyncio.get_event_loop()
+    git_result = await loop.run_in_executor(
+        None, functools.partial(git_run, since="24h", include_diff=False, file_path=file_path)
+    )
     git_summary = _format_git_summary(git_result)
 
     prompt = SURFACE_PROMPT_TEMPLATE.format(
@@ -83,7 +89,7 @@ async def generate(file_path: str, gate_reason: str, mode: str) -> list:
     )
 
     try:
-        response = _call_with_fallback(
+        response = await _call_with_fallback(
             task_type="proactive_surface",
             mode=mode,
             messages=[{"role": "user", "content": prompt}],

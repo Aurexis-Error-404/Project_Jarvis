@@ -9,6 +9,8 @@ import websockets
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from backend.ai.claude_client import run as claude_run
+
 load_dotenv()
 
 logging.basicConfig(
@@ -101,7 +103,6 @@ async def ws_handler(websocket):
 
                     await send_event({"event": "status_update", "message": "Thinking..."})
 
-                    from backend.ai.claude_client import run as claude_run
                     await claude_run(
                         query=query,
                         mode=mode,
@@ -134,7 +135,6 @@ async def ws_handler(websocket):
                         mode = data.get("mode", _current_mode)
                         logger.warning("Message has no event field — treating as user_query")
                         await send_event({"event": "status_update", "message": "Thinking..."})
-                        from backend.ai.claude_client import run as claude_run
                         await claude_run(
                             query=query,
                             mode=mode,

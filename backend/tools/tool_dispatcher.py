@@ -5,12 +5,28 @@ Called by claude_client.py after every tool_use stop_reason.
 All tools must return dict — never raise exceptions.
 """
 
+import asyncio
+import functools
 import logging
 
 from backend.tools import codebase_reader, git_interface, report_generator, web_research
 from backend.memory import jarvis_json, session_log
 
 logger = logging.getLogger("jarvis.dispatcher")
+
+# Sync tools — run in thread executor to avoid blocking the event loop
+_SYNC_TOOLS = {
+    "read_codebase":       codebase_reader.run,
+    "read_git_history":    git_interface.run,
+    "generate_html_report": report_generator.run,
+    "update_project_memory": jarvis_json.update,
+    "read_session_history": session_log.read,
+}
+
+# Async tools — awaited directly
+_ASYNC_TOOLS = {
+    "web_research": web_research.run,
+}
 
 
 async def dispatch_tool(name: str, inputs: dict) -> dict:
@@ -21,30 +37,19 @@ async def dispatch_tool(name: str, inputs: dict) -> dict:
     logger.info(f"Dispatching tool: {name} inputs={list(inputs.keys())}")
 
     try:
-        if name == "read_codebase":
-            return codebase_reader.run(**inputs)
+        if name in _ASYNC_TOOLS:
+            return await _ASYNC_TOOLS[name](**inputs)
 
-        elif name == "read_git_history":
-            return git_interface.run(**inputs)
+        if name in _SYNC_TOOLS:
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(
+                None, functools.partial(_SYNC_TOOLS[name], **inputs)
+            )
 
-        elif name == "web_research":
-            return await web_research.run(**inputs)
-
-        elif name == "generate_html_report":
-            return report_generator.run(**inputs)
-
-        elif name == "update_project_memory":
-            return jarvis_json.update(**inputs)
-
-        elif name == "read_session_history":
-            return session_log.read(**inputs)
-
-        else:
-            logger.warning(f"Unknown tool: {name}")
-            return {"error": f"Unknown tool: {name}"}
+        logger.warning(f"Unknown tool: {name}")
+        return {"error": f"Unknown tool: {name}"}
 
     except TypeError as e:
-        # Wrong parameters passed by Claude
         logger.error(f"Tool {name} called with wrong parameters: {e}")
         return {"error": f"Parameter error in {name}: {e}"}
     except Exception as e:

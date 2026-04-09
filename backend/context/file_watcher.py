@@ -26,6 +26,9 @@ logger = logging.getLogger("jarvis.file_watcher")
 SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "dist", "build"}
 DEBOUNCE_SECONDS = 5  # locked — do not reduce
 
+# Cap on _last_event dict to prevent unbounded memory growth on long-running servers
+_MAX_TRACKED_PATHS = 500
+
 
 class JarvisHandler(FileSystemEventHandler):
     def __init__(
@@ -33,11 +36,13 @@ class JarvisHandler(FileSystemEventHandler):
         loop: asyncio.AbstractEventLoop,
         send_event: Callable,
         get_mode: Callable[[], str],
+        threshold: float,
     ):
         super().__init__()
         self.loop = loop
         self.send_event = send_event
         self.get_mode = get_mode          # callable: () -> "local" | "cloud"
+        self.threshold = threshold        # cached at startup — avoids env lookup per event
         self._last_event: dict = {}
 
     def on_modified(self, event):
@@ -52,6 +57,11 @@ class JarvisHandler(FileSystemEventHandler):
             return  # debounce — skip this event
         self._last_event[path] = now
 
+        # Evict oldest entries if dict grows too large
+        if len(self._last_event) > _MAX_TRACKED_PATHS:
+            oldest = min(self._last_event, key=self._last_event.__getitem__)
+            del self._last_event[oldest]
+
         asyncio.run_coroutine_threadsafe(self._evaluate(path), self.loop)
 
     on_created = on_modified  # surface on new files too
@@ -60,7 +70,6 @@ class JarvisHandler(FileSystemEventHandler):
         try:
             jarvis = read_jarvis()
             focus = jarvis.get("project", {}).get("current_focus", "")
-            threshold = float(os.environ.get("OLLAMA_GATE_THRESHOLD", "0.7"))
 
             result = await ollama_client.gate("file_modified", path, focus)
 
@@ -72,7 +81,7 @@ class JarvisHandler(FileSystemEventHandler):
                 f"Gate: {path} → surface={should_surface}, confidence={confidence:.2f}"
             )
 
-            if not (should_surface and confidence >= threshold):
+            if not (should_surface and confidence >= self.threshold):
                 return  # gate did not pass — nothing to do
 
             # Gate passed — generate surface card bullets (lazy import avoids circular deps)
@@ -118,9 +127,15 @@ async def start(send_event: Callable, get_mode: Callable[[], str] = None):
             return os.environ.get("AI_MODE", "local")
 
     project_path = os.environ.get("PROJECT_PATH", ".")
+    threshold = float(os.environ.get("OLLAMA_GATE_THRESHOLD", "0.7"))
     loop = asyncio.get_running_loop()  # get_event_loop() deprecated in Python 3.10+
 
-    handler = JarvisHandler(loop=loop, send_event=send_event, get_mode=get_mode)
+    handler = JarvisHandler(
+        loop=loop,
+        send_event=send_event,
+        get_mode=get_mode,
+        threshold=threshold,
+    )
     observer = Observer()
     observer.schedule(handler, path=project_path, recursive=True)
     observer.start()

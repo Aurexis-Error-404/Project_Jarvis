@@ -14,7 +14,7 @@ import json as _json
 import logging
 import os
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from backend.ai import prompts
 from backend.ai.providers import PROVIDERS, get_provider, get_fallback
@@ -25,17 +25,24 @@ logger = logging.getLogger("jarvis.claude")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("MAX_TOOL_ITERATIONS", "10"))
 
-
-def _get_client(provider_name: str) -> OpenAI:
-    p = PROVIDERS[provider_name]
-    return OpenAI(api_key=p["api_key"], base_url=p["base_url"])
+# Cached AsyncOpenAI clients — one per provider, created on first use
+_clients: dict[str, AsyncOpenAI] = {}
 
 
-def _call_provider(provider_name: str, messages: list, tools: list = None):
+def _get_client(provider_name: str) -> AsyncOpenAI:
+    if provider_name not in _clients:
+        p = PROVIDERS[provider_name]
+        _clients[provider_name] = AsyncOpenAI(
+            api_key=p["api_key"], base_url=p["base_url"]
+        )
+    return _clients[provider_name]
+
+
+async def _call_provider(provider_name: str, messages: list, tools: list = None):
     """Call a single provider. Raises on failure."""
     p = PROVIDERS[provider_name]
     client = _get_client(provider_name)
-    return client.chat.completions.create(
+    return await client.chat.completions.create(
         model=p["model"],
         messages=messages,
         tools=tools if tools else None,
@@ -45,7 +52,7 @@ def _call_provider(provider_name: str, messages: list, tools: list = None):
     )
 
 
-def _call_with_fallback(
+async def _call_with_fallback(
     task_type: str,
     mode: str,
     messages: list,
@@ -75,7 +82,7 @@ def _call_with_fallback(
             continue
 
         try:
-            response = _call_provider(name, messages, tools)
+            response = await _call_provider(name, messages, tools)
             if name != provider_name:
                 logger.info(f"Used fallback provider: {name} (primary was {provider_name})")
             else:
@@ -113,7 +120,7 @@ async def run(query: str, mode: str, send_event,
 
     for iteration in range(MAX_TOOL_ITERATIONS):
         try:
-            response = _call_with_fallback(
+            response = await _call_with_fallback(
                 task_type=task_type,
                 mode=mode,
                 messages=messages,
@@ -215,4 +222,4 @@ async def run(query: str, mode: str, send_event,
 
 
 def _utcnow() -> str:
-    return datetime.datetime.utcnow().isoformat() + "Z"
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()

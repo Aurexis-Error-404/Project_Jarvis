@@ -65,21 +65,21 @@ def _get_commits(repo: git.Repo, since: str, file_path: str = None):
     if since_lower.endswith("h"):
         hours = int(since_lower[:-1])
         cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=hours)
-        all_commits = list(repo.iter_commits(**kwargs))
-        return [c for c in all_commits if c.committed_datetime >= cutoff]
+        # Use git's --after flag to filter at the source, not in Python
+        kwargs["after"] = cutoff.strftime("%Y-%m-%dT%H:%M:%S")
+        return list(repo.iter_commits(**kwargs))
 
-    elif since_lower.endswith("d"):
+    if since_lower.endswith("d"):
         days = int(since_lower[:-1])
         cutoff = datetime.now(tz=timezone.utc) - timedelta(days=days)
-        all_commits = list(repo.iter_commits(**kwargs))
-        return [c for c in all_commits if c.committed_datetime >= cutoff]
+        kwargs["after"] = cutoff.strftime("%Y-%m-%dT%H:%M:%S")
+        return list(repo.iter_commits(**kwargs))
 
-    elif since_lower.startswith("head~"):
+    if since_lower.startswith("head~"):
         n = int(since_lower[5:])
         kwargs["max_count"] = n
         return list(repo.iter_commits(**kwargs))
 
-    else:
-        logger.warning(f"Unrecognized since format: '{since}' — defaulting to last 10 commits")
-        kwargs["max_count"] = 10
-        return list(repo.iter_commits(**kwargs))
+    logger.warning(f"Unrecognized since format: '{since}' — defaulting to last 10 commits")
+    kwargs["max_count"] = 10
+    return list(repo.iter_commits(**kwargs))
