@@ -13,6 +13,7 @@ import datetime
 import json as _json
 import logging
 import os
+import traceback
 
 from openai import AsyncOpenAI
 
@@ -25,19 +26,29 @@ logger = logging.getLogger("jarvis.claude")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("MAX_TOOL_ITERATIONS", "10"))
 
-# Keywords used to infer task_type from user query for provider routing
-_TASK_TYPE_PATTERNS = {
-    "error_diagnosis": ["error", "exception", "traceback", "crash", "bug", "fail", "broken"],
-    "research_report": ["research", "report", "investigate", "analyze", "survey"],
-    "git_summary": ["git log", "commit history", "changelog"],
-    "commit_message": ["commit message", "write commit"],
-}
+# Priority-ordered task inference — first match wins.
+# More specific patterns come first to avoid false matches
+# (e.g. "research report" must match before "error" in "error while researching")
+_TASK_TYPE_RULES = [
+    # Most specific multi-word patterns first
+    ("research_report", ["research report", "generate report", "create report", "make a report",
+                         "investigate and report", "write a report"]),
+    ("commit_message",  ["commit message", "write commit", "draft commit"]),
+    ("git_summary",     ["git log", "commit history", "changelog", "what changed",
+                         "what did i change", "recent commits"]),
+    # Then broader patterns — only if nothing specific matched
+    ("research_report", ["research", "investigate", "survey", "benchmark", "compare alternatives"]),
+    ("error_diagnosis", ["traceback", "exception", "stack trace", "error:", "crash",
+                         "bug", "broken", "fails with", "not working", "TypeError",
+                         "ValueError", "KeyError", "ImportError", "AttributeError"]),
+]
 
 
 def _infer_task_type(query: str) -> str:
-    """Infer task_type from query content for cloud provider routing."""
+    """Infer task_type from query content for cloud provider routing.
+    Priority-ordered: first match wins. More specific patterns checked first."""
     q = query.lower()
-    for task_type, keywords in _TASK_TYPE_PATTERNS.items():
+    for task_type, keywords in _TASK_TYPE_RULES:
         if any(kw in q for kw in keywords):
             return task_type
     return "quick_qa"
@@ -55,7 +66,9 @@ def _get_client(provider_name: str) -> AsyncOpenAI:
     return _clients[provider_name]
 
 
-async def _call_provider(provider_name: str, messages: list, tools: list = None):
+async def _call_provider(provider_name: str, messages: list, tools: list = None,
+                         temperature: float = 0.3, max_tokens: int = 4096,
+                         stream: bool = False):
     """Call a single provider. Raises on failure."""
     p = PROVIDERS[provider_name]
     client = _get_client(provider_name)
@@ -64,8 +77,9 @@ async def _call_provider(provider_name: str, messages: list, tools: list = None)
         messages=messages,
         tools=tools if tools else None,
         tool_choice="auto" if tools else None,
-        max_tokens=4096,
-        temperature=0.3,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        stream=stream,
     )
 
 
@@ -74,6 +88,9 @@ async def _call_with_fallback(
     mode: str,
     messages: list,
     tools: list = None,
+    temperature: float = 0.3,
+    max_tokens: int = 4096,
+    stream: bool = False,
 ):
     """
     Routes to the correct provider for (task_type, mode) and walks the
@@ -99,7 +116,10 @@ async def _call_with_fallback(
             continue
 
         try:
-            response = await _call_provider(name, messages, tools)
+            response = await _call_provider(
+                name, messages, tools,
+                temperature=temperature, max_tokens=max_tokens, stream=stream,
+            )
             if name != provider_name:
                 logger.info(f"Used fallback provider: {name} (primary was {provider_name})")
             else:
@@ -114,6 +134,50 @@ async def _call_with_fallback(
     raise RuntimeError(
         f"All providers failed for task='{task_type}' mode='{mode}'. Last error: {last_error}"
     )
+
+
+# Task-adaptive parameters — better output quality per task type
+_TASK_PARAMS = {
+    "error_diagnosis":  {"temperature": 0.2, "max_tokens": 4096},
+    "research_report":  {"temperature": 0.5, "max_tokens": 8192},
+    "git_summary":      {"temperature": 0.2, "max_tokens": 2048},
+    "commit_message":   {"temperature": 0.2, "max_tokens": 1024},
+    "session_summary":  {"temperature": 0.3, "max_tokens": 2048},
+    "quick_qa":         {"temperature": 0.4, "max_tokens": 4096},
+}
+
+
+async def _stream_final_response(task_type, mode, messages, send_event):
+    """Stream the final text response to the frontend chunk by chunk."""
+    try:
+        stream = await _call_with_fallback(
+            task_type=task_type,
+            mode=mode,
+            messages=messages,
+            tools=None,  # Final response — no tools, just text
+            stream=True,
+            **_TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096}),
+        )
+        full_text = ""
+        async for chunk in stream:
+            delta = chunk.choices[0].delta if chunk.choices else None
+            if delta and delta.content:
+                full_text += delta.content
+                await send_event({
+                    "event": "jarvis_stream_chunk",
+                    "text": delta.content,
+                    "done": False,
+                })
+        # Signal stream complete
+        await send_event({
+            "event": "jarvis_stream_chunk",
+            "text": "",
+            "done": True,
+        })
+        return full_text
+    except Exception as e:
+        logger.warning(f"Streaming failed, falling back to non-stream: {e}")
+        return None  # Caller will handle fallback
 
 
 async def run(query: str, mode: str, send_event,
@@ -133,7 +197,13 @@ async def run(query: str, mode: str, send_event,
 
     # Infer task type from query — drives cloud provider routing (Gemini vs Groq)
     task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
+    params = _TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096})
     logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
+
+    # Ollama models often don't support OpenAI tool_choice format reliably.
+    # In local mode, skip tools and let the model respond directly with the
+    # full system prompt context. This is faster and more reliable.
+    use_tools = OAI_TOOL_SCHEMAS if mode == "cloud" else None
 
     for iteration in range(MAX_TOOL_ITERATIONS):
         try:
@@ -141,7 +211,8 @@ async def run(query: str, mode: str, send_event,
                 task_type=task_type,
                 mode=mode,
                 messages=messages,
-                tools=OAI_TOOL_SCHEMAS,
+                tools=use_tools,
+                **params,
             )
         except RuntimeError as e:
             logger.error(str(e))
@@ -152,13 +223,27 @@ async def run(query: str, mode: str, send_event,
 
         if choice.finish_reason == "stop":
             text = choice.message.content or ""
-            await send_event(
-                {
+
+            # If text is short or from a tool loop, try streaming a richer response
+            if iteration > 0 and len(text) < 50:
+                # Model gave a terse response after tools — ask it to elaborate
+                messages.append({"role": "assistant", "content": text})
+                messages.append({"role": "user", "content": "Please provide a thorough, detailed response based on the tool results above. Be specific — reference exact file names, line numbers, function names, and code snippets."})
+                streamed = await _stream_final_response(task_type, mode, messages, send_event)
+                if streamed:
+                    return streamed
+
+            # Stream the final response for better UX
+            if len(text) > 200:
+                # Long response — stream it
+                await send_event({"event": "jarvis_stream_chunk", "text": text[:100], "done": False})
+                await send_event({"event": "jarvis_stream_chunk", "text": text[100:], "done": True})
+            else:
+                await send_event({
                     "event": "jarvis_response",
                     "text": text,
                     "timestamp": _utcnow(),
-                }
-            )
+                })
             return text
 
         if choice.finish_reason == "tool_calls":
@@ -192,7 +277,7 @@ async def run(query: str, mode: str, send_event,
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
-                        "content": str({"error": f"Malformed arguments: {e}"}),
+                        "content": _json.dumps({"error": f"Malformed arguments: {e}"}),
                     })
                     continue
 
@@ -202,12 +287,15 @@ async def run(query: str, mode: str, send_event,
 
                 result = await dispatch_tool(tool_name, tool_input)
 
+                # Serialize result as clean JSON for the model
+                result_json = _json.dumps(result, ensure_ascii=False, default=str)
+
                 await send_event(
                     {
                         "event": "tool_call_status",
                         "tool": tool_name,
                         "status": "done",
-                        "result_summary": str(result)[:120],
+                        "result_summary": result_json[:120],
                     }
                 )
 
@@ -217,7 +305,7 @@ async def run(query: str, mode: str, send_event,
                     {
                         "role": "tool",
                         "tool_call_id": tc.id,
-                        "content": str(result),
+                        "content": result_json,
                     }
                 )
 

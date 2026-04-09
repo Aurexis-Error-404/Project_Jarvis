@@ -13,9 +13,9 @@ from pathlib import Path
 
 logger = logging.getLogger("jarvis.codebase_reader")
 
-SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "dist", "build", ".next"}
-MAX_FILES = 50
-MAX_LINES = 300  # truncate single-file reads at this line count
+SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "dist", "build", ".next", ".agents", ".claude"}
+MAX_FILES = 100
+MAX_LINES = 500  # truncate single-file reads at this line count
 
 
 def run(file_path: str, lines: str = None) -> dict:
