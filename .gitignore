@@ -51,7 +51,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-store/
-package-lock.json
 yarn.lock
 
 # Electron build outputs

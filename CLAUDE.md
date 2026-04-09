@@ -12,8 +12,8 @@ This is a **48-hour sprint project** with strict feature freeze at Hour 36. See 
 
 - **Frontend**: Electron + React
 - **Backend**: Python FastAPI + WebSocket server
-- **AI Cloud**: Gemini 2.5 Flash (primary) + Groq Llama-3.3-70B (fallback)
-- **AI Local**: Ollama + CodeLlama (for gate and secure mode)
+- **AI Cloud**: Gemini 2.5 Flash (quality-critical) + Groq Llama-3.3-70B (general)
+- **AI Local**: Ollama + Qwen 3.5 (for gate and secure mode)
 - **Project Memory**: jarvis.json (structured schema at repo root)
 
 ## Critical Architecture Decisions
@@ -21,10 +21,10 @@ This is a **48-hour sprint project** with strict feature freeze at Hour 36. See 
 These decisions are locked — do not change without explicit approval from Rahul (AI Lead) or Person 4 (Integration Lead).
 
 ### AI Model Routing
-- **Proactive gate**: Ollama/CodeLlama (must be free/local — gate runs 50+ times/hour)
-- **Error diagnosis**: Claude Sonnet (user-facing quality requires deep reasoning)
-- **Summaries & commit messages**: Claude Haiku (structured output, 4x lower cost)
-- **Local secure mode**: CodeLlama via Ollama (zero bytes leave machine — no API calls)
+- **Proactive gate**: Ollama/Qwen 3.5 (must be free/local — gate runs 50+ times/hour)
+- **Error diagnosis & research**: Gemini 2.5 Flash (user-facing quality requires deep reasoning)
+- **Summaries, commit messages & general QA**: Groq Llama-3.3-70B (structured output, high throughput)
+- **Local secure mode**: Qwen 3.5 via Ollama (zero bytes leave machine — no API calls)
 
 ### Project Memory
 - **Format**: `jarvis.json` with structured schema (never free-text)

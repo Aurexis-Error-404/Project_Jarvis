@@ -31,6 +31,7 @@ _current_mode: str = os.environ.get("AI_MODE", "local")
 # Populated once when the first client connects (codebase awareness).
 _codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load."
 _codebase_loaded: bool = False
+_codebase_lock = asyncio.Lock()
 
 
 async def broadcast_event(payload: dict):
@@ -65,16 +66,27 @@ async def _load_codebase_map() -> str:
     return f"Project files ({count} total):\n{file_list}"
 
 
+async def _load_codebase_map_async():
+    """Non-blocking codebase loader — updates global without blocking ws_handler."""
+    global _codebase_map
+    try:
+        _codebase_map = await _load_codebase_map()
+    except Exception as e:
+        logger.error(f"Async codebase load failed: {e}")
+
+
 async def ws_handler(websocket):
     global _current_mode, _codebase_map, _codebase_loaded
 
     connected_clients.add(websocket)
     logger.info(f"Client connected. Total: {len(connected_clients)}")
 
-    # Codebase awareness — scan once on first connection
-    if not _codebase_loaded:
-        _codebase_loaded = True
-        _codebase_map = await _load_codebase_map()
+    # Codebase awareness — scan once on first connection (non-blocking)
+    async with _codebase_lock:
+        if not _codebase_loaded:
+            _codebase_loaded = True
+            # Fire and forget — don't block the first message
+            asyncio.create_task(_load_codebase_map_async())
 
     async def send_event(payload: dict):
         try:
@@ -183,6 +195,8 @@ async def lifespan(_app: FastAPI):
     yield
     watcher_task.cancel()
     ws_task.cancel()
+    from backend.ai.ollama_client import close as close_ollama
+    await close_ollama()
 
 
 app = FastAPI(title="JARVIS Backend", lifespan=lifespan)

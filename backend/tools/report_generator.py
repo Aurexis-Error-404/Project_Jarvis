@@ -13,6 +13,7 @@ Coordinate on template variables: title, sections, research_data, generated_at.
 """
 
 import datetime
+import html as _html
 import logging
 from pathlib import Path
 
@@ -30,10 +31,10 @@ def run(
 ) -> dict:
     try:
         if output_path is None:
-            ts = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = str(REPORTS_DIR / f"jarvis_report_{ts}.html")
 
-        generated_at = datetime.datetime.utcnow().isoformat() + "Z"
+        generated_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
         template_path = TEMPLATES_DIR / "report.html"
         if template_path.exists():
@@ -58,7 +59,7 @@ def run(
 def _render_jinja(template_path, title, sections, research_data, generated_at) -> str:
     from jinja2 import Environment, FileSystemLoader
 
-    env = Environment(loader=FileSystemLoader(str(template_path.parent)))
+    env = Environment(loader=FileSystemLoader(str(template_path.parent)), autoescape=True)
     template = env.get_template(template_path.name)
     return template.render(
         title=title,
@@ -72,20 +73,25 @@ def _render_fallback(title, sections, research_data, generated_at) -> str:
     """Minimal HTML report used when Docs team template isn't ready yet."""
     section_html = ""
     for s in sections:
-        heading = s.get("heading", "")
-        content = s.get("content", "").replace("\n", "<br>")
+        if not isinstance(s, dict):
+            continue
+        heading = _html.escape(str(s.get("heading", "")))
+        content = _html.escape(str(s.get("content", ""))).replace("\n", "<br>")
         section_html += f"<h2>{heading}</h2><p>{content}</p>\n"
 
-    research_html = f"<h2>Research Data</h2><pre>{research_data}</pre>" if research_data else ""
+    safe_title = _html.escape(str(title))
+    safe_generated = _html.escape(str(generated_at))
+    safe_research = _html.escape(str(research_data)) if research_data else ""
+    research_html = f"<h2>Research Data</h2><pre>{safe_research}</pre>" if research_data else ""
 
     return f"""<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>{title}</title>
+<head><meta charset="UTF-8"><title>{safe_title}</title>
 <style>body{{font-family:sans-serif;max-width:900px;margin:2em auto;padding:0 1em}}</style>
 </head>
 <body>
-<h1>{title}</h1>
-<p><em>Generated: {generated_at}</em></p>
+<h1>{safe_title}</h1>
+<p><em>Generated: {safe_generated}</em></p>
 {section_html}
 {research_html}
 </body>

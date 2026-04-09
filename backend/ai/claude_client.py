@@ -14,6 +14,7 @@ import datetime
 import json as _json
 import logging
 import os
+import traceback
 
 from openai import AsyncOpenAI
 
@@ -25,6 +26,33 @@ from backend.tools.tool_dispatcher import dispatch_tool
 logger = logging.getLogger("jarvis.claude")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("MAX_TOOL_ITERATIONS", "10"))
+
+# Priority-ordered task inference — first match wins.
+# More specific patterns come first to avoid false matches
+# (e.g. "research report" must match before "error" in "error while researching")
+_TASK_TYPE_RULES = [
+    # Most specific multi-word patterns first
+    ("research_report", ["research report", "generate report", "create report", "make a report",
+                         "investigate and report", "write a report"]),
+    ("commit_message",  ["commit message", "write commit", "draft commit"]),
+    ("git_summary",     ["git log", "commit history", "changelog", "what changed",
+                         "what did i change", "recent commits"]),
+    # Then broader patterns — only if nothing specific matched
+    ("research_report", ["research", "investigate", "survey", "benchmark", "compare alternatives"]),
+    ("error_diagnosis", ["traceback", "exception", "stack trace", "error:", "crash",
+                         "bug", "broken", "fails with", "not working", "TypeError",
+                         "ValueError", "KeyError", "ImportError", "AttributeError"]),
+]
+
+
+def _infer_task_type(query: str) -> str:
+    """Infer task_type from query content for cloud provider routing.
+    Priority-ordered: first match wins. More specific patterns checked first."""
+    q = query.lower()
+    for task_type, keywords in _TASK_TYPE_RULES:
+        if any(kw in q for kw in keywords):
+            return task_type
+    return "quick_qa"
 
 # Cached AsyncOpenAI clients — one per provider, created on first use
 _clients: dict[str, AsyncOpenAI] = {}
@@ -39,7 +67,9 @@ def _get_client(provider_name: str) -> AsyncOpenAI:
     return _clients[provider_name]
 
 
-async def _call_provider(provider_name: str, messages: list, tools: list = None):
+async def _call_provider(provider_name: str, messages: list, tools: list = None,
+                         temperature: float = 0.3, max_tokens: int = 4096,
+                         stream: bool = False):
     """Call a single provider. Raises on failure."""
     p = PROVIDERS[provider_name]
     client = _get_client(provider_name)
@@ -48,8 +78,9 @@ async def _call_provider(provider_name: str, messages: list, tools: list = None)
         messages=messages,
         tools=tools if tools else None,
         tool_choice="auto" if tools else None,
-        max_tokens=4096,
-        temperature=0.3,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        stream=stream,
     )
 
 
@@ -58,6 +89,9 @@ async def _call_with_fallback(
     mode: str,
     messages: list,
     tools: list = None,
+    temperature: float = 0.3,
+    max_tokens: int = 4096,
+    stream: bool = False,
 ):
     """
     Routes to the correct provider for (task_type, mode) and walks the
@@ -83,7 +117,10 @@ async def _call_with_fallback(
             continue
 
         try:
-            response = await _call_provider(name, messages, tools)
+            response = await _call_provider(
+                name, messages, tools,
+                temperature=temperature, max_tokens=max_tokens, stream=stream,
+            )
             if name != provider_name:
                 logger.info(f"Used fallback provider: {name} (primary was {provider_name})")
             else:
@@ -117,6 +154,45 @@ async def _stream_text(text: str, send_event) -> None:
     await send_event({"event": "jarvis_stream_chunk", "text": "", "done": True})
 
 
+# Task-adaptive parameters — better output quality per task type
+_TASK_PARAMS = {
+    "error_diagnosis":  {"temperature": 0.2, "max_tokens": 4096},
+    "research_report":  {"temperature": 0.5, "max_tokens": 8192},
+    "git_summary":      {"temperature": 0.2, "max_tokens": 2048},
+    "commit_message":   {"temperature": 0.2, "max_tokens": 1024},
+    "session_summary":  {"temperature": 0.3, "max_tokens": 2048},
+    "quick_qa":         {"temperature": 0.4, "max_tokens": 4096},
+}
+
+
+async def _stream_final_response(task_type, mode, messages, send_event):
+    """Stream the final text response to the frontend using the OpenAI streaming API."""
+    try:
+        stream = await _call_with_fallback(
+            task_type=task_type,
+            mode=mode,
+            messages=messages,
+            tools=None,  # Final response — no tools, just text
+            stream=True,
+            **_TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096}),
+        )
+        full_text = ""
+        async for chunk in stream:
+            delta = chunk.choices[0].delta if chunk.choices else None
+            if delta and delta.content:
+                full_text += delta.content
+                await send_event({
+                    "event": "jarvis_stream_chunk",
+                    "text": delta.content,
+                    "done": False,
+                })
+        await send_event({"event": "jarvis_stream_chunk", "text": "", "done": True})
+        return full_text
+    except Exception as e:
+        logger.warning(f"Streaming failed, falling back to _stream_text: {e}")
+        return None  # Caller will fall back to _stream_text
+
+
 async def run(query: str, mode: str, send_event,
               codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.") -> str:
     """
@@ -132,9 +208,15 @@ async def run(query: str, mode: str, send_event,
         {"role": "user", "content": query},
     ]
 
-    # Determine task type from mode — local always quick_qa through Ollama
-    task_type = "quick_qa"
+    # Infer task type from query — drives cloud provider routing (Gemini vs Groq)
+    task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
+    params = _TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096})
     logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
+
+    # Ollama models often don't support OpenAI tool_choice format reliably.
+    # In local mode, skip tools and let the model respond directly with the
+    # full system prompt context. This is faster and more reliable.
+    use_tools = OAI_TOOL_SCHEMAS if mode == "cloud" else None
 
     for iteration in range(MAX_TOOL_ITERATIONS):
         try:
@@ -142,7 +224,8 @@ async def run(query: str, mode: str, send_event,
                 task_type=task_type,
                 mode=mode,
                 messages=messages,
-                tools=OAI_TOOL_SCHEMAS,
+                tools=use_tools,
+                **params,
             )
         except RuntimeError as e:
             logger.error(str(e))
@@ -180,7 +263,16 @@ async def run(query: str, mode: str, send_event,
 
             for tc in tool_calls:
                 tool_name = tc.function.name
-                tool_input = _json.loads(tc.function.arguments)
+                try:
+                    tool_input = _json.loads(tc.function.arguments)
+                except (ValueError, _json.JSONDecodeError) as e:
+                    logger.warning(f"Malformed tool arguments for {tool_name}: {e}")
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": _json.dumps({"error": f"Malformed arguments: {e}"}),
+                    })
+                    continue
 
                 await send_event(
                     {"event": "tool_call_status", "tool": tool_name, "status": "start"}
@@ -188,12 +280,15 @@ async def run(query: str, mode: str, send_event,
 
                 result = await dispatch_tool(tool_name, tool_input)
 
+                # Serialize result as clean JSON for the model
+                result_json = _json.dumps(result, ensure_ascii=False, default=str)
+
                 await send_event(
                     {
                         "event": "tool_call_status",
                         "tool": tool_name,
                         "status": "done",
-                        "result_summary": str(result)[:120],
+                        "result_summary": result_json[:120],
                     }
                 )
 
@@ -203,7 +298,7 @@ async def run(query: str, mode: str, send_event,
                     {
                         "role": "tool",
                         "tool_call_id": tc.id,
-                        "content": str(result),
+                        "content": result_json,
                     }
                 )
 

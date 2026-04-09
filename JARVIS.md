@@ -95,4 +95,4 @@ Do not edit these files without telling Rahul first.
 | `prompts/model.md` | Model routing logic |
 | `prompts/prompt_caching.md` | Cache setup and verification |
 | `prompts/prompt_fund.md` | Regression test runner |
-| `prompts/jarvis_memory.md` | jarvis.json schema documentation |
+| `prompts/jarvis_mem.md` | jarvis.json schema documentation |

@@ -38,7 +38,7 @@ async def dispatch_tool(name: str, inputs: dict) -> dict:
 
     try:
         if name in _ASYNC_TOOLS:
-            return await _ASYNC_TOOLS[name](**inputs)
+            return await asyncio.wait_for(_ASYNC_TOOLS[name](**inputs), timeout=60)
 
         if name in _SYNC_TOOLS:
             loop = asyncio.get_event_loop()
@@ -49,6 +49,9 @@ async def dispatch_tool(name: str, inputs: dict) -> dict:
         logger.warning(f"Unknown tool: {name}")
         return {"error": f"Unknown tool: {name}"}
 
+    except asyncio.TimeoutError:
+        logger.error(f"Tool {name} timed out after 60s")
+        return {"error": f"Tool {name} timed out after 60 seconds"}
     except TypeError as e:
         logger.error(f"Tool {name} called with wrong parameters: {e}")
         return {"error": f"Parameter error in {name}: {e}"}

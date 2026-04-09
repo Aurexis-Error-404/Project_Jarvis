@@ -32,13 +32,22 @@ def run(since: str, include_diff: bool = False, file_path: str = None) -> dict:
                 "message": c.message.strip(),
                 "author": str(c.author),
                 "date": c.committed_datetime.isoformat(),
-                "files_changed": list(c.stats.files.keys()) if c.stats else [],
             }
+            # Only compute file stats when diffs are requested — c.stats is expensive
+            # (parses the full diff output for every commit)
             if include_diff and c.parents:
+                entry["files_changed"] = list(c.stats.files.keys()) if c.stats else []
                 diff_text = repo.git.diff(c.parents[0].hexsha, c.hexsha)
                 entry["diff"] = diff_text[:MAX_DIFF_CHARS]
                 if len(diff_text) > MAX_DIFF_CHARS:
                     entry["diff"] += f"\n... (diff truncated at {MAX_DIFF_CHARS} chars)"
+            elif c.parents:
+                # Lightweight: just get changed file names via --name-only (much faster than c.stats)
+                try:
+                    names = repo.git.diff("--name-only", c.parents[0].hexsha, c.hexsha)
+                    entry["files_changed"] = [f for f in names.splitlines() if f.strip()][:20]
+                except Exception:
+                    entry["files_changed"] = []
             result.append(entry)
 
         return {

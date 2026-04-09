@@ -14,7 +14,11 @@ export default function App() {
   const [mode, setMode] = useState('local');
   const [surfaceData, setSurfaceData] = useState(null);
   const [reportReady, setReportReady] = useState(null); // { path }
+  const [reports, setReports] = useState([]); // list of generated reports
+  const [conversations, setConversations] = useState([]); // conversation history
+  const [activeConvId, setActiveConvId] = useState(null);
   const [showStartup, setShowStartup] = useState(true);
+  const [activeTools, setActiveTools] = useState([]); // tools currently running
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -46,9 +50,21 @@ export default function App() {
       dispatch({ type: 'ADD_ERROR', message: event.message });
       isStreamingRef.current = false;
       setIsStreaming(false);
+      setActiveTools([]);
     },
-    onReportGenerated: (event) => { setReportReady({ path: event.path }); },
+    onReportGenerated: (event) => {
+      setReportReady({ path: event.path });
+      const name = event.path.split(/[\\/]/).pop() || 'Report';
+      setReports(prev => [{ path: event.path, name, time: new Date().toLocaleTimeString() }, ...prev]);
+    },
     onStatusUpdate: () => { /* transient — backend signals thinking start, no UI action needed */ },
+    onToolCallStatus: (event) => {
+      if (event.status === 'start') {
+        setActiveTools(prev => [...prev, event.tool]);
+      } else {
+        setActiveTools(prev => prev.filter(t => t !== event.tool));
+      }
+    },
   });
 
   useEffect(() => {
@@ -83,13 +99,29 @@ export default function App() {
     isStreamingRef.current = true;
     setIsStreaming(true);
     sendMessage({ event: 'user_query', query: text.trim(), mode });
-  }, [isStreaming, mode, sendMessage]);
+    // Auto-title the first message of a new conversation
+    if (messages.length === 0 && !activeConvId) {
+      const id = Date.now().toString();
+      const title = text.trim().slice(0, 40) + (text.trim().length > 40 ? '...' : '');
+      setActiveConvId(id);
+      setConversations(prev => [{ id, title, time: new Date().toLocaleTimeString() }, ...prev]);
+    }
+  }, [isStreaming, mode, sendMessage, messages.length, activeConvId]);
 
   const handleModeToggle = useCallback(() => {
     const next = mode === 'cloud' ? 'local' : 'cloud';
     setMode('pending');
     sendMessage({ event: 'mode_change', mode: next });
   }, [mode, sendMessage]);
+
+  const handleNewSession = useCallback(() => {
+    dispatch({ type: 'CLEAR' });
+    setActiveConvId(null);
+    setActiveTools([]);
+    setIsStreaming(false);
+    isStreamingRef.current = false;
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
 
   const handleDismissSurface = useCallback(() => {
     if (surfaceData) {
@@ -131,7 +163,13 @@ export default function App() {
           <button className="surface-dismiss" onClick={() => setReportReady(null)}>✕</button>
         </div>
       )}
-      <SidebarLeft mode={mode} onGoHome={() => setShowStartup(true)} />
+      <SidebarLeft
+        connectionStatus={connectionStatus}
+        onGoHome={() => setShowStartup(true)}
+        onNewSession={handleNewSession}
+        conversations={conversations}
+        activeConvId={activeConvId}
+      />
       <ChatArea
         messages={messages}
         isStreaming={isStreaming}
@@ -140,8 +178,9 @@ export default function App() {
         messagesEndRef={messagesEndRef}
         onSend={handleSend}
         onModeToggle={handleModeToggle}
+        activeTools={activeTools}
       />
-      <SidebarRight />
+      <SidebarRight reports={reports} />
     </div>
   );
 }

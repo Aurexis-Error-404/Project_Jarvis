@@ -12752,11 +12752,11 @@
   });
 
   // src/index.jsx
-  var import_react5 = __toESM(require_react());
+  var import_react4 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // src/App.jsx
-  var import_react4 = __toESM(require_react());
+  var import_react3 = __toESM(require_react());
 
   // src/hooks/useWebSocket.js
   var import_react = __toESM(require_react());
@@ -12856,21 +12856,24 @@
         wsRef.current.send(JSON.stringify(payload));
         console.log("[WS] Sent:", payload.event);
       } else {
-        console.warn("[WS] Cannot send \u2014 not connected. Payload:", payload.type);
+        console.warn("[WS] Cannot send \u2014 not connected. Payload:", payload.event);
       }
     }, []);
     return { sendMessage, connectionStatus };
   }
 
   // src/reducers/messageReducer.js
+  function _uid() {
+    return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  }
   function messageReducer(state, action) {
     switch (action.type) {
       case "ADD_USER_MESSAGE":
-        return [...state, { id: Date.now(), role: "user", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
+        return [...state, { id: _uid(), role: "user", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
       case "ADD_JARVIS_MESSAGE":
-        return [...state, { id: Date.now(), role: "jarvis", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
+        return [...state, { id: _uid(), role: "jarvis", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
       case "START_STREAM":
-        return [...state, { id: action.id || Date.now(), role: "jarvis", text: "", timestamp: /* @__PURE__ */ new Date(), streaming: true }];
+        return [...state, { id: action.id || _uid(), role: "jarvis", text: "", timestamp: /* @__PURE__ */ new Date(), streaming: true }];
       case "APPEND_CHUNK":
         return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg);
       case "FINISH_STREAM": {
@@ -12881,7 +12884,7 @@
       case "REPLACE_RESPONSE":
         return state.map((msg, i) => i === state.length - 1 && msg.role === "jarvis" ? { ...msg, text: action.text, streaming: false } : msg);
       case "ADD_ERROR":
-        return [...state, { id: Date.now(), role: "error", text: action.message, timestamp: /* @__PURE__ */ new Date() }];
+        return [...state, { id: _uid(), role: "error", text: action.message, timestamp: /* @__PURE__ */ new Date() }];
       case "CLEAR":
         return [];
       default:
@@ -12945,59 +12948,44 @@
 
   // src/components/Icons.jsx
   var import_jsx_runtime3 = __toESM(require_jsx_runtime());
-  var IconFilter = () => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: "15", height: "15", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "4", y1: "6", x2: "20", y2: "6" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "8", y1: "12", x2: "16", y2: "12" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "11", y1: "18", x2: "13", y2: "18" })
-  ] });
-  var IconMore = () => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: "15", height: "15", viewBox: "0 0 24 24", fill: "currentColor", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "5", r: "1.5" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "1.5" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "19", r: "1.5" })
-  ] });
-  var IconGrid = () => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "3", y: "3", width: "7", height: "7" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "14", y: "3", width: "7", height: "7" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "3", y: "14", width: "7", height: "7" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "14", y: "14", width: "7", height: "7" })
-  ] });
-  var IconSidebarRight = () => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "15", y1: "3", x2: "15", y2: "21" })
-  ] });
   var IconSend = () => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
     /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "22", y1: "2", x2: "11", y2: "13" }),
     /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })
   ] });
-  var IconPlus = () => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "12", y1: "5", x2: "12", y2: "19" }),
-    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("line", { x1: "5", y1: "12", x2: "19", y2: "12" })
-  ] });
 
   // src/components/SidebarLeft.jsx
   var import_jsx_runtime4 = __toESM(require_jsx_runtime());
-  function SidebarLeft({ mode, onGoHome }) {
+  function SidebarLeft({ connectionStatus, onGoHome, onNewSession, conversations = [], activeConvId }) {
     return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "sidebar sidebar-left", children: [
       /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "sidebar-header", style: { WebkitAppRegion: "drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, overflow: "hidden" }, children: [
           /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "workspace-avatar", children: "J" }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "workspace-title", children: "Untitled workspace" })
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "workspace-title", children: "JARVIS Workspace" })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { display: "flex", gap: 2, WebkitAppRegion: "no-drag", flexShrink: 0 }, children: [
           /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "icon-btn", onClick: onGoHome, title: "Home", children: "\u2190" }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "icon-btn", title: "Grid view", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(IconGrid, {}) }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "icon-btn new-session-btn", title: "New session", children: "+ New session" })
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "icon-btn new-session-btn", onClick: onNewSession, title: "New session", children: "+ New session" })
         ] })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "sidebar-body", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { padding: "12px 14px 0" }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "section-label", children: "Previous Conversations" }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "conv-list", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "No conversations yet." }) })
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "section-label", children: "Conversations" }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "conv-list", children: conversations.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "Start a conversation to see history." }) : conversations.map((conv) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+          "div",
+          {
+            className: `conversation-item${conv.id === activeConvId ? " active" : ""}`,
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "conversation-title", children: conv.title }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "conversation-time", children: conv.time })
+            ]
+          },
+          conv.id
+        )) })
       ] }) }),
       /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag" }, children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "user-avatar", title: "Profile", children: "N" }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "user-avatar", title: "Profile", children: "J" }),
         /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: `conn-dot ${mode === "cloud" ? "connected" : "offline"}` }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "conn-label", children: mode === "cloud" ? "ONLINE" : "OFFLINE" })
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: `conn-dot ${connectionStatus === "connected" ? "connected" : "offline"}` }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "conn-label", children: connectionStatus === "connected" ? "ONLINE" : "OFFLINE" })
         ] })
       ] })
     ] });
@@ -13005,40 +12993,56 @@
 
   // src/components/SidebarRight.jsx
   var import_jsx_runtime5 = __toESM(require_jsx_runtime());
-  function SidebarRight() {
+  function SidebarRight({ reports = [] }) {
+    const handleOpenReport = async (path) => {
+      try {
+        await window.jarvis?.openLocalFile(path);
+      } catch (e) {
+        console.warn("[JARVIS] Could not open report:", e.message);
+      }
+    };
     return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "sidebar sidebar-right", children: [
       /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "sidebar-header", style: { WebkitAppRegion: "drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "chat-title", children: "Reports" }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { className: "icon-btn", style: { WebkitAppRegion: "no-drag" }, title: "Collapse sidebar", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconSidebarRight, {}) })
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { style: { fontSize: 10, color: "#52525b", WebkitAppRegion: "no-drag" }, children: reports.length > 0 ? `${reports.length} generated` : "" })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "sidebar-body", style: { WebkitAppRegion: "no-drag", padding: "16px 14px" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "section-label", style: { marginBottom: 14 }, children: "Generated Reports" }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "reports-list", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "No reports generated yet." }) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag", justifyContent: "flex-end" }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "btn-add-note", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconPlus, {}),
-        " Add note"
-      ] }) })
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "reports-list", children: reports.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "Ask JARVIS to generate a report." }) : reports.map((report, i) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(
+          "div",
+          {
+            className: "report-item",
+            onClick: () => handleOpenReport(report.path),
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "report-icon", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("path", { d: "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("polyline", { points: "14 2 14 8 20 8" })
+              ] }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "report-info", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "report-title", children: report.name }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "report-meta", children: report.time })
+              ] })
+            ]
+          },
+          i
+        )) })
+      ] })
     ] });
   }
-
-  // src/components/ChatArea.jsx
-  var import_react3 = __toESM(require_react());
 
   // src/components/ModeToggle.jsx
   var import_jsx_runtime6 = __toESM(require_jsx_runtime());
   function ModeToggle({ mode, onToggle }) {
     const isCloud = mode === "cloud";
-    const isPending = mode === "pending";
     return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
       "div",
       {
-        className: `mode-pill${isPending ? " disabled" : ""}`,
-        onClick: isPending ? void 0 : onToggle,
+        className: "mode-pill",
+        onClick: onToggle,
         title: isCloud ? "Switch to Secure Mode" : "Switch to Cloud Mode",
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `mode-label${!isCloud && !isPending ? " active-secure" : ""}`, children: "Secure" }),
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: `mode-track${isCloud ? " cloud" : isPending ? " pending" : " secure"}`, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "mode-dot" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `mode-label${!isCloud ? " active-secure" : ""}`, children: "Secure" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: `mode-track${isCloud ? " cloud" : " secure"}`, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "mode-dot" }) }),
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `mode-label${isCloud ? " active-cloud" : ""}`, children: "Cloud" })
         ]
       }
@@ -13047,15 +13051,19 @@
 
   // src/components/ChatArea.jsx
   var import_jsx_runtime7 = __toESM(require_jsx_runtime());
-  function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle }) {
+  var TOOL_LABELS = {
+    read_codebase: "Reading codebase",
+    read_git_history: "Checking git history",
+    web_research: "Searching the web",
+    generate_html_report: "Generating report",
+    update_project_memory: "Updating memory",
+    read_session_history: "Loading session history"
+  };
+  function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [] }) {
     return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "chat-area", children: [
       /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "chat-header", style: { WebkitAppRegion: "drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "chat-title", children: "Chat" }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "header-toggles", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(ModeToggle, { mode, onToggle: onModeToggle }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { style: { display: "flex", gap: 2, WebkitAppRegion: "no-drag" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { className: "icon-btn", title: "Filter conversations", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(IconFilter, {}) }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { className: "icon-btn", title: "More options", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(IconMore, {}) })
-        ] })
+        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "header-toggles", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(ModeToggle, { mode, onToggle: onModeToggle }) })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "messages-area", children: messages.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "empty-state", children: [
         /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "empty-avatar", children: "J" }),
@@ -13066,7 +13074,12 @@
           msg.text,
           msg.streaming && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "streaming-cursor", children: "\u258A" })
         ] }) }, msg.id)),
-        isStreaming && messages[messages.length - 1]?.text === "" && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "thinking-indicator", children: "JARVIS is thinking\u2026" }),
+        activeTools.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "tool-progress", children: activeTools.map((tool, i) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "tool-progress-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "tool-progress-dot" }),
+          TOOL_LABELS[tool] || tool,
+          "..."
+        ] }, i)) }),
+        isStreaming && messages[messages.length - 1]?.text === "" && activeTools.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "thinking-indicator", children: "JARVIS is thinking\u2026" }),
         /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { ref: messagesEndRef })
       ] }) }),
       /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "input-area", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "chat-input-wrapper", children: [
@@ -13086,7 +13099,7 @@
               {
                 ref: inputRef,
                 type: "text",
-                placeholder: "Message JARVIS...",
+                placeholder: mode === "local" ? "Message JARVIS (Secure Mode)..." : "Message JARVIS...",
                 disabled: isStreaming,
                 className: "chat-input"
               }
@@ -13094,7 +13107,7 @@
           }
         ),
         /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "input-footer", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "input-disclaimer", children: "JARVIS can be inaccurate, please double check its responses." }),
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "input-disclaimer", children: mode === "local" ? "\u{1F512} Secure mode \u2014 all data stays local" : "JARVIS can be inaccurate, please double check its responses." }),
           /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
             "button",
             {
@@ -13119,15 +13132,19 @@
   // src/App.jsx
   var import_jsx_runtime8 = __toESM(require_jsx_runtime());
   function App() {
-    const [messages, dispatch] = (0, import_react4.useReducer)(messageReducer, []);
-    const [isStreaming, setIsStreaming] = (0, import_react4.useState)(false);
-    const isStreamingRef = (0, import_react4.useRef)(false);
-    const [mode, setMode] = (0, import_react4.useState)("local");
-    const [surfaceData, setSurfaceData] = (0, import_react4.useState)(null);
-    const [reportReady, setReportReady] = (0, import_react4.useState)(null);
-    const [showStartup, setShowStartup] = (0, import_react4.useState)(true);
-    const inputRef = (0, import_react4.useRef)(null);
-    const messagesEndRef = (0, import_react4.useRef)(null);
+    const [messages, dispatch] = (0, import_react3.useReducer)(messageReducer, []);
+    const [isStreaming, setIsStreaming] = (0, import_react3.useState)(false);
+    const isStreamingRef = (0, import_react3.useRef)(false);
+    const [mode, setMode] = (0, import_react3.useState)("local");
+    const [surfaceData, setSurfaceData] = (0, import_react3.useState)(null);
+    const [reportReady, setReportReady] = (0, import_react3.useState)(null);
+    const [reports, setReports] = (0, import_react3.useState)([]);
+    const [conversations, setConversations] = (0, import_react3.useState)([]);
+    const [activeConvId, setActiveConvId] = (0, import_react3.useState)(null);
+    const [showStartup, setShowStartup] = (0, import_react3.useState)(true);
+    const [activeTools, setActiveTools] = (0, import_react3.useState)([]);
+    const inputRef = (0, import_react3.useRef)(null);
+    const messagesEndRef = (0, import_react3.useRef)(null);
     const { sendMessage, connectionStatus } = useWebSocket("ws://localhost:8765", {
       onStreamChunk: (event) => {
         if (!isStreamingRef.current) {
@@ -13166,48 +13183,72 @@
         dispatch({ type: "ADD_ERROR", message: event.message });
         isStreamingRef.current = false;
         setIsStreaming(false);
+        setActiveTools([]);
       },
       onReportGenerated: (event) => {
         setReportReady({ path: event.path });
+        const name = event.path.split(/[\\/]/).pop() || "Report";
+        setReports((prev) => [{ path: event.path, name, time: (/* @__PURE__ */ new Date()).toLocaleTimeString() }, ...prev]);
       },
       onStatusUpdate: () => {
+      },
+      onToolCallStatus: (event) => {
+        if (event.status === "start") {
+          setActiveTools((prev) => [...prev, event.tool]);
+        } else {
+          setActiveTools((prev) => prev.filter((t) => t !== event.tool));
+        }
       }
     });
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       if (window.jarvis?.onToggleOverlay) {
         return window.jarvis.onToggleOverlay(() => setTimeout(() => inputRef.current?.focus(), 50));
       }
     }, []);
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") setShowStartup(true);
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       if (connectionStatus === "disconnected" && isStreamingRef.current) {
         isStreamingRef.current = false;
         setIsStreaming(false);
       }
     }, [connectionStatus]);
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
-    const handleSend = (0, import_react4.useCallback)((text) => {
+    const handleSend = (0, import_react3.useCallback)((text) => {
       if (!text.trim() || isStreaming) return;
       dispatch({ type: "ADD_USER_MESSAGE", text: text.trim() });
       dispatch({ type: "START_STREAM" });
       isStreamingRef.current = true;
       setIsStreaming(true);
       sendMessage({ event: "user_query", query: text.trim(), mode });
-    }, [isStreaming, mode, sendMessage]);
-    const handleModeToggle = (0, import_react4.useCallback)(() => {
+      if (messages.length === 0 && !activeConvId) {
+        const id = Date.now().toString();
+        const title = text.trim().slice(0, 40) + (text.trim().length > 40 ? "..." : "");
+        setActiveConvId(id);
+        setConversations((prev) => [{ id, title, time: (/* @__PURE__ */ new Date()).toLocaleTimeString() }, ...prev]);
+      }
+    }, [isStreaming, mode, sendMessage, messages.length, activeConvId]);
+    const handleModeToggle = (0, import_react3.useCallback)(() => {
       const next = mode === "cloud" ? "local" : "cloud";
       setMode("pending");
       sendMessage({ event: "mode_change", mode: next });
     }, [mode, sendMessage]);
-    const handleDismissSurface = (0, import_react4.useCallback)(() => {
+    const handleNewSession = (0, import_react3.useCallback)(() => {
+      dispatch({ type: "CLEAR" });
+      setActiveConvId(null);
+      setActiveTools([]);
+      setIsStreaming(false);
+      isStreamingRef.current = false;
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }, []);
+    const handleDismissSurface = (0, import_react3.useCallback)(() => {
       if (surfaceData) {
         sendMessage({ event: "surface_dismissed", file: surfaceData.file });
         setSurfaceData(null);
@@ -13242,7 +13283,16 @@
         ),
         /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "surface-dismiss", onClick: () => setReportReady(null), children: "\u2715" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarLeft, { mode, onGoHome: () => setShowStartup(true) }),
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+        SidebarLeft,
+        {
+          connectionStatus,
+          onGoHome: () => setShowStartup(true),
+          onNewSession: handleNewSession,
+          conversations,
+          activeConvId
+        }
+      ),
       /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
         ChatArea,
         {
@@ -13252,10 +13302,11 @@
           inputRef,
           messagesEndRef,
           onSend: handleSend,
-          onModeToggle: handleModeToggle
+          onModeToggle: handleModeToggle,
+          activeTools
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarRight, {})
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarRight, { reports })
     ] });
   }
 
