@@ -767,7 +767,7 @@
   var require_react_dom_production = __commonJS({
     "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
-      var React3 = require_react();
+      var React2 = require_react();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -807,7 +807,7 @@
           implementation
         };
       }
-      var ReactSharedInternals = React3.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React2.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       function getCrossOriginStringAs(as, input) {
         if ("font" === as) return "";
         if ("string" === typeof input)
@@ -943,7 +943,7 @@
     "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
       "use strict";
       var Scheduler = require_scheduler();
-      var React3 = require_react();
+      var React2 = require_react();
       var ReactDOM = require_react_dom();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
@@ -1138,7 +1138,7 @@
         return null;
       }
       var isArrayImpl = Array.isArray;
-      var ReactSharedInternals = React3.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React2.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var sharedNotPendingObject = {
         pending: false,
@@ -12584,7 +12584,7 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_1840 = React3.version;
+      var isomorphicReactPackageVersion$jscomp$inline_1840 = React2.version;
       if ("19.2.4" !== isomorphicReactPackageVersion$jscomp$inline_1840)
         throw Error(
           formatProdErrorMessage(
@@ -12709,6 +12709,48 @@
     }
   });
 
+  // node_modules/react/cjs/react-jsx-runtime.production.js
+  var require_react_jsx_runtime_production = __commonJS({
+    "node_modules/react/cjs/react-jsx-runtime.production.js"(exports) {
+      "use strict";
+      var REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element");
+      var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
+      function jsxProd(type, config, maybeKey) {
+        var key = null;
+        void 0 !== maybeKey && (key = "" + maybeKey);
+        void 0 !== config.key && (key = "" + config.key);
+        if ("key" in config) {
+          maybeKey = {};
+          for (var propName in config)
+            "key" !== propName && (maybeKey[propName] = config[propName]);
+        } else maybeKey = config;
+        config = maybeKey.ref;
+        return {
+          $$typeof: REACT_ELEMENT_TYPE,
+          type,
+          key,
+          ref: void 0 !== config ? config : null,
+          props: maybeKey
+        };
+      }
+      exports.Fragment = REACT_FRAGMENT_TYPE;
+      exports.jsx = jsxProd;
+      exports.jsxs = jsxProd;
+    }
+  });
+
+  // node_modules/react/jsx-runtime.js
+  var require_jsx_runtime = __commonJS({
+    "node_modules/react/jsx-runtime.js"(exports, module) {
+      "use strict";
+      if (true) {
+        module.exports = require_react_jsx_runtime_production();
+      } else {
+        module.exports = null;
+      }
+    }
+  });
+
   // src/index.jsx
   var import_react3 = __toESM(require_react());
   var import_client = __toESM(require_client());
@@ -12812,75 +12854,100 @@
   }
 
   // src/App.jsx
+  var import_jsx_runtime = __toESM(require_jsx_runtime());
   function messageReducer(state, action) {
     switch (action.type) {
       case "ADD_USER_MESSAGE":
-        return [...state, {
-          id: Date.now(),
-          role: "user",
-          text: action.text,
-          timestamp: /* @__PURE__ */ new Date()
-        }];
+        return [...state, { id: Date.now(), role: "user", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
       case "ADD_JARVIS_MESSAGE":
-        return [...state, {
-          id: Date.now(),
-          role: "jarvis",
-          text: action.text,
-          timestamp: /* @__PURE__ */ new Date()
-        }];
+        return [...state, { id: Date.now(), role: "jarvis", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
       case "START_STREAM":
-        return [...state, {
-          id: action.id || Date.now(),
-          role: "jarvis",
-          text: "",
-          timestamp: /* @__PURE__ */ new Date(),
-          streaming: true
-        }];
+        return [...state, { id: action.id || Date.now(), role: "jarvis", text: "", timestamp: /* @__PURE__ */ new Date(), streaming: true }];
       case "APPEND_CHUNK":
-        return state.map(
-          (msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg
-        );
+        return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg);
       case "FINISH_STREAM":
-        return state.map(
-          (msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, streaming: false } : msg
-        );
+        return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, streaming: false } : msg);
       case "REPLACE_RESPONSE":
-        return state.map(
-          (msg, i) => i === state.length - 1 && msg.role === "jarvis" ? { ...msg, text: action.text, streaming: false } : msg
-        );
+        return state.map((msg, i) => i === state.length - 1 && msg.role === "jarvis" ? { ...msg, text: action.text, streaming: false } : msg);
       case "ADD_ERROR":
-        return [...state, {
-          id: Date.now(),
-          role: "error",
-          text: action.message,
-          timestamp: /* @__PURE__ */ new Date()
-        }];
+        return [...state, { id: Date.now(), role: "error", text: action.message, timestamp: /* @__PURE__ */ new Date() }];
       case "CLEAR":
         return [];
       default:
         return state;
     }
   }
+  var IconFilter = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "15", height: "15", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "4", y1: "6", x2: "20", y2: "6" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "8", y1: "12", x2: "16", y2: "12" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "11", y1: "18", x2: "13", y2: "18" })
+  ] });
+  var IconMore = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "15", height: "15", viewBox: "0 0 24 24", fill: "currentColor", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "12", cy: "5", r: "1.5" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "12", cy: "12", r: "1.5" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("circle", { cx: "12", cy: "19", r: "1.5" })
+  ] });
+  var IconGrid = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "7", height: "7" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "14", y: "3", width: "7", height: "7" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "14", width: "7", height: "7" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "14", y: "14", width: "7", height: "7" })
+  ] });
+  var IconSidebarRight = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("rect", { x: "3", y: "3", width: "18", height: "18", rx: "2" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "15", y1: "3", x2: "15", y2: "21" })
+  ] });
+  var IconSend = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "16", height: "16", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "22", y1: "2", x2: "11", y2: "13" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("polygon", { points: "22 2 15 22 11 13 2 9 22 2" })
+  ] });
+  var IconPlus = () => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("svg", { width: "13", height: "13", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "12", y1: "5", x2: "12", y2: "19" }),
+    /* @__PURE__ */ (0, import_jsx_runtime.jsx)("line", { x1: "5", y1: "12", x2: "19", y2: "12" })
+  ] });
+  function ModeToggle({ mode, onToggle }) {
+    const isCloud = mode === "cloud";
+    const isPending = mode === "pending";
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+      "div",
+      {
+        className: `mode-pill${isPending ? " disabled" : ""}`,
+        onClick: isPending ? void 0 : onToggle,
+        title: isCloud ? "Switch to Secure Mode" : "Switch to Cloud Mode",
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `mode-label${!isCloud && !isPending ? " active-secure" : ""}`, children: "Secure" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `mode-track${isCloud ? " cloud" : isPending ? " pending" : " secure"}`, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "mode-dot" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: `mode-label${isCloud ? " active-cloud" : ""}`, children: "Cloud" })
+        ]
+      }
+    );
+  }
   function App() {
     const [messages, dispatch] = (0, import_react2.useReducer)(messageReducer, []);
     const [isStreaming, setIsStreaming] = (0, import_react2.useState)(false);
+    const isStreamingRef = (0, import_react2.useRef)(false);
     const [mode, setMode] = (0, import_react2.useState)("local");
     const [surfaceData, setSurfaceData] = (0, import_react2.useState)(null);
+    const [showStartup, setShowStartup] = (0, import_react2.useState)(true);
     const inputRef = (0, import_react2.useRef)(null);
+    const messagesEndRef = (0, import_react2.useRef)(null);
     const { sendMessage, connectionStatus } = useWebSocket("ws://localhost:8765", {
       onStreamChunk: (event) => {
-        if (!isStreaming) {
+        if (!isStreamingRef.current) {
+          isStreamingRef.current = true;
           setIsStreaming(true);
           dispatch({ type: "START_STREAM" });
         }
         dispatch({ type: "APPEND_CHUNK", text: event.text });
         if (event.done) {
+          isStreamingRef.current = false;
           dispatch({ type: "FINISH_STREAM" });
           setIsStreaming(false);
         }
       },
       onResponse: (event) => {
-        if (isStreaming) {
+        if (isStreamingRef.current) {
+          isStreamingRef.current = false;
           dispatch({ type: "REPLACE_RESPONSE", text: event.text });
           setIsStreaming(false);
         } else {
@@ -12900,25 +12967,21 @@
     });
     (0, import_react2.useEffect)(() => {
       if (window.jarvis?.onToggleOverlay) {
-        return window.jarvis.onToggleOverlay(() => {
-          setTimeout(() => inputRef.current?.focus(), 50);
-        });
+        return window.jarvis.onToggleOverlay(() => setTimeout(() => inputRef.current?.focus(), 50));
       }
     }, []);
+    (0, import_react2.useEffect)(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
     const handleSend = (0, import_react2.useCallback)((text) => {
       if (!text.trim() || isStreaming) return;
       dispatch({ type: "ADD_USER_MESSAGE", text: text.trim() });
-      sendMessage({
-        type: "user_query",
-        text: text.trim(),
-        mode: mode === "pending" ? "local" : mode
-      });
+      sendMessage({ type: "user_query", text: text.trim(), mode });
     }, [isStreaming, mode, sendMessage]);
     const handleModeToggle = (0, import_react2.useCallback)(() => {
-      if (mode === "pending") return;
-      const newMode = mode === "local" ? "cloud" : "local";
-      setMode("pending");
-      sendMessage({ type: "mode_change", mode: newMode });
+      const next = mode === "cloud" ? "local" : "cloud";
+      setMode(next);
+      sendMessage({ type: "mode_change", mode: next });
     }, [mode, sendMessage]);
     const handleDismissSurface = (0, import_react2.useCallback)(() => {
       if (surfaceData) {
@@ -12928,46 +12991,156 @@
     }, [surfaceData, sendMessage]);
     (0, import_react2.useEffect)(() => {
       if (!surfaceData) return;
-      const timer = setTimeout(() => {
-        handleDismissSurface();
-      }, 8e3);
+      const timer = setTimeout(handleDismissSurface, 8e3);
       return () => clearTimeout(timer);
     }, [surfaceData, handleDismissSurface]);
-    return /* @__PURE__ */ import_react2.default.createElement("div", { className: "overlay", style: {
-      width: "100%",
-      height: "100%",
-      background: "rgba(12, 12, 20, 0.95)",
-      borderRadius: "16px",
-      border: "1px solid rgba(100, 140, 255, 0.1)",
-      display: "flex",
-      flexDirection: "column",
-      fontFamily: "'Inter', sans-serif",
-      color: "#e8e8f0",
-      overflow: "hidden"
-    } }, /* @__PURE__ */ import_react2.default.createElement("div", { style: { padding: "16px", borderBottom: "1px solid rgba(100,140,255,0.1)", display: "flex", justifyContent: "space-between", alignItems: "center", WebkitAppRegion: "drag" } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { fontSize: "14px", fontWeight: 600, letterSpacing: "1.5px", background: "linear-gradient(135deg, #00d4ff, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" } }, "JARVIS"), /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", gap: "8px", alignItems: "center", WebkitAppRegion: "no-drag" } }, /* @__PURE__ */ import_react2.default.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: connectionStatus === "connected" ? "#10b981" : connectionStatus === "connecting" ? "#f59e0b" : "#ef4444" }, title: connectionStatus }), /* @__PURE__ */ import_react2.default.createElement("button", { onClick: handleModeToggle, disabled: mode === "pending", style: { padding: "4px 12px", borderRadius: 20, border: "none", fontSize: "20px", fontWeight: 700, cursor: "pointer", background: mode === "local" ? "rgba(16,185,129,0.15)" : mode === "cloud" ? "rgba(59,130,246,0.15)" : "rgba(120,120,140,0.15)", color: mode === "local" ? "#10b981" : mode === "cloud" ? "#3b82f6" : "#9898b0", animation: mode === "pending" ? "pulse 1.5s infinite" : "none" } }, mode === "pending" ? "\u2026" : mode.toUpperCase()))), /* @__PURE__ */ import_react2.default.createElement("div", { style: { flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" } }, messages.length === 0 ? /* @__PURE__ */ import_react2.default.createElement("div", { style: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.5, fontSize: "16px", color: "#9898b0" } }, "\u26A1 Ask JARVIS anything\u2026") : messages.map((msg) => /* @__PURE__ */ import_react2.default.createElement("div", { key: msg.id, style: {
-      alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-      maxWidth: "85%",
-      padding: "12px 16px",
-      borderRadius: "12px",
-      fontSize: "20px",
-      lineHeight: 1.5,
-      background: msg.role === "user" ? "linear-gradient(135deg, #3b82f6, #2563eb)" : msg.role === "error" ? "rgba(239,68,68,0.12)" : "rgba(22,22,35,0.9)",
-      color: msg.role === "error" ? "#f59e0b" : "#e8e8f0",
-      border: msg.role === "user" ? "none" : "1px solid rgba(100,140,255,0.1)"
-    } }, msg.text, msg.streaming ? "\u258A" : "")), isStreaming && messages[messages.length - 1]?.text === "" && /* @__PURE__ */ import_react2.default.createElement("div", { style: { alignSelf: "flex-start", padding: "14px 18px", background: "rgba(22,22,35,0.9)", borderRadius: "12px", border: "1px solid rgba(100,140,255,0.1)" } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { opacity: 0.6 } }, "Thinking\u2026"))), /* @__PURE__ */ import_react2.default.createElement("div", { style: { padding: "12px 16px", borderTop: "1px solid rgba(100,140,255,0.1)" } }, /* @__PURE__ */ import_react2.default.createElement("form", { onSubmit: (e) => {
-      e.preventDefault();
-      const input = inputRef.current;
-      if (input?.value) {
-        handleSend(input.value);
-        input.value = "";
-      }
-    }, style: { display: "flex", gap: "8px", background: "rgba(30,30,48,0.85)", borderRadius: "12px", padding: "4px 4px 4px 16px", border: "1px solid rgba(100,140,255,0.1)" } }, /* @__PURE__ */ import_react2.default.createElement("input", { ref: inputRef, type: "text", placeholder: isStreaming ? "JARVIS is thinking\u2026" : "Ask JARVIS anything\u2026", disabled: isStreaming, autoFocus: true, style: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#e8e8f0", fontSize: "16px", fontFamily: "inherit", padding: "10px 0" } }), /* @__PURE__ */ import_react2.default.createElement("button", { type: "submit", disabled: isStreaming, style: { width: 40, height: 40, borderRadius: 8, border: "none", background: "linear-gradient(135deg, #00d4ff, #3b82f6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" } }, "\u2191"))), surfaceData && /* @__PURE__ */ import_react2.default.createElement("div", { style: { position: "absolute", bottom: "100%", right: 0, width: 320, marginBottom: 8, background: "rgba(12,12,20,0.95)", border: "1px solid rgba(100,140,255,0.25)", borderRadius: 12, padding: 16, boxShadow: "0 8px 32px rgba(0,0,0,0.4)" } }, /* @__PURE__ */ import_react2.default.createElement("div", { style: { display: "flex", justifyContent: "space-between", marginBottom: 8 } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { fontSize: 13, fontWeight: 600, color: "#00d4ff", letterSpacing: 1, textTransform: "uppercase" } }, "Context"), /* @__PURE__ */ import_react2.default.createElement("button", { onClick: handleDismissSurface, style: { background: "transparent", border: "1px solid rgba(100,140,255,0.1)", borderRadius: 6, color: "#9898b0", cursor: "pointer", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 } }, "\xD7")), /* @__PURE__ */ import_react2.default.createElement("ul", { style: { listStyle: "none", padding: 0 } }, surfaceData.bullets.map((b, i) => /* @__PURE__ */ import_react2.default.createElement("li", { key: i, style: { fontSize: 14, color: "#e8e8f0", paddingLeft: 16, position: "relative", lineHeight: 1.6 } }, /* @__PURE__ */ import_react2.default.createElement("span", { style: { position: "absolute", left: 0, color: "#00d4ff" } }, "\u25B8"), b))), /* @__PURE__ */ import_react2.default.createElement("span", { style: { display: "inline-block", marginTop: 8, padding: "3px 10px", background: "rgba(0,212,255,0.1)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: 20, fontSize: 12, color: "#00d4ff", fontFamily: "Consolas, monospace" } }, surfaceData.file)));
+    if (showStartup) {
+      return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "splash-screen", style: { WebkitAppRegion: "drag" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "splash-system-badge", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "splash-line" }),
+          "SYSTEM ONLINE",
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "splash-line" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h1", { className: "splash-title", children: "J.A.R.V.I.S" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "splash-subtitle", children: "JUST A RATHER VERY INTELLIGENT SYSTEM" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "button",
+          {
+            className: "splash-btn",
+            onClick: () => setShowStartup(false),
+            style: { WebkitAppRegion: "no-drag" },
+            children: "START YOUR CONVO"
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "splash-status", style: { WebkitAppRegion: "no-drag" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `splash-dot ${connectionStatus === "connected" ? "ready" : "connecting"}` }),
+          connectionStatus === "connected" ? "READY" : "CONNECTING..."
+        ] })
+      ] });
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "app-container", children: [
+      surfaceData && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "surface-card", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "surface-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "surface-file", children: surfaceData.file }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "surface-dismiss", onClick: handleDismissSurface, children: "\u2715" })
+        ] }),
+        surfaceData.bullets.map((bullet, i) => /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", { className: "surface-bullet", children: [
+          "\u2022 ",
+          bullet
+        ] }, i))
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sidebar sidebar-left", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sidebar-header", style: { WebkitAppRegion: "drag" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, overflow: "hidden" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "workspace-avatar", children: "J" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "workspace-title", children: "Untitled workspace" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", gap: 2, WebkitAppRegion: "no-drag", flexShrink: 0 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "icon-btn", onClick: () => setShowStartup(true), title: "Home", children: "\u2190" }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "icon-btn", title: "Grid view", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconGrid, {}) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "icon-btn new-session-btn", title: "New session", children: "+ New session" })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "sidebar-body", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { padding: "12px 14px 0" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "section-label", children: "Previous Conversations" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "conv-list", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "No conversations yet." }) })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "user-avatar", title: "Profile", children: "N" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `conn-dot ${mode === "cloud" ? "connected" : "offline"}` }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "conn-label", children: mode === "cloud" ? "ONLINE" : "OFFLINE" })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "chat-area", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "chat-header", style: { WebkitAppRegion: "drag" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "chat-title", children: "Chat" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "header-toggles", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ModeToggle, { mode, onToggle: handleModeToggle }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", gap: 2, WebkitAppRegion: "no-drag" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "icon-btn", title: "Filter conversations", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconFilter, {}) }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "icon-btn", title: "More options", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconMore, {}) })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "messages-area", children: messages.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "empty-state", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "empty-avatar", children: "J" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("h2", { className: "empty-title", children: "How can I help you today?" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", { className: "empty-subtitle", children: "Ask questions, generate code, or analyze your workspace." })
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "messages-list", children: [
+          messages.map((msg) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: `message-row ${msg.role}`, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: `message-bubble ${msg.role}`, children: [
+            msg.text,
+            msg.streaming && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "streaming-cursor", children: "\u258A" })
+          ] }) }, msg.id)),
+          isStreaming && messages[messages.length - 1]?.text === "" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "thinking-indicator", children: "JARVIS is thinking\u2026" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { ref: messagesEndRef })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "input-area", style: { WebkitAppRegion: "no-drag" }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "chat-input-wrapper", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            "form",
+            {
+              onSubmit: (e) => {
+                e.preventDefault();
+                const val = inputRef.current?.value?.trim();
+                if (val) {
+                  handleSend(val);
+                  inputRef.current.value = "";
+                }
+              },
+              children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+                "input",
+                {
+                  ref: inputRef,
+                  type: "text",
+                  placeholder: "Message JARVIS...",
+                  disabled: isStreaming,
+                  className: "chat-input"
+                }
+              )
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "input-footer", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "input-disclaimer", children: "JARVIS can be inaccurate, please double check its responses." }),
+            /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              "button",
+              {
+                className: "btn-send",
+                disabled: isStreaming,
+                onClick: () => {
+                  const val = inputRef.current?.value?.trim();
+                  if (val) {
+                    handleSend(val);
+                    inputRef.current.value = "";
+                  }
+                },
+                title: "Send",
+                children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconSend, {})
+              }
+            )
+          ] })
+        ] }) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sidebar sidebar-right", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sidebar-header", style: { WebkitAppRegion: "drag" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "chat-title", children: "Reports" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", { className: "icon-btn", style: { WebkitAppRegion: "no-drag" }, title: "Collapse sidebar", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconSidebarRight, {}) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "sidebar-body", style: { WebkitAppRegion: "no-drag", padding: "16px 14px" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "section-label", style: { marginBottom: 14 }, children: "Generated Reports" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "reports-list", children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "No reports generated yet." }) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag", justifyContent: "flex-end" }, children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", { className: "btn-add-note", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(IconPlus, {}),
+          " Add note"
+        ] }) })
+      ] })
+    ] });
   }
 
   // src/index.jsx
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
   var container = document.getElementById("root");
   var root = (0, import_client.createRoot)(container);
-  root.render(/* @__PURE__ */ import_react3.default.createElement(App, null));
+  root.render(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}));
   console.log("[JARVIS] React app mounted");
 })();
 /*! Bundled license information:
@@ -13009,6 +13182,17 @@ react-dom/cjs/react-dom-client.production.js:
   (**
    * @license React
    * react-dom-client.production.js
+   *
+   * Copyright (c) Meta Platforms, Inc. and affiliates.
+   *
+   * This source code is licensed under the MIT license found in the
+   * LICENSE file in the root directory of this source tree.
+   *)
+
+react/cjs/react-jsx-runtime.production.js:
+  (**
+   * @license React
+   * react-jsx-runtime.production.js
    *
    * Copyright (c) Meta Platforms, Inc. and affiliates.
    *
