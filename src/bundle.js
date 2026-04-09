@@ -12752,11 +12752,11 @@
   });
 
   // src/index.jsx
-  var import_react5 = __toESM(require_react());
+  var import_react4 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // src/App.jsx
-  var import_react4 = __toESM(require_react());
+  var import_react3 = __toESM(require_react());
 
   // src/hooks/useWebSocket.js
   var import_react = __toESM(require_react());
@@ -12856,21 +12856,24 @@
         wsRef.current.send(JSON.stringify(payload));
         console.log("[WS] Sent:", payload.event);
       } else {
-        console.warn("[WS] Cannot send \u2014 not connected. Payload:", payload.type);
+        console.warn("[WS] Cannot send \u2014 not connected. Payload:", payload.event);
       }
     }, []);
     return { sendMessage, connectionStatus };
   }
 
   // src/reducers/messageReducer.js
+  function _uid() {
+    return typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  }
   function messageReducer(state, action) {
     switch (action.type) {
       case "ADD_USER_MESSAGE":
-        return [...state, { id: Date.now(), role: "user", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
+        return [...state, { id: _uid(), role: "user", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
       case "ADD_JARVIS_MESSAGE":
-        return [...state, { id: Date.now(), role: "jarvis", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
+        return [...state, { id: _uid(), role: "jarvis", text: action.text, timestamp: /* @__PURE__ */ new Date() }];
       case "START_STREAM":
-        return [...state, { id: action.id || Date.now(), role: "jarvis", text: "", timestamp: /* @__PURE__ */ new Date(), streaming: true }];
+        return [...state, { id: action.id || _uid(), role: "jarvis", text: "", timestamp: /* @__PURE__ */ new Date(), streaming: true }];
       case "APPEND_CHUNK":
         return state.map((msg, i) => i === state.length - 1 && msg.streaming ? { ...msg, text: msg.text + action.text } : msg);
       case "FINISH_STREAM":
@@ -12878,7 +12881,7 @@
       case "REPLACE_RESPONSE":
         return state.map((msg, i) => i === state.length - 1 && msg.role === "jarvis" ? { ...msg, text: action.text, streaming: false } : msg);
       case "ADD_ERROR":
-        return [...state, { id: Date.now(), role: "error", text: action.message, timestamp: /* @__PURE__ */ new Date() }];
+        return [...state, { id: _uid(), role: "error", text: action.message, timestamp: /* @__PURE__ */ new Date() }];
       case "CLEAR":
         return [];
       default:
@@ -12973,7 +12976,7 @@
 
   // src/components/SidebarLeft.jsx
   var import_jsx_runtime4 = __toESM(require_jsx_runtime());
-  function SidebarLeft({ mode, onGoHome }) {
+  function SidebarLeft({ connectionStatus, onGoHome }) {
     return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "sidebar sidebar-left", children: [
       /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "sidebar-header", style: { WebkitAppRegion: "drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, overflow: "hidden" }, children: [
@@ -12993,8 +12996,8 @@
       /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "user-avatar", title: "Profile", children: "N" }),
         /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 6 }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: `conn-dot ${mode === "cloud" ? "connected" : "offline"}` }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "conn-label", children: mode === "cloud" ? "ONLINE" : "OFFLINE" })
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: `conn-dot ${connectionStatus === "connected" ? "connected" : "offline"}` }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "conn-label", children: connectionStatus === "connected" ? "ONLINE" : "OFFLINE" })
         ] })
       ] })
     ] });
@@ -13006,36 +13009,32 @@
     return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "sidebar sidebar-right", children: [
       /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "sidebar-header", style: { WebkitAppRegion: "drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "chat-title", children: "Reports" }),
-        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { className: "icon-btn", style: { WebkitAppRegion: "no-drag" }, title: "Collapse sidebar", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconSidebarRight, {}) })
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { className: "icon-btn", style: { WebkitAppRegion: "no-drag" }, title: "Collapse sidebar", disabled: true, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconSidebarRight, {}) })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "sidebar-body", style: { WebkitAppRegion: "no-drag", padding: "16px 14px" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "section-label", style: { marginBottom: 14 }, children: "Generated Reports" }),
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "reports-list", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { color: "#555", fontSize: 11, padding: "8px 0", fontFamily: "monospace" }, children: "No reports generated yet." }) })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag", justifyContent: "flex-end" }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "btn-add-note", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "sidebar-footer", style: { WebkitAppRegion: "no-drag", justifyContent: "flex-end" }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "btn-add-note", disabled: true, title: "TODO: implement notes", children: [
         /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(IconPlus, {}),
         " Add note"
       ] }) })
     ] });
   }
 
-  // src/components/ChatArea.jsx
-  var import_react3 = __toESM(require_react());
-
   // src/components/ModeToggle.jsx
   var import_jsx_runtime6 = __toESM(require_jsx_runtime());
   function ModeToggle({ mode, onToggle }) {
     const isCloud = mode === "cloud";
-    const isPending = mode === "pending";
     return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
       "div",
       {
-        className: `mode-pill${isPending ? " disabled" : ""}`,
-        onClick: isPending ? void 0 : onToggle,
+        className: "mode-pill",
+        onClick: onToggle,
         title: isCloud ? "Switch to Secure Mode" : "Switch to Cloud Mode",
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `mode-label${!isCloud && !isPending ? " active-secure" : ""}`, children: "Secure" }),
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: `mode-track${isCloud ? " cloud" : isPending ? " pending" : " secure"}`, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "mode-dot" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `mode-label${!isCloud ? " active-secure" : ""}`, children: "Secure" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: `mode-track${isCloud ? " cloud" : " secure"}`, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "mode-dot" }) }),
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `mode-label${isCloud ? " active-cloud" : ""}`, children: "Cloud" })
         ]
       }
@@ -13116,15 +13115,15 @@
   // src/App.jsx
   var import_jsx_runtime8 = __toESM(require_jsx_runtime());
   function App() {
-    const [messages, dispatch] = (0, import_react4.useReducer)(messageReducer, []);
-    const [isStreaming, setIsStreaming] = (0, import_react4.useState)(false);
-    const isStreamingRef = (0, import_react4.useRef)(false);
-    const [mode, setMode] = (0, import_react4.useState)("local");
-    const [surfaceData, setSurfaceData] = (0, import_react4.useState)(null);
-    const [reportReady, setReportReady] = (0, import_react4.useState)(null);
-    const [showStartup, setShowStartup] = (0, import_react4.useState)(true);
-    const inputRef = (0, import_react4.useRef)(null);
-    const messagesEndRef = (0, import_react4.useRef)(null);
+    const [messages, dispatch] = (0, import_react3.useReducer)(messageReducer, []);
+    const [isStreaming, setIsStreaming] = (0, import_react3.useState)(false);
+    const isStreamingRef = (0, import_react3.useRef)(false);
+    const [mode, setMode] = (0, import_react3.useState)("local");
+    const [surfaceData, setSurfaceData] = (0, import_react3.useState)(null);
+    const [reportReady, setReportReady] = (0, import_react3.useState)(null);
+    const [showStartup, setShowStartup] = (0, import_react3.useState)(true);
+    const inputRef = (0, import_react3.useRef)(null);
+    const messagesEndRef = (0, import_react3.useRef)(null);
     const { sendMessage, connectionStatus } = useWebSocket("ws://localhost:8765", {
       onStreamChunk: (event) => {
         if (!isStreamingRef.current) {
@@ -13162,34 +13161,36 @@
         setReportReady({ path: event.path });
       },
       onStatusUpdate: () => {
+      },
+      onToolCallStatus: () => {
       }
     });
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       if (window.jarvis?.onToggleOverlay) {
         return window.jarvis.onToggleOverlay(() => setTimeout(() => inputRef.current?.focus(), 50));
       }
     }, []);
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       const handleKeyDown = (e) => {
         if (e.key === "Escape") setShowStartup(true);
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, []);
-    (0, import_react4.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
-    const handleSend = (0, import_react4.useCallback)((text) => {
+    const handleSend = (0, import_react3.useCallback)((text) => {
       if (!text.trim() || isStreaming) return;
       dispatch({ type: "ADD_USER_MESSAGE", text: text.trim() });
       sendMessage({ event: "user_query", query: text.trim(), mode });
     }, [isStreaming, mode, sendMessage]);
-    const handleModeToggle = (0, import_react4.useCallback)(() => {
+    const handleModeToggle = (0, import_react3.useCallback)(() => {
       const next = mode === "cloud" ? "local" : "cloud";
       setMode(next);
       sendMessage({ event: "mode_change", mode: next });
     }, [mode, sendMessage]);
-    const handleDismissSurface = (0, import_react4.useCallback)(() => {
+    const handleDismissSurface = (0, import_react3.useCallback)(() => {
       if (surfaceData) {
         sendMessage({ event: "surface_dismissed", file: surfaceData.file });
         setSurfaceData(null);
@@ -13224,7 +13225,7 @@
         ),
         /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "surface-dismiss", onClick: () => setReportReady(null), children: "\u2715" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarLeft, { mode, onGoHome: () => setShowStartup(true) }),
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarLeft, { connectionStatus, onGoHome: () => setShowStartup(true) }),
       /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
         ChatArea,
         {

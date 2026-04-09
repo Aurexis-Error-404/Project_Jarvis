@@ -69,9 +69,13 @@ def _read_file(file_path: str, lines: str = None) -> dict:
 
     if lines:
         try:
-            start_str, end_str = lines.split("-")
-            start = max(1, int(start_str))
-            end = min(total_lines, int(end_str))
+            parts = lines.split("-")
+            if len(parts) != 2:
+                return {"error": f"Invalid lines format: '{lines}'. Expected 'start-end', e.g. '80-120'."}
+            start = max(1, int(parts[0].strip()))
+            end = min(total_lines, int(parts[1].strip()))
+            if start > end:
+                return {"error": f"Invalid line range: start ({start}) > end ({end})."}
             selected = all_lines[start - 1 : end]
             return {
                 "file": file_path,

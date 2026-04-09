@@ -159,7 +159,7 @@ export default function useWebSocket(url, handlers = {}) {
       wsRef.current.send(JSON.stringify(payload));
       console.log('[WS] Sent:', payload.event);
     } else {
-      console.warn('[WS] Cannot send — not connected. Payload:', payload.type);
+      console.warn('[WS] Cannot send — not connected. Payload:', payload.event);
     }
   }, []);
 

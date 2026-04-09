@@ -5,7 +5,7 @@ export default function SidebarRight() {
     <div className="sidebar sidebar-right">
       <div className="sidebar-header" style={{ WebkitAppRegion: 'drag' }}>
         <span className="chat-title">Reports</span>
-        <button className="icon-btn" style={{ WebkitAppRegion: 'no-drag' }} title="Collapse sidebar">
+        <button className="icon-btn" style={{ WebkitAppRegion: 'no-drag' }} title="Collapse sidebar" disabled>
           <IconSidebarRight />
         </button>
       </div>
@@ -20,7 +20,7 @@ export default function SidebarRight() {
       </div>
 
       <div className="sidebar-footer" style={{ WebkitAppRegion: 'no-drag', justifyContent: 'flex-end' }}>
-        <button className="btn-add-note">
+        <button className="btn-add-note" disabled title="TODO: implement notes">
           <IconPlus /> Add note
         </button>
       </div>

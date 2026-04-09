@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import ModeToggle from './ModeToggle';
 import { IconFilter, IconMore, IconSend } from './Icons';
 

@@ -42,6 +42,7 @@ export default function App() {
     onError: (event) => { dispatch({ type: 'ADD_ERROR', message: event.message }); setIsStreaming(false); },
     onReportGenerated: (event) => { setReportReady({ path: event.path }); },
     onStatusUpdate: () => { /* transient — backend signals thinking start, no UI action needed */ },
+    onToolCallStatus: () => { /* tool progress — can be surfaced in UI later */ },
   });
 
   useEffect(() => {
@@ -114,7 +115,7 @@ export default function App() {
           <button className="surface-dismiss" onClick={() => setReportReady(null)}>✕</button>
         </div>
       )}
-      <SidebarLeft mode={mode} onGoHome={() => setShowStartup(true)} />
+      <SidebarLeft connectionStatus={connectionStatus} onGoHome={() => setShowStartup(true)} />
       <ChatArea
         messages={messages}
         isStreaming={isStreaming}

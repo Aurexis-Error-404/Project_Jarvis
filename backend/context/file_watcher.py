@@ -13,6 +13,7 @@ import asyncio
 import logging
 import os
 import time
+from pathlib import PurePath
 from typing import Callable
 
 from watchdog.events import FileSystemEventHandler
@@ -49,7 +50,7 @@ class JarvisHandler(FileSystemEventHandler):
         if event.is_directory:
             return
         path = event.src_path
-        if any(skip in path for skip in SKIP_DIRS):
+        if any(skip in PurePath(path).parts for skip in SKIP_DIRS):
             return
 
         now = time.monotonic()

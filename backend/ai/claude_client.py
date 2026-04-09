@@ -25,6 +25,23 @@ logger = logging.getLogger("jarvis.claude")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("MAX_TOOL_ITERATIONS", "10"))
 
+# Keywords used to infer task_type from user query for provider routing
+_TASK_TYPE_PATTERNS = {
+    "error_diagnosis": ["error", "exception", "traceback", "crash", "bug", "fail", "broken"],
+    "research_report": ["research", "report", "investigate", "analyze", "survey"],
+    "git_summary": ["git log", "commit history", "changelog"],
+    "commit_message": ["commit message", "write commit"],
+}
+
+
+def _infer_task_type(query: str) -> str:
+    """Infer task_type from query content for cloud provider routing."""
+    q = query.lower()
+    for task_type, keywords in _TASK_TYPE_PATTERNS.items():
+        if any(kw in q for kw in keywords):
+            return task_type
+    return "quick_qa"
+
 # Cached AsyncOpenAI clients — one per provider, created on first use
 _clients: dict[str, AsyncOpenAI] = {}
 
@@ -114,8 +131,8 @@ async def run(query: str, mode: str, send_event,
         {"role": "user", "content": query},
     ]
 
-    # Determine task type from mode — local always quick_qa through Ollama
-    task_type = "quick_qa"
+    # Infer task type from query — drives cloud provider routing (Gemini vs Groq)
+    task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
     logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
 
     for iteration in range(MAX_TOOL_ITERATIONS):
@@ -168,7 +185,16 @@ async def run(query: str, mode: str, send_event,
 
             for tc in tool_calls:
                 tool_name = tc.function.name
-                tool_input = _json.loads(tc.function.arguments)
+                try:
+                    tool_input = _json.loads(tc.function.arguments)
+                except (ValueError, _json.JSONDecodeError) as e:
+                    logger.warning(f"Malformed tool arguments for {tool_name}: {e}")
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": str({"error": f"Malformed arguments: {e}"}),
+                    })
+                    continue
 
                 await send_event(
                     {"event": "tool_call_status", "tool": tool_name, "status": "start"}

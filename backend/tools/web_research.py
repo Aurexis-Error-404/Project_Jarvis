@@ -9,6 +9,7 @@ Playwright must be installed: pip install playwright && playwright install chrom
 """
 
 import logging
+from urllib.parse import quote
 
 logger = logging.getLogger("jarvis.web_research")
 
@@ -20,7 +21,7 @@ async def run(query: str, max_results: int = 5) -> dict:
     Searches Google for `query` and returns scraped page text.
     Returns {"query": str, "content": str, "url": str} or {"error": str}.
     """
-    url = f"https://www.google.com/search?q={query.replace(' ', '+')}&num={max_results}"
+    url = f"https://www.google.com/search?q={quote(query)}&num={max_results}"
 
     try:
         from playwright.async_api import async_playwright

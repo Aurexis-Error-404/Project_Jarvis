@@ -4,8 +4,8 @@
   "description": "JARVIS — Proactive AI Developer Intelligence Layer",
   "main": "main.js",
   "scripts": {
-    "build": "esbuild src/index.jsx --bundle --outfile=src/bundle.js --loader:.jsx=jsx --jsx=automatic --define:process.env.NODE_ENV=\\\"production\\\"",
-    "watch": "esbuild src/index.jsx --bundle --outfile=src/bundle.js --loader:.jsx=jsx --jsx=automatic --watch --define:process.env.NODE_ENV=\\\"development\\\"",
+    "build": "esbuild ./src/index.jsx --bundle --outfile=src/bundle.js --loader:.jsx=jsx --jsx=automatic --define:process.env.NODE_ENV=\\\"production\\\"",
+    "watch": "esbuild ./src/index.jsx --bundle --outfile=src/bundle.js --loader:.jsx=jsx --jsx=automatic --watch --define:process.env.NODE_ENV=\\\"development\\\"",
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --enable-logging"
   },

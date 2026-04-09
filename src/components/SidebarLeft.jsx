@@ -1,6 +1,6 @@
 import { IconGrid } from './Icons';
 
-export default function SidebarLeft({ mode, onGoHome }) {
+export default function SidebarLeft({ connectionStatus, onGoHome }) {
   return (
     <div className="sidebar sidebar-left">
       <div className="sidebar-header" style={{ WebkitAppRegion: 'drag' }}>
@@ -29,9 +29,9 @@ export default function SidebarLeft({ mode, onGoHome }) {
       <div className="sidebar-footer" style={{ WebkitAppRegion: 'no-drag' }}>
         <div className="user-avatar" title="Profile">N</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div className={`conn-dot ${mode === 'cloud' ? 'connected' : 'offline'}`} />
+          <div className={`conn-dot ${connectionStatus === 'connected' ? 'connected' : 'offline'}`} />
           <span className="conn-label">
-            {mode === 'cloud' ? 'ONLINE' : 'OFFLINE'}
+            {connectionStatus === 'connected' ? 'ONLINE' : 'OFFLINE'}
           </span>
         </div>
       </div>

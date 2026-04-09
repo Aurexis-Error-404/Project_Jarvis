@@ -16,7 +16,7 @@ import httpx
 logger = logging.getLogger("jarvis.ollama")
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "codellama")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen3.5:cloud")
 GATE_THRESHOLD = float(os.environ.get("OLLAMA_GATE_THRESHOLD", "0.7"))
 
 GATE_PROMPT_TEMPLATE = """Respond with ONLY a JSON object. No other text.
@@ -31,6 +31,11 @@ JSON:"""
 
 # Reused across all calls — avoids connection overhead on every gate check
 _http = httpx.AsyncClient()
+
+
+async def close():
+    """Close the shared httpx client. Call from app shutdown."""
+    await _http.aclose()
 
 
 def parse_ollama_json(raw: str) -> dict:
