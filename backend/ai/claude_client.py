@@ -1,9 +1,9 @@
 """
-AI tool-use loop — Gemini (primary) + Groq (fallback) via OpenAI-compatible endpoints.
+AI tool-use loop — routes through providers.py (Gemini / Groq / Ollama).
 
 Critical rules (violations cause 400 errors or silent failures):
   - tool_call_id ALWAYS from tc.id — NEVER construct it manually
-  - Pass tools=OAI_TOOL_SCHEMAS on EVERY API call, not just the first
+  - Pass tools on EVERY API call in the loop, not just the first
   - Tools ALWAYS return dict — never raise exceptions out of a tool
   - Each tool result is its OWN "tool" role message — never bundle into one "user" message
   - Assistant message with tool_calls MUST be appended to history before tool results
@@ -13,30 +13,87 @@ import datetime
 import json as _json
 import logging
 import os
-import time
 
 from openai import OpenAI
 
 from backend.ai import prompts
+from backend.ai.providers import PROVIDERS, get_provider, get_fallback
 from backend.tools import OAI_TOOL_SCHEMAS
 from backend.tools.tool_dispatcher import dispatch_tool
 
 logger = logging.getLogger("jarvis.claude")
 
-_gemini_client = OpenAI(
-    api_key=os.environ.get("GEMINI_API_KEY", ""),
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-)
-
-_groq_client = OpenAI(
-    api_key=os.environ.get("GROQ_API_KEY", ""),
-    base_url="https://api.groq.com/openai/v1",
-)
-
 MAX_TOOL_ITERATIONS = int(os.environ.get("MAX_TOOL_ITERATIONS", "10"))
 
 
-async def run(query: str, mode: str, send_event) -> str:
+def _get_client(provider_name: str) -> OpenAI:
+    p = PROVIDERS[provider_name]
+    return OpenAI(api_key=p["api_key"], base_url=p["base_url"])
+
+
+def _call_provider(provider_name: str, messages: list, tools: list = None):
+    """Call a single provider. Raises on failure."""
+    p = PROVIDERS[provider_name]
+    client = _get_client(provider_name)
+    return client.chat.completions.create(
+        model=p["model"],
+        messages=messages,
+        tools=tools if tools else None,
+        tool_choice="auto" if tools else None,
+        max_tokens=4096,
+        temperature=0.3,
+    )
+
+
+def _call_with_fallback(
+    task_type: str,
+    mode: str,
+    messages: list,
+    tools: list = None,
+):
+    """
+    Routes to the correct provider for (task_type, mode) and walks the
+    fallback chain on failure.  Raises RuntimeError if all providers fail.
+    """
+    provider_name = get_provider(task_type, mode)
+
+    # Build the attempt chain (Gemini → Groq, or Ollama with no fallback)
+    chain = []
+    current = provider_name
+    seen: set = set()
+    while current and current not in seen:
+        chain.append(current)
+        seen.add(current)
+        current = get_fallback(current, mode)
+
+    last_error = None
+    for name in chain:
+        p = PROVIDERS[name]
+
+        if not p["api_key"]:
+            logger.warning(f"Skipping {name} — API key not set")
+            continue
+
+        try:
+            response = _call_provider(name, messages, tools)
+            if name != provider_name:
+                logger.info(f"Used fallback provider: {name} (primary was {provider_name})")
+            else:
+                logger.debug(f"Provider: {name} | task: {task_type} | mode: {mode}")
+            return response
+
+        except Exception as e:
+            last_error = e
+            logger.warning(f"{name} failed: {e}. Trying next in chain...")
+            continue
+
+    raise RuntimeError(
+        f"All providers failed for task='{task_type}' mode='{mode}'. Last error: {last_error}"
+    )
+
+
+async def run(query: str, mode: str, send_event,
+              codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.") -> str:
     """
     Main entry point — runs the full tool-use loop for a user query.
 
@@ -44,22 +101,26 @@ async def run(query: str, mode: str, send_event) -> str:
     mode: "local" | "cloud"
     send_event: async callable that sends a WebSocket event dict to the client
     """
-    system = prompts.build_system_prompt()  # returns str
-    messages = [{"role": "user", "content": query}]
+    system = prompts.build_system_prompt(codebase_map=codebase_map)
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": query},
+    ]
 
-    if mode == "local":
-        from backend.ai import ollama_client
-        text = await ollama_client.chat(prompt=query, system=system)
-        await send_event({"event": "jarvis_reply", "text": text, "timestamp": _utcnow()})
-        return text
-
-    logger.info(f"Running query (mode={mode}): {query[:80]}")
+    # Determine task type from mode — local always quick_qa through Ollama
+    task_type = "quick_qa"
+    logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
 
     for iteration in range(MAX_TOOL_ITERATIONS):
         try:
-            response = _call_cloud(system=system, messages=messages)
-        except Exception as e:
-            logger.error(f"All AI providers failed: {e}")
+            response = _call_with_fallback(
+                task_type=task_type,
+                mode=mode,
+                messages=messages,
+                tools=OAI_TOOL_SCHEMAS,
+            )
+        except RuntimeError as e:
+            logger.error(str(e))
             await send_event({"event": "error", "message": str(e), "recoverable": False})
             return f"API error: {e}"
 
@@ -69,7 +130,7 @@ async def run(query: str, mode: str, send_event) -> str:
             text = choice.message.content or ""
             await send_event(
                 {
-                    "event": "jarvis_reply",
+                    "event": "jarvis_response",
                     "text": text,
                     "timestamp": _utcnow(),
                 }
@@ -117,7 +178,7 @@ async def run(query: str, mode: str, send_event) -> str:
                     }
                 )
 
-                # CRITICAL: each tool result is its own "tool" role message
+                # CRITICAL: each result is its own "tool" role message
                 # CRITICAL: always use tc.id — never construct tool_call_id manually
                 messages.append(
                     {
@@ -139,62 +200,18 @@ async def run(query: str, mode: str, send_event) -> str:
 
             continue
 
-        # Unexpected finish reason
         logger.warning(f"Unexpected finish_reason: {choice.finish_reason}")
         break
 
     logger.warning("Max tool iterations reached")
     await send_event(
         {
-            "event": "error",
+            "event": "jarvis_error",
             "message": "Reached max tool iterations. Please ask a more specific question.",
             "recoverable": True,
         }
     )
     return "I ran into a loop. Please try a more specific question."
-
-
-def _call_cloud(system: str, messages: list):
-    """
-    Call Gemini first (up to 3 attempts with backoff on rate limits).
-    On any non-rate-limit error, fall back to Groq immediately.
-    Raises if both providers fail.
-    """
-    gemini_model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
-    groq_model   = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
-    full_messages = [{"role": "system", "content": system}] + messages
-
-    for attempt in range(3):
-        try:
-            resp = _gemini_client.chat.completions.create(
-                model=gemini_model,
-                max_tokens=2000,
-                messages=full_messages,
-                tools=OAI_TOOL_SCHEMAS,
-                tool_choice="auto",
-            )
-            logger.debug("Gemini call succeeded")
-            return resp
-        except Exception as e:
-            is_rate_limit = "429" in str(e) or "rate" in str(e).lower()
-            if attempt < 2 and is_rate_limit:
-                wait = 2 ** (attempt + 1)  # 2s, 4s
-                logger.warning(f"Gemini rate limited — retrying in {wait}s (attempt {attempt + 1}/3)")
-                time.sleep(wait)
-                continue
-            logger.warning(f"Gemini failed ({e}), falling back to Groq")
-            break
-
-    # Groq fallback
-    resp = _groq_client.chat.completions.create(
-        model=groq_model,
-        max_tokens=2000,
-        messages=full_messages,
-        tools=OAI_TOOL_SCHEMAS,
-        tool_choice="auto",
-    )
-    logger.info("Groq fallback succeeded")
-    return resp
 
 
 def _utcnow() -> str:

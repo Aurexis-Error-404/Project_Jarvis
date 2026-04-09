@@ -1,6 +1,6 @@
 """
 Proactive file watcher — monitors PROJECT_PATH for file changes,
-runs the Ollama gate, and sends context_surface events to the frontend
+runs the Ollama gate, and sends jarvis_surface events to the frontend
 when the gate confidence meets the threshold.
 
 Highest-risk feature in Phase 1. Build last. Keep the gate call minimal.
@@ -13,6 +13,7 @@ import asyncio
 import logging
 import os
 import time
+from typing import Callable
 
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -27,11 +28,17 @@ DEBOUNCE_SECONDS = 5  # locked — do not reduce
 
 
 class JarvisHandler(FileSystemEventHandler):
-    def __init__(self, loop: asyncio.AbstractEventLoop, send_event):
+    def __init__(
+        self,
+        loop: asyncio.AbstractEventLoop,
+        send_event: Callable,
+        get_mode: Callable[[], str],
+    ):
         super().__init__()
         self.loop = loop
         self.send_event = send_event
-        self._last_event: dict[str, float] = {}
+        self.get_mode = get_mode          # callable: () -> "local" | "cloud"
+        self._last_event: dict = {}
 
     def on_modified(self, event):
         if event.is_directory:
@@ -59,32 +66,61 @@ class JarvisHandler(FileSystemEventHandler):
 
             should_surface = result.get("should_surface", False)
             confidence = result.get("confidence", 0.0)
+            reason = result.get("reason", "File modified — may affect active session")
 
-            logger.debug(f"Gate: {path} → surface={should_surface}, confidence={confidence:.2f}")
+            logger.debug(
+                f"Gate: {path} → surface={should_surface}, confidence={confidence:.2f}"
+            )
 
-            if should_surface and confidence >= threshold:
-                await self.send_event(
-                    {
-                        "event": "context_surface",
-                        "file": path.replace("\\", "/"),
-                        "reason": result.get("reason", "File modified — may affect active session"),
-                        "confidence": confidence,
-                    }
+            if not (should_surface and confidence >= threshold):
+                return  # gate did not pass — nothing to do
+
+            # Gate passed — generate surface card bullets (lazy import avoids circular deps)
+            from backend.ai.surface_generator import generate as generate_surface
+
+            mode = self.get_mode()
+            bullets = await generate_surface(
+                file_path=path,
+                gate_reason=reason,
+                mode=mode,
+            )
+
+            if not bullets:
+                logger.warning(
+                    f"No bullets generated for {path} — suppressing jarvis_surface event"
                 )
+                return  # better silent than a broken card
+
+            await self.send_event(
+                {
+                    "event": "jarvis_surface",
+                    "file": path.replace("\\", "/"),
+                    "reason": reason,
+                    "confidence": confidence,
+                    "bullets": bullets,
+                }
+            )
 
         except Exception as e:
             logger.error(f"File watcher _evaluate error for {path}: {e}")
 
 
-async def start(send_event):
+async def start(send_event: Callable, get_mode: Callable[[], str] = None):
     """
     Start the file watcher. Call from main.py lifespan after WebSocket is up.
-    send_event: async callable that sends events to connected WebSocket clients.
-    """
-    project_path = os.environ.get("PROJECT_PATH", ".")
-    loop = asyncio.get_event_loop()
 
-    handler = JarvisHandler(loop=loop, send_event=send_event)
+    send_event: async callable that fans out events to all connected clients.
+    get_mode:   callable returning current AI mode ("local" | "cloud").
+                Defaults to reading AI_MODE env var if not provided.
+    """
+    if get_mode is None:
+        def get_mode():
+            return os.environ.get("AI_MODE", "local")
+
+    project_path = os.environ.get("PROJECT_PATH", ".")
+    loop = asyncio.get_running_loop()  # get_event_loop() deprecated in Python 3.10+
+
+    handler = JarvisHandler(loop=loop, send_event=send_event, get_mode=get_mode)
     observer = Observer()
     observer.schedule(handler, path=project_path, recursive=True)
     observer.start()

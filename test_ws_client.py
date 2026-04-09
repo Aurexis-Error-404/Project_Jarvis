@@ -9,7 +9,7 @@ async def test_websocket():
     try:
         async with websockets.connect(uri) as ws:
             print("Connected! Sending query...")
-            payload = {"query": "Hello JARVIS! This is a test.", "mode": "local"}
+            payload = {"event": "user_query", "query": "Hello JARVIS! This is a test.", "mode": "local"}
             await ws.send(json.dumps(payload))
             
             # Listen for responses (status_update, jarvis_reply, tool info, etc.)
@@ -19,7 +19,7 @@ async def test_websocket():
                     data = json.loads(response)
                     print(f"\nReceived Event [{data.get('event')}]:\n{json.dumps(data, indent=2)}")
                     
-                    if data.get("event") == "jarvis_reply" or data.get("recoverable") is False:
+                    if data.get("event") in ("jarvis_response", "jarvis_error") or data.get("recoverable") is False:
                         break
                 except websockets.exceptions.ConnectionClosed:
                     print("Connection closed by server.")

@@ -1,0 +1,85 @@
+# providers.py — JARVIS AI Provider Configuration
+#
+# MODE LOGIC:
+#   mode="cloud" → task-routed between Gemini + Groq
+#                  error_diagnosis + research_report → Gemini
+#                  everything else                   → Groq
+#
+#   mode="local" → Ollama only (qwen3.5:cloud or OLLAMA_MODEL from env)
+#                  zero bytes leave the machine
+#                  this is the SECURE MODE the user toggles in UI
+
+import os
+
+PROVIDERS = {
+    "gemini": {
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "api_key":  os.getenv("GEMINI_API_KEY"),
+        "model":    os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        "context_window": 1_000_000,
+    },
+    "groq": {
+        "base_url": "https://api.groq.com/openai/v1",
+        "api_key":  os.getenv("GROQ_API_KEY"),
+        "model":    os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        "context_window": 128_000,
+    },
+    "ollama": {
+        "base_url": "http://localhost:11434/v1",
+        "api_key":  "ollama",
+        "model":    os.getenv("OLLAMA_MODEL", "qwen3.5:cloud"),  # local secure mode model
+        "context_window": 32_000,
+    }
+}
+
+# Cloud mode: which tasks go to Gemini vs Groq
+CLOUD_TASK_ROUTING = {
+    # Gemini — quality-critical only (saves your 20 RPD free limit)
+    "error_diagnosis":   "gemini",
+    "research_report":   "gemini",
+
+    # Groq — everything else (14,400 RPD, use freely)
+    "git_summary":       "groq",
+    "commit_message":    "groq",
+    "session_summary":   "groq",
+    "quick_qa":          "groq",
+    "read_codebase":     "groq",
+    "read_git_history":  "groq",
+    "read_session":      "groq",
+    "update_memory":     "groq",
+    "proactive_surface": "groq",
+
+    # Proactive gate is ALWAYS Ollama regardless of mode
+    # (runs 50+ times/hour — never use cloud for this)
+    "proactive_gate":    "ollama",
+}
+
+# Fallback chain within cloud mode
+CLOUD_FALLBACK = {
+    "gemini": "groq",   # Gemini rate-limited → fall to Groq
+    "groq":   None,     # Groq fails → surface error (don't fall to Ollama in cloud mode)
+}
+
+
+def get_provider(task_type: str, mode: str) -> str:
+    """
+    Returns the provider name for a given task and mode.
+
+    mode="local"  → always Ollama (secure mode — user toggled the badge)
+    mode="cloud"  → CLOUD_TASK_ROUTING table (Gemini or Groq based on task)
+    """
+    if mode == "local":
+        return "ollama"
+
+    # Cloud mode — proactive_gate always Ollama even here
+    return CLOUD_TASK_ROUTING.get(task_type, "groq")  # default to Groq
+
+
+def get_fallback(provider_name: str, mode: str):
+    """
+    Returns fallback provider name for cloud mode, or None.
+    Local mode has no fallback — Ollama is the only option.
+    """
+    if mode == "local":
+        return None
+    return CLOUD_FALLBACK.get(provider_name)

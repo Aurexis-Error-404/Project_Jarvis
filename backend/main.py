@@ -23,10 +23,56 @@ logger = logging.getLogger("jarvis.main")
 
 connected_clients: set = set()
 
+# Persists for the process lifetime; updated on mode_change events.
+_current_mode: str = os.environ.get("AI_MODE", "local")
+
+# Populated once when the first client connects (codebase awareness).
+_codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load."
+_codebase_loaded: bool = False
+
+
+async def broadcast_event(payload: dict):
+    """Send an event to ALL currently connected WebSocket clients."""
+    if not connected_clients:
+        return
+    message = json.dumps(payload)
+    dead: set = set()
+    for ws in connected_clients:
+        try:
+            await ws.send(message)
+        except Exception as e:
+            logger.warning(f"broadcast_event failed for a client: {e}")
+            dead.add(ws)
+    connected_clients.difference_update(dead)
+
+
+async def _load_codebase_map() -> str:
+    """
+    Scan the project directory at session start for codebase awareness.
+    Uses codebase_reader — no AI call, just file listing.
+    """
+    from backend.tools.codebase_reader import run as read_codebase
+    result = read_codebase(".")
+    if "error" in result:
+        logger.warning(f"Codebase scan failed: {result['error']}")
+        return "Codebase scan failed. Call read_codebase('.') to retry."
+    files = result.get("files", [])
+    count = result.get("count", len(files))
+    file_list = "\n".join(f"  {f}" for f in files)
+    logger.info(f"Codebase map loaded: {count} files")
+    return f"Project files ({count} total):\n{file_list}"
+
 
 async def ws_handler(websocket):
+    global _current_mode, _codebase_map, _codebase_loaded
+
     connected_clients.add(websocket)
     logger.info(f"Client connected. Total: {len(connected_clients)}")
+
+    # Codebase awareness — scan once on first connection
+    if not _codebase_loaded:
+        _codebase_loaded = True
+        _codebase_map = await _load_codebase_map()
 
     async def send_event(payload: dict):
         try:
@@ -38,23 +84,83 @@ async def ws_handler(websocket):
         async for message in websocket:
             try:
                 data = json.loads(message)
-                query = data.get("query", "")
-                mode = data.get("mode", os.environ.get("AI_MODE", "local"))
+                event_type = data.get("event", "")
 
-                if not query:
-                    await send_event({"event": "error", "message": "Empty query", "recoverable": True})
-                    continue
+                # ── user_query: route to AI ───────────────────────────────
+                if event_type == "user_query":
+                    query = data.get("query", "").strip()
+                    mode = data.get("mode", _current_mode)
 
-                await send_event({"event": "status_update", "message": "Thinking..."})
+                    if not query:
+                        await send_event({
+                            "event": "jarvis_error",
+                            "message": "Empty query",
+                            "recoverable": True,
+                        })
+                        continue
 
-                from backend.ai.claude_client import run as claude_run
-                await claude_run(query=query, mode=mode, send_event=send_event)
+                    await send_event({"event": "status_update", "message": "Thinking..."})
+
+                    from backend.ai.claude_client import run as claude_run
+                    await claude_run(
+                        query=query,
+                        mode=mode,
+                        send_event=send_event,
+                        codebase_map=_codebase_map,
+                    )
+
+                # ── mode_change: update global mode, acknowledge ──────────
+                elif event_type == "mode_change":
+                    new_mode = data.get("mode", "").strip()
+                    if new_mode not in ("local", "cloud"):
+                        await send_event({
+                            "event": "jarvis_error",
+                            "message": f"Invalid mode '{new_mode}'. Expected 'local' or 'cloud'.",
+                            "recoverable": True,
+                        })
+                        continue
+                    _current_mode = new_mode
+                    logger.info(f"Mode changed to: {_current_mode}")
+                    await send_event({"event": "jarvis_mode_ack", "mode": _current_mode})
+
+                # ── surface_dismissed: log only ───────────────────────────
+                elif event_type == "surface_dismissed":
+                    logger.info(f"Surface dismissed: {data.get('file', 'unknown')}")
+
+                # ── legacy / no event field: backwards-compat fallback ────
+                else:
+                    query = data.get("query", "").strip()
+                    if query:
+                        mode = data.get("mode", _current_mode)
+                        logger.warning("Message has no event field — treating as user_query")
+                        await send_event({"event": "status_update", "message": "Thinking..."})
+                        from backend.ai.claude_client import run as claude_run
+                        await claude_run(
+                            query=query,
+                            mode=mode,
+                            send_event=send_event,
+                            codebase_map=_codebase_map,
+                        )
+                    else:
+                        await send_event({
+                            "event": "jarvis_error",
+                            "message": f"Unrecognised event: '{event_type}'",
+                            "recoverable": True,
+                        })
 
             except json.JSONDecodeError:
-                await send_event({"event": "error", "message": "Invalid JSON payload", "recoverable": True})
+                await send_event({
+                    "event": "jarvis_error",
+                    "message": "Invalid JSON payload",
+                    "recoverable": True,
+                })
             except Exception as e:
                 logger.exception(f"Error handling message: {e}")
-                await send_event({"event": "error", "message": str(e), "recoverable": False})
+                await send_event({
+                    "event": "jarvis_error",
+                    "message": str(e),
+                    "recoverable": False,
+                })
     finally:
         connected_clients.discard(websocket)
         logger.info(f"Client disconnected. Total: {len(connected_clients)}")
@@ -68,12 +174,14 @@ async def start_ws_server():
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     ws_task = asyncio.create_task(start_ws_server())
-    # File watcher started here once Phase 1 is complete:
-    # from backend.context.file_watcher import start as start_watcher
-    # watcher_task = asyncio.create_task(start_watcher(broadcast_event))
+    from backend.context.file_watcher import start as start_watcher
+    watcher_task = asyncio.create_task(
+        start_watcher(broadcast_event, get_mode=lambda: _current_mode)
+    )
     yield
+    watcher_task.cancel()
     ws_task.cancel()
 
 
@@ -82,4 +190,9 @@ app = FastAPI(title="JARVIS Backend", lifespan=lifespan)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "connected_clients": len(connected_clients)}
+    return {
+        "status": "ok",
+        "connected_clients": len(connected_clients),
+        "mode": _current_mode,
+        "codebase_loaded": _codebase_loaded,
+    }
