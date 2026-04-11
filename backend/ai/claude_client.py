@@ -65,6 +65,26 @@ def _infer_task_type(query: str) -> str:
             return task_type
     return "quick_qa"
 
+def _format_session_history() -> str:
+    """Read recent sessions from jarvis.json and format for the system prompt."""
+    try:
+        from backend.memory.session_log import read as read_sessions
+        sess = read_sessions(last_n_sessions=3)
+        sessions = sess.get("sessions", [])
+        if not sessions:
+            return "No previous sessions recorded."
+        lines = []
+        for s in sessions:
+            ts = s.get("timestamp", "unknown time")
+            msgs = s.get("messages", 0)
+            mode = s.get("mode", "unknown")
+            lines.append(f"- {ts}: {msgs} messages ({mode} mode)")
+        return "\n".join(lines)
+    except Exception as e:
+        logger.warning(f"Failed to load session history: {e}")
+        return "Session history unavailable."
+
+
 # Cached AsyncOpenAI clients — one per provider, created on first use
 _clients: dict[str, AsyncOpenAI] = {}
 
@@ -217,7 +237,8 @@ async def run(query: str, mode: str, send_event,
     send_event: async callable that sends a WebSocket event dict to the client
     history: prior turns [{role, content}, ...] for session continuity
     """
-    system = prompts.build_system_prompt(codebase_map=codebase_map)
+    session_summary = _format_session_history()
+    system = prompts.build_system_prompt(codebase_map=codebase_map, session_history=session_summary)
     messages = [{"role": "system", "content": system}]
     if history:
         messages.extend(history)

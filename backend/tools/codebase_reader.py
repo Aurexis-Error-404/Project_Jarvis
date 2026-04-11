@@ -9,6 +9,7 @@ NOT path + depth (that was backend CLAUDE.md — see CONFLICTS.md #2).
 """
 
 import logging
+import os
 from pathlib import Path
 
 logger = logging.getLogger("jarvis.codebase_reader")
@@ -35,14 +36,14 @@ def run(file_path: str, lines: str = None) -> dict:
 
 
 def _list_files() -> dict:
-    root = Path(".")
+    root = Path(os.environ.get("PROJECT_PATH", ".")).resolve()
     files = []
     for p in sorted(root.rglob("*")):
         if not p.is_file():
             continue
         if any(skip in p.parts for skip in SKIP_DIRS):
             continue
-        files.append(str(p).replace("\\", "/"))
+        files.append(str(p.relative_to(root)).replace("\\", "/"))
         if len(files) >= MAX_FILES:
             break
     return {
@@ -54,6 +55,9 @@ def _list_files() -> dict:
 
 def _read_file(file_path: str, lines: str = None) -> dict:
     p = Path(file_path)
+    if not p.is_absolute():
+        project_root = Path(os.environ.get("PROJECT_PATH", ".")).resolve()
+        p = project_root / p
     if not p.exists():
         return {"error": f"File not found: {file_path}"}
     if not p.is_file():

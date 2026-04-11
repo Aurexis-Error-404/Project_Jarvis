@@ -10,6 +10,7 @@ NOT limit: int (that was backend CLAUDE.md — see CONFLICTS.md #3).
 """
 
 import logging
+import os
 from datetime import datetime, timedelta, timezone
 
 import git
@@ -22,7 +23,8 @@ MAX_DIFF_CHARS = 3000
 
 def run(since: str, include_diff: bool = False, file_path: str = None) -> dict:
     try:
-        repo = git.Repo(search_parent_directories=True)
+        project_path = os.environ.get("PROJECT_PATH", ".")
+        repo = git.Repo(project_path, search_parent_directories=True)
         commits = _get_commits(repo, since, file_path)
 
         result = []

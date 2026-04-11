@@ -20,7 +20,10 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('jarvis_reports') || '[]'); }
     catch { return []; }
   });
-  const [conversations, setConversations] = useState([]); // { id, title, time, messages[] }
+  const [conversations, setConversations] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('jarvis_conversations') || '[]'); }
+    catch { return []; }
+  });
   const [activeConvId, setActiveConvId] = useState(null);
   const [showStartup, setShowStartup] = useState(true);
   const [activeTools, setActiveTools] = useState([]);
@@ -32,6 +35,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('jarvis_reports', JSON.stringify(reports));
   }, [reports]);
+
+  // Persist conversations across restarts
+  useEffect(() => {
+    localStorage.setItem('jarvis_conversations', JSON.stringify(conversations));
+  }, [conversations]);
 
   // Save messages into the active conversation on every change
   useEffect(() => {
@@ -249,6 +257,7 @@ export default function App() {
         onSend={handleSend}
         onModeToggle={handleModeToggle}
         activeTools={activeTools}
+        connectionStatus={connectionStatus}
       />
       <SidebarRight reports={reports} />
     </div>

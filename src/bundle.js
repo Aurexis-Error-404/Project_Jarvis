@@ -19643,7 +19643,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     update_project_memory: "Updating memory",
     read_session_history: "Loading session history"
   };
-  function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [] }) {
+  function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [], connectionStatus }) {
     return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "chat-area", children: [
       /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "chat-header", style: { WebkitAppRegion: "drag" }, children: [
         /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "chat-title", children: "Chat" }),
@@ -19691,7 +19691,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
                 ref: inputRef,
                 type: "text",
                 placeholder: mode === "local" ? "Message JARVIS (Secure Mode)..." : "Message JARVIS...",
-                disabled: isStreaming,
+                disabled: isStreaming || connectionStatus !== "connected",
                 className: "chat-input"
               }
             )
@@ -19703,7 +19703,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
             "button",
             {
               className: "btn-send",
-              disabled: isStreaming,
+              disabled: isStreaming || connectionStatus !== "connected",
               onClick: () => {
                 const val = inputRef.current?.value?.trim();
                 if (val) {
@@ -19738,7 +19738,13 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         return [];
       }
     });
-    const [conversations, setConversations] = (0, import_react3.useState)([]);
+    const [conversations, setConversations] = (0, import_react3.useState)(() => {
+      try {
+        return JSON.parse(localStorage.getItem("jarvis_conversations") || "[]");
+      } catch {
+        return [];
+      }
+    });
     const [activeConvId, setActiveConvId] = (0, import_react3.useState)(null);
     const [showStartup, setShowStartup] = (0, import_react3.useState)(true);
     const [activeTools, setActiveTools] = (0, import_react3.useState)([]);
@@ -19748,6 +19754,9 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     (0, import_react3.useEffect)(() => {
       localStorage.setItem("jarvis_reports", JSON.stringify(reports));
     }, [reports]);
+    (0, import_react3.useEffect)(() => {
+      localStorage.setItem("jarvis_conversations", JSON.stringify(conversations));
+    }, [conversations]);
     (0, import_react3.useEffect)(() => {
       if (activeConvId && messages.length > 0) {
         setConversations((prev) => prev.map(
@@ -19967,7 +19976,8 @@ Please report this to https://github.com/markedjs/marked.`, e) {
           messagesEndRef,
           onSend: handleSend,
           onModeToggle: handleModeToggle,
-          activeTools
+          activeTools,
+          connectionStatus
         }
       ),
       /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(SidebarRight, { reports })

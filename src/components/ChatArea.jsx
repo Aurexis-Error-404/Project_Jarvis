@@ -11,7 +11,7 @@ const TOOL_LABELS = {
   read_session_history: 'Loading session history',
 };
 
-export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [] }) {
+export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [], connectionStatus }) {
   return (
     <div className="chat-area">
       <div className="chat-header" style={{ WebkitAppRegion: 'drag' }}>
@@ -82,7 +82,7 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
               ref={inputRef}
               type="text"
               placeholder={mode === 'local' ? 'Message JARVIS (Secure Mode)...' : 'Message JARVIS...'}
-              disabled={isStreaming}
+              disabled={isStreaming || connectionStatus !== 'connected'}
               className="chat-input"
             />
           </form>
@@ -92,7 +92,7 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
             </span>
             <button
               className="btn-send"
-              disabled={isStreaming}
+              disabled={isStreaming || connectionStatus !== 'connected'}
               onClick={() => {
                 const val = inputRef.current?.value?.trim();
                 if (val) { onSend(val); inputRef.current.value = ''; }
