@@ -1,0 +1,113 @@
+# ─────────────────────────────────────────────
+# JARVIS .gitignore
+# Stack: Electron + React + Python FastAPI + Ollama
+# ─────────────────────────────────────────────
+
+# ── Secrets & Environment ─────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.secret
+
+# Keep the template — never the real keys
+!.env.example
+
+# ── Python ────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# ── Node / Electron / React ───────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+yarn.lock
+
+# Electron build outputs
+out/
+release/
+dist-electron/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+
+# Next.js / Vite (if added later)
+.next/
+.nuxt/
+.vite/
+
+# ── Logs ──────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ── OS Artifacts ──────────────────────────────
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── IDE / Editor ──────────────────────────────
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Ollama / Model Cache ──────────────────────
+# Don't commit locally pulled model weights
+*.gguf
+*.bin
+models/
+
+# ── JARVIS Specific ───────────────────────────
+# Session logs written at runtime (jarvis.json tracks these)
+session_*.json
+
+# Compiled/cached prompt outputs
+prompts/__pycache__/
+*.prompt.cache
+
+# Electron app temp files
+.electron-gyp/

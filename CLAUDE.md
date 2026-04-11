@@ -12,8 +12,8 @@ This is a **48-hour sprint project** with strict feature freeze at Hour 36. See 
 
 - **Frontend**: Electron + React
 - **Backend**: Python FastAPI + WebSocket server
-- **AI Cloud**: Claude API (sonnet-4-20250514 for reasoning, haiku-4-5-20251001 for structured output)
-- **AI Local**: Ollama + CodeLlama (for gate and secure mode)
+- **AI Cloud**: Gemini 2.5 Flash (quality-critical) + Groq Llama-3.3-70B (general)
+- **AI Local**: Ollama + Qwen 3.5 (for gate and secure mode)
 - **Project Memory**: jarvis.json (structured schema at repo root)
 
 ## Critical Architecture Decisions
@@ -21,10 +21,10 @@ This is a **48-hour sprint project** with strict feature freeze at Hour 36. See 
 These decisions are locked — do not change without explicit approval from Rahul (AI Lead) or Person 4 (Integration Lead).
 
 ### AI Model Routing
-- **Proactive gate**: Ollama/CodeLlama (must be free/local — gate runs 50+ times/hour)
-- **Error diagnosis**: Claude Sonnet (user-facing quality requires deep reasoning)
-- **Summaries & commit messages**: Claude Haiku (structured output, 4x lower cost)
-- **Local secure mode**: CodeLlama via Ollama (zero bytes leave machine — no API calls)
+- **Proactive gate**: Ollama/Qwen 3.5 (must be free/local — gate runs 50+ times/hour)
+- **Error diagnosis & research**: Gemini 2.5 Flash (user-facing quality requires deep reasoning)
+- **Summaries, commit messages & general QA**: Groq Llama-3.3-70B (structured output, high throughput)
+- **Local secure mode**: Qwen 3.5 via Ollama (zero bytes leave machine — no API calls)
 
 ### Project Memory
 - **Format**: `jarvis.json` with structured schema (never free-text)
@@ -33,7 +33,7 @@ These decisions are locked — do not change without explicit approval from Rahu
 
 ### Proactive Engine
 - **Gate**: Ollama evaluates context → surface or not
-- **Surface**: If gate passes, haiku generates concise card
+- **Surface**: If gate passes, Groq generates concise card
 - **Cooldown**: Window TBD (5 min or 10 min — see open_questions in jarvis.json)
 
 ## WebSocket Contract (LOCKED)
@@ -46,7 +46,7 @@ These event names and directions must not change without updating both frontend 
 - `surface_dismissed` — User dismissed surface card
 
 **Backend → Frontend**:
-- `jarvis_stream_chunk` — Streaming text chunk from Claude
+- `jarvis_stream_chunk` — Streaming text chunk from AI
 - `jarvis_surface` — Proactive surface card data
 - `jarvis_response` — Non-streamed full response
 - `jarvis_mode_ack` — Backend confirmed mode switch
@@ -101,7 +101,7 @@ npm start
 ## Configuration
 
 ### Environment Variables
-- `ANTHROPIC_API_KEY`: Required for Claude API calls (error diagnosis, summaries)
+- `GEMINI_API_KEY`: Required for Gemini API calls (error diagnosis, research)
 - `AI_MODE`: Set to `local` by default (Ollama during development). Switch to `cloud` only for testing research report pipeline.
 - See `.env.example` for template.
 
@@ -110,9 +110,9 @@ npm start
 {
   "ai_config": {
     "mode": "local",
-    "cloud_model": "claude-sonnet-4-20250514",
-    "haiku_model": "claude-haiku-4-5-20251001",
-    "local_model": "ollama/codellama",
+    "cloud_model": "gemini-2.5-flash",
+    "haiku_model": "llama-3.3-70b-versatile (Groq)",
+    "local_model": "ollama/qwen3.5:cloud",
     "max_tool_iterations": 10,
     "system_prompt_version": "v1"
   }
@@ -141,7 +141,7 @@ These values are locked. Changing them requires approval.
 These are the only features targeted for the sprint:
 
 - [ ] Hotkey overlay (Ctrl+Space)
-- [ ] Proactive context surface (file watcher + Ollama gate + haiku surface)
+- [ ] Proactive context surface (file watcher + Ollama gate + Groq surface generation)
 - [ ] Codebase awareness (reads /src at session start)
 - [ ] Project memory (jarvis.json — structured, never hallucinated)
 - [ ] Error diagnosis with codebase context
@@ -153,7 +153,7 @@ These are the only features targeted for the sprint:
 
 - **Hard cap**: $20 API spend
 - **Default AI_MODE**: `local` (Ollama during development)
-- **Proactive gate**: Always uses Ollama, never Claude API
+- **Proactive gate**: Always uses Ollama, never cloud API
 - **Only switch to `cloud=true`** for testing research report pipeline
 - Monitor spending via `jarvis.json` session_log
 
@@ -182,7 +182,7 @@ These are hard deadlines with owners:
 
 ### Setting up development
 1. Clone the repository
-2. Copy `.env.example` to `.env` and add `ANTHROPIC_API_KEY`
+2. Copy `.env.example` to `.env` and add `GEMINI_API_KEY`
 3. Pull the relevant branch (e.g., `ai`, `backend`, `frontend`)
 4. Install dependencies in `backend/` and `frontend/` as they're added
 5. Follow startup order (Ollama → backend → frontend)

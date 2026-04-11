@@ -11,7 +11,7 @@
             "Python",
             "WebSocket"
         ],
-        "current_focus": "Proactive developer intelligence — zero search paradigm",
+        "current_focus": "Proactive developer intelligence \u2014 zero search paradigm",
         "repo_root": "/src"
     },
     "decisions": [
@@ -19,25 +19,25 @@
             "what": "AI engine for proactive gate",
             "chose": "Ollama / CodeLlama",
             "rejected": "Claude API",
-            "reason": "Gate runs 50+ times per hour — must be free and local"
+            "reason": "Gate runs 50+ times per hour \u2014 must be free and local"
         },
         {
             "what": "AI engine for error diagnosis",
-            "chose": "claude-sonnet-4-20250514",
-            "rejected": "claude-haiku-4-5-20251001",
-            "reason": "Error diagnosis is user-facing quality — needs deep reasoning"
+            "chose": "gemini-2.5-flash",
+            "rejected": "llama-3.3-70b-versatile",
+            "reason": "Error diagnosis is user-facing quality \u2014 needs deep reasoning"
         },
         {
             "what": "AI engine for summaries and commit messages",
-            "chose": "claude-haiku-4-5-20251001",
-            "rejected": "claude-sonnet-4-20250514",
-            "reason": "Structured short output — haiku matches sonnet quality at 4x lower cost"
+            "chose": "llama-3.3-70b-versatile",
+            "rejected": "gemini-2.5-flash",
+            "reason": "Structured short output \u2014 Groq matches Gemini quality at lower latency and cost"
         },
         {
             "what": "Project memory format",
             "chose": "jarvis.json structured schema",
             "rejected": "free-text notes",
-            "reason": "Structured fields prevent hallucination — Claude reads schema not prose"
+            "reason": "Structured fields prevent hallucination \u2014 Claude reads schema not prose"
         },
         {
             "what": "Local secure mode model",
@@ -47,9 +47,9 @@
         }
     ],
     "open_questions": [
-        "Proactive gate cooldown window — 5 minutes or 10 minutes?",
-        "Max tool iterations before hard stop — 10 or 15?",
-        "Surface card auto-dismiss timer — 8 seconds or 12 seconds?"
+        "Proactive gate cooldown window \u2014 5 minutes or 10 minutes?",
+        "Max tool iterations before hard stop \u2014 10 or 15?",
+        "Surface card auto-dismiss timer \u2014 8 seconds or 12 seconds?"
     ],
     "rejected_approaches": [
         "Claude API for proactive gate",
@@ -59,9 +59,9 @@
     ],
     "ai_config": {
         "mode": "local",
-        "cloud_model": "claude-sonnet-4-20250514",
-        "haiku_model": "claude-haiku-4-5-20251001",
-        "local_model": "ollama/codellama",
+        "cloud_model": "gemini-2.5-flash",
+        "fallback_model": "llama-3.3-70b-versatile",
+        "local_model": "ollama/qwen3.5:cloud",
         "max_tool_iterations": 10,
         "system_prompt_version": "v1"
     },
@@ -80,5 +80,26 @@
             "jarvis_error"
         ]
     },
-    "session_log": []
+    "session_log": [
+        {
+            "timestamp": "2026-04-10T13:34:07.248055+00:00",
+            "messages": 1,
+            "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-11T09:19:23.394813+00:00",
+            "messages": 4,
+            "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-11T09:33:43.418705+00:00",
+            "messages": 5,
+            "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-11T10:05:32.351325+00:00",
+            "messages": 12,
+            "mode": "cloud"
+        }
+    ]
 }
