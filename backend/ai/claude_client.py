@@ -15,7 +15,6 @@ import json as _json
 import logging
 import os
 import time
-import traceback
 
 from openai import AsyncOpenAI
 
@@ -225,7 +224,9 @@ async def run(query: str, mode: str, send_event,
     messages.append({"role": "user", "content": query})
 
     # Infer task type from query — drives provider routing and adaptive params
-    task_type = _infer_task_type(query)
+    # Local mode always uses quick_qa — Ollama works best with fast params
+    # (research_report would set max_tokens=8192 which is very slow on Ollama)
+    task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
     params = _TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096})
     logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
 
@@ -258,8 +259,10 @@ async def run(query: str, mode: str, send_event,
 
         if choice.finish_reason == "stop":
             text = choice.message.content or ""
-            # After tool calls, try real token-by-token streaming
-            if iteration > 0:
+            # Only use real streaming API for cloud mode after tool calls.
+            # Ollama's stream=True can hang indefinitely (never sends [DONE]),
+            # which would permanently disable the chat input.
+            if iteration > 0 and mode == "cloud":
                 streamed = await _stream_final_response(task_type, mode, messages, send_event)
                 if streamed is not None:
                     return streamed
