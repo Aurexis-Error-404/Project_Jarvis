@@ -14,6 +14,7 @@ import datetime
 import json as _json
 import logging
 import os
+import time
 import traceback
 
 from openai import AsyncOpenAI
@@ -26,6 +27,17 @@ from backend.tools.tool_dispatcher import dispatch_tool
 logger = logging.getLogger("jarvis.claude")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("MAX_TOOL_ITERATIONS", "10"))
+HISTORY_TOKEN_BUDGET = 30_000
+MAX_TOOL_OUTPUT_CHARS = 12_000
+
+
+def _trim_history(messages: list) -> list:
+    """Drop oldest non-system messages when history exceeds token budget."""
+    total_chars = sum(len(str(m)) for m in messages)
+    while total_chars // 4 > HISTORY_TOKEN_BUDGET and len(messages) > 2:
+        messages.pop(1)  # keep system prompt at [0]
+        total_chars = sum(len(str(m)) for m in messages)
+    return messages
 
 # Priority-ordered task inference — first match wins.
 # More specific patterns come first to avoid false matches
@@ -73,11 +85,13 @@ async def _call_provider(provider_name: str, messages: list, tools: list = None,
     """Call a single provider. Raises on failure."""
     p = PROVIDERS[provider_name]
     client = _get_client(provider_name)
+    # Ollama's OpenAI-compat endpoint accepts tools but chokes on tool_choice="auto"
+    tool_choice_val = "auto" if (tools and provider_name != "ollama") else None
     return await client.chat.completions.create(
         model=p["model"],
         messages=messages,
         tools=tools if tools else None,
-        tool_choice="auto" if tools else None,
+        tool_choice=tool_choice_val,
         max_tokens=max_tokens,
         temperature=temperature,
         stream=stream,
@@ -122,7 +136,7 @@ async def _call_with_fallback(
                 temperature=temperature, max_tokens=max_tokens, stream=stream,
             )
             if name != provider_name:
-                logger.info(f"Used fallback provider: {name} (primary was {provider_name})")
+                logger.info(f"Fallback: {provider_name} → {name} for task={task_type}")
             else:
                 logger.debug(f"Provider: {name} | task: {task_type} | mode: {mode}")
             return response
@@ -149,7 +163,7 @@ async def _stream_text(text: str, send_event) -> None:
         await send_event(
             {"event": "jarvis_stream_chunk", "text": chunk, "done": False}
         )
-        await asyncio.sleep(0.015)
+        await asyncio.sleep(0.005)
 
     await send_event({"event": "jarvis_stream_chunk", "text": "", "done": True})
 
@@ -194,31 +208,33 @@ async def _stream_final_response(task_type, mode, messages, send_event):
 
 
 async def run(query: str, mode: str, send_event,
-              codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.") -> str:
+              codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.",
+              history: list = None) -> str:
     """
     Main entry point — runs the full tool-use loop for a user query.
 
     query: user message text
     mode: "local" | "cloud"
     send_event: async callable that sends a WebSocket event dict to the client
+    history: prior turns [{role, content}, ...] for session continuity
     """
     system = prompts.build_system_prompt(codebase_map=codebase_map)
-    messages = [
-        {"role": "system", "content": system},
-        {"role": "user", "content": query},
-    ]
+    messages = [{"role": "system", "content": system}]
+    if history:
+        messages.extend(history)
+    messages.append({"role": "user", "content": query})
 
-    # Infer task type from query — drives cloud provider routing (Gemini vs Groq)
-    task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
+    # Infer task type from query — drives provider routing and adaptive params
+    task_type = _infer_task_type(query)
     params = _TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096})
     logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
 
-    # Ollama models often don't support OpenAI tool_choice format reliably.
-    # In local mode, skip tools and let the model respond directly with the
-    # full system prompt context. This is faster and more reliable.
-    use_tools = OAI_TOOL_SCHEMAS if mode == "cloud" else None
+    # Enable tools for all modes — Ollama's OpenAI-compat endpoint supports
+    # tool definitions (tool_choice handled separately in _call_provider)
+    use_tools = OAI_TOOL_SCHEMAS
 
     for iteration in range(MAX_TOOL_ITERATIONS):
+        _trim_history(messages)
         try:
             response = await _call_with_fallback(
                 task_type=task_type,
@@ -228,14 +244,25 @@ async def run(query: str, mode: str, send_event,
                 **params,
             )
         except RuntimeError as e:
-            logger.error(str(e))
-            await send_event({"event": "jarvis_error", "message": str(e), "recoverable": False})
+            err = str(e)
+            logger.error(err)
+            is_ollama = "ollama" in err.lower() or "connection" in err.lower()
+            await send_event({
+                "event": "jarvis_error",
+                "message": "Ollama is not running. Start with: ollama serve" if is_ollama else err,
+                "recoverable": is_ollama,
+            })
             return f"API error: {e}"
 
         choice = response.choices[0]
 
         if choice.finish_reason == "stop":
             text = choice.message.content or ""
+            # After tool calls, try real token-by-token streaming
+            if iteration > 0:
+                streamed = await _stream_final_response(task_type, mode, messages, send_event)
+                if streamed is not None:
+                    return streamed
             await _stream_text(text, send_event)
             return text
 
@@ -274,23 +301,29 @@ async def run(query: str, mode: str, send_event,
                     })
                     continue
 
-                await send_event(
-                    {"event": "tool_call_status", "tool": tool_name, "status": "start"}
-                )
+                await send_event({
+                    "event": "tool_call_status",
+                    "tool": tool_name,
+                    "status": "start",
+                    "params": {k: str(v)[:80] for k, v in tool_input.items()},
+                })
 
+                tool_start = time.monotonic()
                 result = await dispatch_tool(tool_name, tool_input)
+                tool_elapsed = int((time.monotonic() - tool_start) * 1000)
 
-                # Serialize result as clean JSON for the model
+                # Serialize result as clean JSON for the model (truncate large outputs)
                 result_json = _json.dumps(result, ensure_ascii=False, default=str)
+                if len(result_json) > MAX_TOOL_OUTPUT_CHARS:
+                    result_json = result_json[:MAX_TOOL_OUTPUT_CHARS] + '..."}'
 
-                await send_event(
-                    {
-                        "event": "tool_call_status",
-                        "tool": tool_name,
-                        "status": "done",
-                        "result_summary": result_json[:120],
-                    }
-                )
+                await send_event({
+                    "event": "tool_call_status",
+                    "tool": tool_name,
+                    "status": "done",
+                    "result_summary": result_json[:200],
+                    "duration_ms": tool_elapsed,
+                })
 
                 # CRITICAL: each result is its own "tool" role message
                 # CRITICAL: always use tc.id — never construct tool_call_id manually

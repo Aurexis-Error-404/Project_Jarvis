@@ -2,7 +2,7 @@
 // Frameless, transparent, always-on-top JARVIS overlay
 // Toggled by Ctrl+Space (fallback: Ctrl+Shift+Space), hidden by default, system tray icon
 
-const { app, BrowserWindow, globalShortcut, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, globalShortcut, Tray, Menu, nativeImage, ipcMain, dialog } = require('electron');
 const path = require('path');
 
 // ─── Redirect userData before anything else ───────────────
@@ -55,6 +55,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,          // preload uses require('path') and shell — needs Node access
     },
   });
 
@@ -160,6 +161,16 @@ function createTray() {
 app.whenReady().then(() => {
   createWindow();
   createTray();
+
+  // IPC: let renderer open a native directory picker
+  ipcMain.handle('select-project-dir', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Select Project Directory',
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
 
   // Register global hotkey.
   // Ctrl+Space is reserved by Windows IME on some systems — fall back

@@ -103,6 +103,10 @@ export default function useWebSocket(url, handlers = {}) {
           h.onToolCallStatus?.(data);
           break;
 
+        case 'project_path_ack':
+          h.onProjectPathAck?.(data);
+          break;
+
         default:
           console.warn('[WS] Unknown event:', data.event, data);
       }

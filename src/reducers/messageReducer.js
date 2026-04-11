@@ -23,6 +23,8 @@ export default function messageReducer(state, action) {
       return [...state, { id: _uid(), role: 'error', text: action.message, timestamp: new Date() }];
     case 'CLEAR':
       return [];
+    case 'RESTORE_MESSAGES':
+      return action.messages;
     default:
       return state;
   }

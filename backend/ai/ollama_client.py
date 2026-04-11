@@ -20,12 +20,21 @@ OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen3.5:cloud")
 GATE_THRESHOLD = float(os.environ.get("OLLAMA_GATE_THRESHOLD", "0.7"))
 
 GATE_PROMPT_TEMPLATE = """Respond with ONLY a JSON object. No other text.
-No explanation. No code blocks. No markdown. Just the JSON:
+No explanation. No code blocks. No markdown. Just JSON.
 
-{{"should_surface": true, "confidence": 0.8, "reason": "one sentence"}}
+{{"should_surface": true or false, "confidence": 0.0 to 1.0, "reason": "one sentence max"}}
 
-Signal: {signal_type} — {file_path}
-Project focus: {current_focus}
+Rules:
+- should_surface true: file is actively being worked on AND relates to current focus
+- should_surface false: config file, dependency, test file, file surfaced in last 5 minutes
+- confidence above 0.7 required for should_surface true
+
+Signal:
+File changed: {file_path}
+File type: {file_extension}
+Last surfaced: {last_surfaced_minutes} minutes ago
+Current project focus: {current_focus}
+Recent files touched: {recent_files}
 
 JSON:"""
 
@@ -70,15 +79,19 @@ def parse_ollama_json(raw: str) -> dict:
     return {"should_surface": False, "confidence": 0.0, "reason": "parse failed — invalid JSON"}
 
 
-async def gate(signal_type: str, file_path: str, current_focus: str) -> dict:
+async def gate(signal_type: str, file_path: str, current_focus: str,
+               file_extension: str = "", last_surfaced_minutes: int = 999,
+               recent_files: str = "") -> dict:
     """
     Run the proactive gate — asks Ollama whether to surface a context card.
     Returns: {"should_surface": bool, "confidence": float, "reason": str}
     """
     prompt = GATE_PROMPT_TEMPLATE.format(
-        signal_type=signal_type,
         file_path=file_path,
+        file_extension=file_extension or os.path.splitext(file_path)[1] or "unknown",
+        last_surfaced_minutes=last_surfaced_minutes,
         current_focus=current_focus,
+        recent_files=recent_files,
     )
 
     try:

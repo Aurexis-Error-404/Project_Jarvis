@@ -18,7 +18,7 @@ def _build_providers() -> dict:
         "gemini": {
             "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
             "api_key":  os.getenv("GEMINI_API_KEY"),
-            "model":    os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+            "model":    os.getenv("GEMINI_MODEL", "gemini-2.5-flash-preview-04-17"),
             "context_window": 1_000_000,
         },
         "groq": {

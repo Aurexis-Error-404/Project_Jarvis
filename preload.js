@@ -25,6 +25,12 @@ contextBridge.exposeInMainWorld('jarvis', {
   },
 
   /**
+   * Open a native OS directory picker and return the selected path.
+   * @returns {Promise<string|null>} selected path or null if cancelled
+   */
+  selectProjectDir: () => ipcRenderer.invoke('select-project-dir'),
+
+  /**
    * Open a URL in the system default browser.
    * Safe alternative to shell.openExternal that doesn't require nodeIntegration.
    * @param {string} url - URL to open

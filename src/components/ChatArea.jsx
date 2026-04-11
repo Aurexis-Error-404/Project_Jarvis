@@ -1,5 +1,6 @@
 import ModeToggle from './ModeToggle';
 import { IconSend } from './Icons';
+import renderMarkdown from '../utils/renderMarkdown';
 
 const TOOL_LABELS = {
   read_codebase: 'Reading codebase',
@@ -32,7 +33,11 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
             {messages.map((msg) => (
               <div key={msg.id} className={`message-row ${msg.role}`}>
                 <div className={`message-bubble ${msg.role}`}>
-                  {msg.text}
+                  {msg.role === 'jarvis' ? (
+                    <div className="markdown-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.text) }} />
+                  ) : (
+                    msg.text
+                  )}
                   {msg.streaming && <span className="streaming-cursor">▊</span>}
                 </div>
               </div>
@@ -40,10 +45,18 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
             {/* Tool progress indicators */}
             {activeTools.length > 0 && (
               <div className="tool-progress">
-                {activeTools.map((tool, i) => (
-                  <div key={i} className="tool-progress-item">
-                    <div className="tool-progress-dot" />
-                    {TOOL_LABELS[tool] || tool}...
+                {activeTools.map((t, i) => (
+                  <div key={i} className={`tool-progress-item ${t.status || 'running'}`}>
+                    <div className={`tool-progress-dot ${t.status || 'running'}`} />
+                    <span className="tool-name">{TOOL_LABELS[t.tool] || t.tool}...</span>
+                    {t.params && Object.keys(t.params).length > 0 && (
+                      <span className="tool-params">
+                        {Object.entries(t.params).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                      </span>
+                    )}
+                    {t.status === 'done' && t.duration != null && (
+                      <span className="tool-duration">{t.duration}ms</span>
+                    )}
                   </div>
                 ))}
               </div>

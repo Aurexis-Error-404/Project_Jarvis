@@ -11,19 +11,40 @@ export default function App() {
   const [messages, dispatch] = useReducer(messageReducer, []);
   const [isStreaming, setIsStreaming] = useState(false);
   const isStreamingRef = useRef(false);
+  const discardStreamRef = useRef(false);
+  const manualSplashRef = useRef(false);
   const [mode, setMode] = useState('local');
   const [surfaceData, setSurfaceData] = useState(null);
-  const [reportReady, setReportReady] = useState(null); // { path }
-  const [reports, setReports] = useState([]); // list of generated reports
-  const [conversations, setConversations] = useState([]); // conversation history
+  const [reportReady, setReportReady] = useState(null);
+  const [reports, setReports] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('jarvis_reports') || '[]'); }
+    catch { return []; }
+  });
+  const [conversations, setConversations] = useState([]); // { id, title, time, messages[] }
   const [activeConvId, setActiveConvId] = useState(null);
   const [showStartup, setShowStartup] = useState(true);
-  const [activeTools, setActiveTools] = useState([]); // tools currently running
+  const [activeTools, setActiveTools] = useState([]);
+  const [projectPath, setProjectPath] = useState(null);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  // Persist reports across restarts
+  useEffect(() => {
+    localStorage.setItem('jarvis_reports', JSON.stringify(reports));
+  }, [reports]);
+
+  // Save messages into the active conversation on every change
+  useEffect(() => {
+    if (activeConvId && messages.length > 0) {
+      setConversations(prev => prev.map(c =>
+        c.id === activeConvId ? { ...c, messages } : c
+      ));
+    }
+  }, [messages, activeConvId]);
+
   const { sendMessage, connectionStatus } = useWebSocket('ws://localhost:8765', {
     onStreamChunk: (event) => {
+      if (discardStreamRef.current) return;
       if (!isStreamingRef.current) {
         isStreamingRef.current = true;
         setIsStreaming(true);
@@ -57,12 +78,24 @@ export default function App() {
       const name = event.path.split(/[\\/]/).pop() || 'Report';
       setReports(prev => [{ path: event.path, name, time: new Date().toLocaleTimeString() }, ...prev]);
     },
-    onStatusUpdate: () => { /* transient — backend signals thinking start, no UI action needed */ },
+    onStatusUpdate: () => { /* transient */ },
+    onProjectPathAck: (event) => { setProjectPath(event.path); },
     onToolCallStatus: (event) => {
       if (event.status === 'start') {
-        setActiveTools(prev => [...prev, event.tool]);
+        setActiveTools(prev => [...prev, {
+          tool: event.tool, params: event.params || {}, status: 'running',
+        }]);
       } else {
-        setActiveTools(prev => prev.filter(t => t !== event.tool));
+        setActiveTools(prev => prev.map(t =>
+          t.tool === event.tool && t.status === 'running'
+            ? { ...t, status: 'done', duration: event.duration_ms }
+            : t
+        ));
+        setTimeout(() => {
+          setActiveTools(prev => prev.filter(t =>
+            !(t.tool === event.tool && t.status === 'done')
+          ));
+        }, 1500);
       }
     },
   });
@@ -75,11 +108,22 @@ export default function App() {
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') setShowStartup(true);
+      if (e.key === 'Escape') {
+        manualSplashRef.current = true;
+        setShowStartup(true);
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Auto-skip splash on connect — but only if user didn't manually navigate here
+  useEffect(() => {
+    if (showStartup && connectionStatus === 'connected' && !manualSplashRef.current) {
+      const t = setTimeout(() => setShowStartup(false), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [showStartup, connectionStatus]);
 
   useEffect(() => {
     if (connectionStatus === 'disconnected' && isStreamingRef.current) {
@@ -93,6 +137,7 @@ export default function App() {
   }, [messages]);
 
   const handleSend = useCallback((text) => {
+    discardStreamRef.current = false;
     if (!text.trim() || isStreaming) return;
     dispatch({ type: 'ADD_USER_MESSAGE', text: text.trim() });
     dispatch({ type: 'START_STREAM' });
@@ -104,7 +149,7 @@ export default function App() {
       const id = Date.now().toString();
       const title = text.trim().slice(0, 40) + (text.trim().length > 40 ? '...' : '');
       setActiveConvId(id);
-      setConversations(prev => [{ id, title, time: new Date().toLocaleTimeString() }, ...prev]);
+      setConversations(prev => [{ id, title, time: new Date().toLocaleTimeString(), messages: [] }, ...prev]);
     }
   }, [isStreaming, mode, sendMessage, messages.length, activeConvId]);
 
@@ -115,13 +160,35 @@ export default function App() {
   }, [mode, sendMessage]);
 
   const handleNewSession = useCallback(() => {
+    discardStreamRef.current = true;
     dispatch({ type: 'CLEAR' });
     setActiveConvId(null);
     setActiveTools([]);
     setIsStreaming(false);
     isStreamingRef.current = false;
+    setReportReady(null);
+    setSurfaceData(null);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
+
+  const handleSelectConv = useCallback((convId) => {
+    if (convId === activeConvId) return;
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv?.messages?.length) return;
+    discardStreamRef.current = true;
+    isStreamingRef.current = false;
+    setIsStreaming(false);
+    setActiveTools([]);
+    setActiveConvId(convId);
+    dispatch({ type: 'RESTORE_MESSAGES', messages: conv.messages });
+  }, [activeConvId, conversations]);
+
+  const handleSelectProject = useCallback(async () => {
+    const dir = await window.jarvis?.selectProjectDir();
+    if (dir) {
+      sendMessage({ event: 'set_project_path', path: dir });
+    }
+  }, [sendMessage]);
 
   const handleDismissSurface = useCallback(() => {
     if (surfaceData) {
@@ -134,7 +201,7 @@ export default function App() {
     return (
       <SplashScreen
         connectionStatus={connectionStatus}
-        onStart={() => setShowStartup(false)}
+        onStart={() => { manualSplashRef.current = false; setShowStartup(false); }}
       />
     );
   }
@@ -165,10 +232,13 @@ export default function App() {
       )}
       <SidebarLeft
         connectionStatus={connectionStatus}
-        onGoHome={() => setShowStartup(true)}
+        onGoHome={() => { manualSplashRef.current = true; setShowStartup(true); }}
         onNewSession={handleNewSession}
         conversations={conversations}
         activeConvId={activeConvId}
+        onSelectConv={handleSelectConv}
+        projectPath={projectPath}
+        onSelectProject={handleSelectProject}
       />
       <ChatArea
         messages={messages}

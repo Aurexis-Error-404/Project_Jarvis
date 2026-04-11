@@ -33,7 +33,7 @@ These decisions are locked — do not change without explicit approval from Rahu
 
 ### Proactive Engine
 - **Gate**: Ollama evaluates context → surface or not
-- **Surface**: If gate passes, haiku generates concise card
+- **Surface**: If gate passes, Groq generates concise card
 - **Cooldown**: Window TBD (5 min or 10 min — see open_questions in jarvis.json)
 
 ## WebSocket Contract (LOCKED)
@@ -46,7 +46,7 @@ These event names and directions must not change without updating both frontend 
 - `surface_dismissed` — User dismissed surface card
 
 **Backend → Frontend**:
-- `jarvis_stream_chunk` — Streaming text chunk from Claude
+- `jarvis_stream_chunk` — Streaming text chunk from AI
 - `jarvis_surface` — Proactive surface card data
 - `jarvis_response` — Non-streamed full response
 - `jarvis_mode_ack` — Backend confirmed mode switch
@@ -101,7 +101,7 @@ npm start
 ## Configuration
 
 ### Environment Variables
-- `GEMINI_API_KEY`: Required for Claude API calls (error diagnosis, summaries)
+- `GEMINI_API_KEY`: Required for Gemini API calls (error diagnosis, research)
 - `AI_MODE`: Set to `local` by default (Ollama during development). Switch to `cloud` only for testing research report pipeline.
 - See `.env.example` for template.
 
@@ -141,7 +141,7 @@ These values are locked. Changing them requires approval.
 These are the only features targeted for the sprint:
 
 - [ ] Hotkey overlay (Ctrl+Space)
-- [ ] Proactive context surface (file watcher + Ollama gate + haiku surface)
+- [ ] Proactive context surface (file watcher + Ollama gate + Groq surface generation)
 - [ ] Codebase awareness (reads /src at session start)
 - [ ] Project memory (jarvis.json — structured, never hallucinated)
 - [ ] Error diagnosis with codebase context
@@ -153,7 +153,7 @@ These are the only features targeted for the sprint:
 
 - **Hard cap**: $20 API spend
 - **Default AI_MODE**: `local` (Ollama during development)
-- **Proactive gate**: Always uses Ollama, never Claude API
+- **Proactive gate**: Always uses Ollama, never cloud API
 - **Only switch to `cloud=true`** for testing research report pipeline
 - Monitor spending via `jarvis.json` session_log
 

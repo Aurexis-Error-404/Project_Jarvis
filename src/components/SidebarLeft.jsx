@@ -1,6 +1,6 @@
 import { IconGrid } from './Icons';
 
-export default function SidebarLeft({ connectionStatus, onGoHome, onNewSession, conversations = [], activeConvId }) {
+export default function SidebarLeft({ connectionStatus, onGoHome, onNewSession, conversations = [], activeConvId, onSelectConv, projectPath, onSelectProject }) {
   return (
     <div className="sidebar sidebar-left">
       <div className="sidebar-header" style={{ WebkitAppRegion: 'drag' }}>
@@ -16,7 +16,18 @@ export default function SidebarLeft({ connectionStatus, onGoHome, onNewSession, 
 
       <div className="sidebar-body" style={{ WebkitAppRegion: 'no-drag' }}>
         <div style={{ padding: '12px 14px 0' }}>
-          <div className="section-label">Conversations</div>
+          <div
+            className="project-source"
+            onClick={onSelectProject}
+            title={projectPath || 'Select a project directory'}
+          >
+            <span className="project-icon">&#128194;</span>
+            <span className="project-path">
+              {projectPath ? projectPath.split(/[\\/]/).pop() : 'Add Project'}
+            </span>
+            <span className="project-change">{projectPath ? 'Change' : 'Browse'}</span>
+          </div>
+          <div className="section-label" style={{ marginTop: 12 }}>Conversations</div>
           <div className="conv-list">
             {conversations.length === 0 ? (
               <div style={{ color: '#555', fontSize: 11, padding: '8px 0', fontFamily: 'monospace' }}>
@@ -27,6 +38,7 @@ export default function SidebarLeft({ connectionStatus, onGoHome, onNewSession, 
                 <div
                   key={conv.id}
                   className={`conversation-item${conv.id === activeConvId ? ' active' : ''}`}
+                  onClick={() => onSelectConv?.(conv.id)}
                 >
                   <div className="conversation-title">{conv.title}</div>
                   <div className="conversation-time">{conv.time}</div>

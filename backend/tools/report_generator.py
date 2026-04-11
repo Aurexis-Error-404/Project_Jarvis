@@ -20,7 +20,7 @@ from pathlib import Path
 logger = logging.getLogger("jarvis.report_generator")
 
 TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
-REPORTS_DIR = Path(__file__).parent.parent / "reports"
+REPORTS_DIR = Path(__file__).parent.parent.parent / "reports"
 
 
 def run(

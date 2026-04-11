@@ -13,7 +13,7 @@ import asyncio
 import logging
 import os
 import time
-from pathlib import PurePath
+from pathlib import Path, PurePath
 from typing import Callable
 
 from watchdog.events import FileSystemEventHandler
@@ -24,8 +24,9 @@ from backend.memory.jarvis_json import read as read_jarvis
 
 logger = logging.getLogger("jarvis.file_watcher")
 
-SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "dist", "build"}
+SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "dist", "build", ".agents", ".claude"}
 DEBOUNCE_SECONDS = 5  # locked — do not reduce
+GLOBAL_COOLDOWN = int(os.environ.get("SURFACE_COOLDOWN", "60"))
 
 # Cap on _last_event dict to prevent unbounded memory growth on long-running servers
 _MAX_TRACKED_PATHS = 500
@@ -45,6 +46,7 @@ class JarvisHandler(FileSystemEventHandler):
         self.get_mode = get_mode          # callable: () -> "local" | "cloud"
         self.threshold = threshold        # cached at startup — avoids env lookup per event
         self._last_event: dict = {}
+        self._last_surface_time: float = 0.0
 
     def on_modified(self, event):
         if event.is_directory:
@@ -72,7 +74,16 @@ class JarvisHandler(FileSystemEventHandler):
             jarvis = read_jarvis()
             focus = jarvis.get("project", {}).get("current_focus", "")
 
-            result = await ollama_client.gate("file_modified", path, focus)
+            ext = PurePath(path).suffix or "unknown"
+            last_surfaced_ago = int((time.monotonic() - self._last_surface_time) / 60) if self._last_surface_time else 999
+            recent = ", ".join(list(self._last_event.keys())[-5:])
+
+            result = await ollama_client.gate(
+                "file_modified", path, focus,
+                file_extension=ext,
+                last_surfaced_minutes=last_surfaced_ago,
+                recent_files=recent,
+            )
 
             should_surface = result.get("should_surface", False)
             confidence = result.get("confidence", 0.0)
@@ -84,6 +95,12 @@ class JarvisHandler(FileSystemEventHandler):
 
             if not (should_surface and confidence >= self.threshold):
                 return  # gate did not pass — nothing to do
+
+            # Global cooldown — prevent surface card storms
+            now_surface = time.monotonic()
+            if now_surface - self._last_surface_time < GLOBAL_COOLDOWN:
+                logger.debug(f"Global cooldown active — skipping surface for {path}")
+                return
 
             # Gate passed — generate surface card bullets (lazy import avoids circular deps)
             from backend.ai.surface_generator import generate as generate_surface
@@ -101,15 +118,14 @@ class JarvisHandler(FileSystemEventHandler):
                 )
                 return  # better silent than a broken card
 
-            await self.send_event(
-                {
-                    "event": "jarvis_surface",
-                    "file": path.replace("\\", "/"),
-                    "reason": reason,
-                    "confidence": confidence,
-                    "bullets": bullets,
-                }
-            )
+            await self.send_event({
+                "event": "jarvis_surface",
+                "file": path.replace("\\", "/"),
+                "reason": reason,
+                "confidence": confidence,
+                "bullets": bullets,
+            })
+            self._last_surface_time = time.monotonic()
 
         except Exception as e:
             logger.error(f"File watcher _evaluate error for {path}: {e}")
@@ -127,7 +143,8 @@ async def start(send_event: Callable, get_mode: Callable[[], str] = None):
         def get_mode():
             return os.environ.get("AI_MODE", "local")
 
-    project_path = os.environ.get("PROJECT_PATH", ".")
+    _default_path = str(Path(__file__).parent.parent.parent)
+    project_path = os.environ.get("PROJECT_PATH", _default_path)
     threshold = float(os.environ.get("OLLAMA_GATE_THRESHOLD", "0.7"))
     loop = asyncio.get_running_loop()  # get_event_loop() deprecated in Python 3.10+
 

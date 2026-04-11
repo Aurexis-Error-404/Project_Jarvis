@@ -9,10 +9,18 @@
     "start": "npm run build && electron .",
     "dev": "npm run build && electron . --enable-logging"
   },
-  "keywords": ["jarvis", "ai", "developer-assistant", "electron"],
+  "keywords": [
+    "jarvis",
+    "ai",
+    "developer-assistant",
+    "electron"
+  ],
   "author": "Team JARVIS",
   "license": "ISC",
   "dependencies": {
+    "dompurify": "^3.3.3",
+    "highlight.js": "^11.11.1",
+    "marked": "^18.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
