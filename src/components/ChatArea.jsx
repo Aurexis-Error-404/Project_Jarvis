@@ -12,6 +12,7 @@ const TOOL_LABELS = {
   read_session_history: 'Loading session history',
 };
 
+<<<<<<< HEAD
 export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [] }) {
   const [inputValue, setInputValue] = useState('');
 
@@ -27,6 +28,9 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
     if (val && !isStreaming) { onSend(val); setInputValue(''); }
   };
 
+=======
+export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [], connectionStatus }) {
+>>>>>>> e389db3f56978f7d7f15cde282a77e0feef7c135
   return (
     <div className="chat-area">
       <div className="chat-header" style={{ WebkitAppRegion: 'drag' }}>
@@ -92,7 +96,7 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={mode === 'local' ? 'Message JARVIS (Secure Mode)...' : 'Message JARVIS...'}
-              disabled={isStreaming}
+              disabled={isStreaming || connectionStatus !== 'connected'}
               className="chat-input"
             />
           </form>
@@ -100,7 +104,19 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
             <span className="input-disclaimer">
               {mode === 'local' ? '🔒 Secure mode — all data stays local' : 'JARVIS can be inaccurate, please double check its responses.'}
             </span>
+<<<<<<< HEAD
             <button className="btn-send" disabled={isStreaming} onClick={submit} title="Send">
+=======
+            <button
+              className="btn-send"
+              disabled={isStreaming || connectionStatus !== 'connected'}
+              onClick={() => {
+                const val = inputRef.current?.value?.trim();
+                if (val) { onSend(val); inputRef.current.value = ''; }
+              }}
+              title="Send"
+            >
+>>>>>>> e389db3f56978f7d7f15cde282a77e0feef7c135
               <IconSend />
             </button>
           </div>

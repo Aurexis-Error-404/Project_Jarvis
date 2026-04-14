@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS Project Status Report — Proactive Developer Intelligence Layer — JARVIS Report</title>
+<style>
+  :root {
+    --bg: #0e0e11; --surface: #18181b; --border: #2a2a3e;
+    --text: #e8e8f0; --dim: #a1a1aa; --accent: #93c5fd;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    max-width: 900px; margin: 0 auto; padding: 40px 24px 60px;
+    line-height: 1.65; -webkit-font-smoothing: antialiased;
+  }
+  header { margin-bottom: 32px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 1.6rem; font-weight: 600; margin-bottom: 8px; }
+  header .meta { font-size: 12px; color: var(--dim); letter-spacing: 0.04em; }
+  header .badge {
+    display: inline-block; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px; font-size: 11px; color: var(--accent);
+    letter-spacing: 0.06em; margin-left: 8px;
+  }
+  section { margin-bottom: 28px; }
+  h2 {
+    font-size: 1.15rem; font-weight: 600; color: #fff;
+    margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  }
+  p { margin-bottom: 10px; font-size: 14px; color: var(--text); }
+  pre {
+    background: #1a1a2e; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; overflow-x: auto; font-family: var(--mono);
+    font-size: 13px; line-height: 1.5; margin: 10px 0; color: #c9d1d9;
+  }
+  code {
+    background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;
+    font-family: var(--mono); font-size: 13px;
+  }
+  pre code { background: none; padding: 0; }
+  ul, ol { margin: 8px 0; padding-left: 20px; }
+  li { margin: 4px 0; font-size: 14px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+  th, td { border: 1px solid var(--border); padding: 8px 12px; font-size: 13px; text-align: left; }
+  th { background: var(--surface); font-weight: 600; }
+  .research-data {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; margin-top: 12px;
+  }
+  .research-data h2 { border-color: #3b82f6; }
+  footer {
+    margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--border);
+    font-size: 11px; color: #52525b; text-align: center; letter-spacing: 0.04em;
+  }
+  @media print {
+    body { background: #fff; color: #1a1a1a; }
+    pre { background: #f5f5f5; border-color: #ddd; color: #1a1a1a; }
+    th { background: #f0f0f0; }
+    header, footer { border-color: #ddd; }
+    h2 { border-color: #ddd; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>JARVIS Project Status Report — Proactive Developer Intelligence Layer<span class="badge">JARVIS</span></h1>
+    <div class="meta">Generated 2026-04-11T11:34:16.790241+00:00</div>
+  </header>
+
+  
+  <section>
+    <h2>Executive Summary</h2>
+    <p>JARVIS is a proactive developer intelligence layer built on Electron, React, and FastAPI, implementing a zero-search paradigm for ambient coding assistance. The system uses local LLMs (Ollama/CodeLlama) for the proactive gate and cloud models (Gemini, Groq) for user-facing quality tasks. Current development focuses on refining the proactive gate behavior and optimizing tool iteration limits.</p>
+  </section>
+  
+  <section>
+    <h2>Current Stack &amp; Architecture</h2>
+    <p>**Frontend:** Electron + React with WebSocket communication&lt;br&gt;**Backend:** FastAPI (Python) with modular tool system&lt;br&gt;**AI Engines:**&lt;br&gt;- Proactive Gate: Ollama + CodeLlama (local, free, 50+ calls/hour)&lt;br&gt;- Error Diagnosis: gemini-2.5-flash (deep reasoning for user-facing quality)&lt;br&gt;- Summaries/Commits: llama-3.3-70b-versatile via Groq (structured output, low latency)&lt;br&gt;**Memory:** jarvis.json structured schema (prevents hallucination, Claude-readable)&lt;br&gt;**Local Secure Mode:** CodeLlama via Ollama (zero bytes leave machine)</p>
+  </section>
+  
+  <section>
+    <h2>Key Decisions Made</h2>
+    <p>| Component | Chose | Rejected | Reason |&lt;br&gt;|-----------|-------|----------|--------|&lt;br&gt;| Proactive Gate AI | Ollama/CodeLlama | Claude API | Must be free &amp; local for 50+ calls/hour |&lt;br&gt;| Error Diagnosis AI | gemini-2.5-flash | llama-3.3-70b-versatile | User-facing quality needs deep reasoning |&lt;br&gt;| Summary/Commit AI | llama-3.3-70b-versatile (Groq) | gemini-2.5-flash | Structured short output, lower latency/cost |&lt;br&gt;| Project Memory | jarvis.json schema | Free-text notes | Structured fields prevent hallucination |&lt;br&gt;| Local Secure Mode | CodeLlama/Ollama | Claude API | Zero bytes leave machine in secure mode |</p>
+  </section>
+  
+  <section>
+    <h2>Open Questions</h2>
+    <p>1. **Proactive gate cooldown window** — 5 minutes or 10 minutes?&lt;br&gt;2. **Max tool iterations before hard stop** — 10 or 15?&lt;br&gt;3. **Surface card auto-dismiss timer** — 8 seconds or 12 seconds?&lt;br&gt;&lt;br&gt;These decisions impact user experience and system resource usage. Resolution recommended before production deployment.</p>
+  </section>
+  
+  <section>
+    <h2>Codebase Structure</h2>
+    <p>**65 total files** organized into:&lt;br&gt;- `backend/ai/` — AI client integrations (Claude, Ollama, providers, prompts)&lt;br&gt;- `backend/tools/` — Tool implementations (codebase reader, git interface, web research, report generator)&lt;br&gt;- `backend/context/` — File watcher and context gathering&lt;br&gt;- `backend/memory/` — jarvis.json and session log management&lt;br&gt;- `src/components/` — React UI components (ChatArea, SurfaceCard, Sidebars, ModeToggle)&lt;br&gt;- `src/hooks/` — WebSocket hook for real-time communication&lt;br&gt;- `reports/` — Generated HTML research reports&lt;br&gt;- `docs/` — Project documentation and roadmaps</p>
+  </section>
+  
+  <section>
+    <h2>Next Steps</h2>
+    <p>1. **Resolve open questions** — Decide on cooldown window, iteration limits, and auto-dismiss timer&lt;br&gt;2. **Test proactive gate** — Validate 50+ calls/hour performance with Ollama locally&lt;br&gt;3. **Document secure mode** — Ensure zero-byte-leak guarantee is tested and documented&lt;br&gt;4. **Surface card UX polish** — Finalize dismiss behavior and visual feedback</p>
+  </section>
+  
+  <section>
+    <h2>Recent Activity</h2>
+    <p>No session history loaded. This appears to be a fresh session or session log has not been populated yet. Check `backend/memory/session_log.py` and `jarvis.json` for session tracking implementation.</p>
+  </section>
+  
+
+  
+
+  <footer>JARVIS — Proactive Developer Intelligence Layer</footer>
+</body>
+</html>

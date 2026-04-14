@@ -102,6 +102,7 @@
             "mode": "cloud"
         },
         {
+<<<<<<< HEAD
             "timestamp": "2026-04-11T10:20:19.335357+00:00",
             "messages": 2,
             "mode": "local"
@@ -115,6 +116,16 @@
             "timestamp": "2026-04-11T18:56:40.404337+00:00",
             "messages": 1,
             "mode": "local"
+=======
+            "timestamp": "2026-04-11T12:06:52.723174+00:00",
+            "messages": 9,
+            "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-11T13:13:31.878208+00:00",
+            "messages": 2,
+            "mode": "local"
+>>>>>>> e389db3f56978f7d7f15cde282a77e0feef7c135
         }
     ]
 }
