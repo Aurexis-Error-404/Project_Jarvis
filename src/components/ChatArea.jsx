@@ -5,6 +5,7 @@ import renderMarkdown from '../utils/renderMarkdown';
 
 const TOOL_LABELS = {
   read_codebase: 'Reading codebase',
+  read_project_context: 'Loading project context',
   read_git_history: 'Checking git history',
   web_research: 'Searching the web',
   generate_html_report: 'Generating report',

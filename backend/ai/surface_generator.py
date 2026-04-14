@@ -13,13 +13,21 @@ Task routing (from providers.py):
 
 import asyncio
 import functools
+import hashlib
 import logging
+import time
 
 from backend.ai.claude_client import _call_with_fallback
 from backend.memory.jarvis_json import read as read_jarvis
 from backend.tools.git_interface import run as git_run
 
 logger = logging.getLogger("jarvis.surface_generator")
+
+# Deduplication cache: file_path → (monotonic_timestamp, context_hash)
+# Prevents re-generating identical bullets when the same file is saved twice
+# within the dedup window.
+_recent_surfaces: dict[str, tuple[float, str]] = {}
+_SURFACE_DEDUP_TTL = 600.0  # 10 minutes
 
 SURFACE_PROMPT_TEMPLATE = """You are generating a proactive context card for a developer.
 
@@ -29,8 +37,10 @@ Project context:
 - Recent decisions: {recent_decisions}
 
 File signal:
+- Signal type: {signal_type}
 - File changed: {file_path}
 - Recent git activity on this file: {git_summary}
+- Related project context: {context_summary}
 
 Generate exactly 2-3 bullet points. Rules:
 - Each bullet: maximum 15 words
@@ -57,16 +67,25 @@ def _format_git_summary(git_result: dict) -> str:
     return "\n".join(lines)
 
 
-async def generate(file_path: str, gate_reason: str, mode: str) -> list:
+async def generate(
+    file_path: str,
+    gate_reason: str,  # noqa: ARG001 — kept for API compatibility; may be used in future prompts
+    mode: str,
+    signal_type: str = "code_change",
+    context_summary: str = "",
+    activity_focus: str = "",
+) -> list:
     """
     Generate 2-3 project-specific surface card bullets for a changed file.
 
     Returns a list of bullet strings (each starts with •), or [] if generation
-    fails or the model returns nothing project-specific.
+    fails, the model returns nothing project-specific, or dedup cache hit.
     """
     jarvis = read_jarvis()
     project = jarvis.get("project", {})
-    current_focus = project.get("current_focus", "Not specified")
+    stated_focus = project.get("current_focus", "Not specified")
+    # Combine stated focus with live activity hint when available
+    current_focus = f"{stated_focus} | {activity_focus}" if activity_focus else stated_focus
     stack = ", ".join(project.get("stack", []))
     decisions = jarvis.get("decisions", [])
     recent_decisions = "; ".join(
@@ -80,12 +99,27 @@ async def generate(file_path: str, gate_reason: str, mode: str) -> list:
     )
     git_summary = _format_git_summary(git_result)
 
+    # Deduplication: skip generation when the same file + same context was
+    # already surfaced within the last 10 minutes.
+    content_key = hashlib.md5(
+        f"{git_summary}|{context_summary}|{file_path}".encode()
+    ).hexdigest()
+    now = time.monotonic()
+    cached = _recent_surfaces.get(file_path)
+    if cached:
+        cached_ts, cached_hash = cached
+        if (now - cached_ts) < _SURFACE_DEDUP_TTL and cached_hash == content_key:
+            logger.debug(f"Surface dedup hit for {file_path} — skipping generation")
+            return []
+
     prompt = SURFACE_PROMPT_TEMPLATE.format(
         current_focus=current_focus,
         stack=stack,
         recent_decisions=recent_decisions,
+        signal_type=signal_type,
         file_path=file_path.replace("\\", "/"),
         git_summary=git_summary,
+        context_summary=context_summary or "No related wiki notes loaded.",
     )
 
     try:
@@ -111,5 +145,11 @@ async def generate(file_path: str, gate_reason: str, mode: str) -> list:
             f"Surface generator returned no bullets for {file_path}. "
             f"Raw: {raw_text[:120]}"
         )
+    else:
+        # Store in dedup cache; evict oldest entry if over limit
+        _recent_surfaces[file_path] = (now, content_key)
+        if len(_recent_surfaces) > 50:
+            oldest = min(_recent_surfaces, key=lambda k: _recent_surfaces[k][0])
+            del _recent_surfaces[oldest]
 
     return bullets[:3]

@@ -43,6 +43,54 @@ TOOL_SCHEMAS = [
         },
     },
     {
+        "name": "read_project_context",
+        "description": (
+            "Read project knowledge from the wiki/Obsidian vault.\n\n"
+            "Call this tool when:\n"
+            "- Developer asks about architecture, decisions, project history, current focus, or secure mode intent\n"
+            "- You need wiki notes, design analyses, or project memory beyond raw code files\n"
+            "- Developer asks 'why did we choose X', 'what context should Jarvis use', or anything second-brain related\n"
+            "- You want to validate vault health before relying on wiki context\n\n"
+            "Do NOT call this tool when:\n"
+            "- Developer asks only about a specific function or implementation detail in code (use read_codebase)\n"
+            "- Developer asks what changed in git history (use read_git_history)\n"
+            "- You already have the exact relevant note content in the current conversation\n\n"
+            "This tool searches wiki notes, parses tags/frontmatter, follows wikilinks, and returns vault health."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Keyword query for wiki/project knowledge search. "
+                        "Examples: 'secure mode decisions', 'file watcher architecture', 'project memory'."
+                    ),
+                },
+                "note_path": {
+                    "type": "string",
+                    "description": (
+                        "Optional exact note path or note name to read directly. "
+                        "Examples: 'wiki/index.md', 'project-memory', '2026-04-11-jarvis-architecture-review'."
+                    ),
+                },
+                "tags": {
+                    "type": "string",
+                    "description": "Optional comma-separated tag filter. Example: 'architecture,memory'.",
+                },
+                "include_related": {
+                    "type": "boolean",
+                    "description": "When true, include linked/backlinked related notes.",
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Maximum number of notes to return. Default 5.",
+                },
+            },
+            "required": [],
+        },
+    },
+    {
         "name": "read_git_history",
         "description": (
             "Read recent git commits, diffs, and file change history.\n\n"

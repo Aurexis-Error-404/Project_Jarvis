@@ -1,21 +1,36 @@
 # Project Jarvis
 
-Project Jarvis is a starter repository for a personal assistant-style application. This repository currently contains the initial project documentation scaffold and will grow as the application is implemented.
+JARVIS is an Electron desktop assistant for developer workflows. The app uses a React renderer, a FastAPI backend, a local WebSocket channel, and Ollama/cloud model routing for responses and proactive surfaces.
 
-## Overview
+## Stack
 
-- Repository name: Project Jarvis
-- Purpose: initial scaffold for the Jarvis project
-- Status: early setup
+- Desktop shell: Electron
+- Frontend: React + esbuild
+- Backend: FastAPI + `websockets`
+- AI routing: Gemini, Groq, and Ollama
+- Project memory: `jarvis.json`
+- Project second brain: Obsidian-compatible `wiki/` + `.obsidian/`
 
-## Getting Started
+## Run
 
-1. Clone the repository.
-2. Add the application source files and dependencies.
-3. Update this README with build and run instructions once the implementation is in place.
+1. Install Node and Python dependencies.
+2. Add any needed API keys to `.env`.
+3. Start Ollama if you want local mode available.
+4. Run `npm start`.
 
-## Next Steps
+`npm start` now builds the renderer and launches Electron, and Electron will start the FastAPI backend automatically if it is not already running.
 
-- Add the application entry point.
-- Document setup, configuration, and runtime requirements.
-- Add usage examples and testing instructions.
+## Useful Commands
+
+- `npm run build`
+- `npm run watch`
+- `python -m pytest -q`
+- `python tests/test_ws_client.py`
+- `python tests/test_prompt.py`
+
+## Notes
+
+- WebSocket events are stream-first; the active response event is `jarvis_stream_chunk`.
+- Reports are written to `reports/`.
+- You can override the Python executable Electron uses with `JARVIS_PYTHON`.
+- `VAULT_PATH` is optional; if omitted, JARVIS uses `PROJECT_PATH` when that directory contains `.obsidian/` and `wiki/`.

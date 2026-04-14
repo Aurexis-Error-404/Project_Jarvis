@@ -4,11 +4,31 @@
     "type": "split",
     "children": [
       {
-        "id": "f82e063b7e0f93fb",
+        "id": "a1caf810dc870025",
         "type": "tabs",
         "children": [
           {
-            "id": "da3bebd5ab24cede",
+            "id": "7eca1609b30c0f74",
+            "type": "leaf",
+            "state": {
+              "type": "3d_graph_view",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "3D-Graph"
+            }
+          },
+          {
+            "id": "69f7b5af74bb7c52",
+            "type": "leaf",
+            "state": {
+              "type": "3d_graph_view",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "3D-Graph"
+            }
+          },
+          {
+            "id": "579a119a76fd5cb5",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -17,7 +37,8 @@
               "title": "Graph view"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -173,23 +194,28 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "obsidian-excalidraw-plugin:New drawing": false,
+      "3d-graph:3D Graph": false
     }
   },
-  "active": "da3bebd5ab24cede",
+  "active": "69f7b5af74bb7c52",
   "lastOpenFiles": [
+    "backend/main.py.tmp.35764.1776169774623",
+    "backend/ai/ollama_client.py.tmp.35764.1776169693570",
+    "Untitled 1.canvas",
+    "tests/__pycache__/test_project_context.cpython-313-pytest-8.3.5.pyc",
+    "tests/__pycache__/test_backend_smoke.cpython-313.pyc",
+    "tests/__pycache__/test_project_context.cpython-313.pyc",
+    "backend/tools/__pycache__/obsidian_reader.cpython-313.pyc",
+    "backend/context/__pycache__/project_context.cpython-313.pyc",
+    "tests/test_project_context.py",
+    "wiki/index.md",
+    "Untitled.canvas",
+    "backend/tools/obsidian_reader.py",
+    "backend/context/project_context.py",
     "dist/bundle.js",
-    "dist/bundle.css",
-    "dist",
-    "tests/conftest.py",
-    "tests/test_ws_client.py",
-    "tests/test_prompt.py",
-    "tests",
-    "src/components/SurfaceCard.jsx.tmp.34228.1775931436167",
-    "src/App.jsx.tmp.34228.1775931383928",
-    "src/constants/config.js",
     "node_modules/sumchecker/README.md",
-    "src/constants/wsEvents.js",
     "wiki/analyses/2026-04-11-codebase-restructure-plan.md",
     "wiki/analyses/2026-04-11-jarvis-architecture-review.md",
     "wiki/concepts/project-memory.md",
@@ -197,7 +223,6 @@
     "README.md",
     "wiki/concepts/proactive-context-surfacing.md",
     "wiki/concepts/zero-search-paradigm.md",
-    "Untitled.canvas",
     "2026-04-11.md",
     "wiki/entities/websocket-contract.md",
     "wiki/entities/ollama.md",
@@ -208,7 +233,6 @@
     "node_modules/fs-extra/README.md",
     "wiki/sources/jarvis-project-architecture.md",
     "wiki/log.md",
-    "wiki/index.md",
     "wiki/setup.md",
     "assets/icon.png",
     "prompts/tool_schema.md",

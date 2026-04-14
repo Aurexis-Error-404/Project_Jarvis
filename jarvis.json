@@ -66,7 +66,7 @@
         "mode": "local",
         "cloud_model": "gemini-2.5-flash",
         "fallback_model": "llama-3.3-70b-versatile",
-        "local_model": "ollama/qwen3.5:cloud",
+        "local_model": "ollama/codellama",
         "max_tool_iterations": 10,
         "system_prompt_version": "v1"
     },
@@ -80,7 +80,6 @@
         "events_receive": [
             "jarvis_stream_chunk",
             "jarvis_surface",
-            "jarvis_response",
             "jarvis_mode_ack",
             "jarvis_error"
         ]
@@ -130,6 +129,12 @@
             "timestamp": "2026-04-11T18:56:40.404337+00:00",
             "messages": 1,
             "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-14T09:52:25.882251+00:00",
+            "messages": 2,
+            "mode": "local",
+            "summary": "Based on my analysis of the codebase, here's what's not useful:\n\n**1. Duplicate log statement \u2014 backend/main.py lines 230-231**\n```python\nlogger.info(f\"Client disconnected. Total: {len(connected_clien"
         }
     ]
-}
+}

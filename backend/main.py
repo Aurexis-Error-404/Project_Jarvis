@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from backend.ai.claude_client import run as claude_run
+from backend.context.project_context import get_vault_path, inspect_vault
 
 load_dotenv()
 
@@ -26,8 +28,20 @@ logger = logging.getLogger("jarvis.main")
 
 connected_clients: set = set()
 
+# Tracks when the last jarvis_surface was broadcast so we can detect
+# whether the user's next query is acting on that surface (within 60 s).
+_last_surface_at: float = 0.0
+
 # Persists for the process lifetime; updated on mode_change events.
-_current_mode: str = os.environ.get("AI_MODE", "local")
+# Reads saved mode from jarvis.json so restarts honour the last toggle.
+def _load_initial_mode() -> str:
+    try:
+        from backend.memory.jarvis_json import read as _rj
+        return _rj().get("ai_config", {}).get("mode", os.environ.get("AI_MODE", "local"))
+    except Exception:
+        return os.environ.get("AI_MODE", "local")
+
+_current_mode: str = _load_initial_mode()
 
 # Populated once when the first client connects (codebase awareness).
 _codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load."
@@ -38,6 +52,7 @@ _codebase_ready: asyncio.Event = None  # initialized in ws_handler (needs runnin
 
 async def broadcast_event(payload: dict):
     """Send an event to ALL currently connected WebSocket clients."""
+    global _last_surface_at
     if not connected_clients:
         return
     message = json.dumps(payload)
@@ -49,6 +64,14 @@ async def broadcast_event(payload: dict):
             logger.warning(f"broadcast_event failed for a client: {e}")
             dead.add(ws)
     connected_clients.difference_update(dead)
+    # Track surface metrics when a surface card is broadcast
+    if payload.get("event") == "jarvis_surface":
+        _last_surface_at = time.monotonic()
+        try:
+            from backend.memory.jarvis_json import update as _uj
+            _uj("surface_metrics", "increment", "shown")
+        except Exception as e:
+            logger.warning(f"Failed to increment surface_metrics.shown: {e}")
 
 
 async def _load_codebase_map() -> str:
@@ -84,9 +107,19 @@ async def _load_codebase_map_async():
 
 async def _handle_user_query(data: dict, send_event, session_history: list) -> list:
     """Handle user_query event. Returns updated session_history."""
-    global _codebase_map, _codebase_ready
+    global _codebase_map, _codebase_ready, _last_surface_at
     query = data.get("query", "").strip()
     mode = data.get("mode", _current_mode)
+
+    # If the user queries within 60 s of a surface card being shown, count it
+    # as an acted_on event — the surface probably prompted the question.
+    if _last_surface_at and (time.monotonic() - _last_surface_at) < 60.0:
+        try:
+            from backend.memory.jarvis_json import update as _uj
+            _uj("surface_metrics", "increment", "acted_on")
+        except Exception as e:
+            logger.warning(f"Failed to increment surface_metrics.acted_on: {e}")
+        _last_surface_at = 0.0  # reset — one acted_on credit per surface
 
     if not query:
         await send_event({"event": "jarvis_error", "message": "Empty query", "recoverable": True})
@@ -124,6 +157,12 @@ async def _handle_mode_change(data: dict, send_event) -> bool:
         return False
     _current_mode = new_mode
     logger.info(f"Mode changed to: {_current_mode}")
+    # Persist so the next restart picks up the saved mode
+    try:
+        from backend.memory.jarvis_json import update as update_jarvis
+        update_jarvis("ai_config.mode", "update", new_mode)
+    except Exception as e:
+        logger.warning(f"Failed to persist mode change to jarvis.json: {e}")
     await send_event({"event": "jarvis_mode_ack", "mode": _current_mode})
     return True
 
@@ -140,17 +179,21 @@ async def _handle_set_project_path(data: dict, send_event):
         })
         return
     from backend.tools.codebase_reader import run as read_codebase
-    result = read_codebase(new_path)
+    os.environ["PROJECT_PATH"] = new_path
+    if (Path(new_path) / ".obsidian").exists() and (Path(new_path) / "wiki").exists():
+        os.environ["VAULT_PATH"] = new_path
+    result = read_codebase(".")
     if "error" not in result:
         files = result.get("files", [])
         count = result.get("count", len(files))
         _codebase_map = f"Project files ({count} total):\n" + "\n".join(f"  {f}" for f in files)
-    os.environ["PROJECT_PATH"] = new_path
     logger.info(f"Project path changed to: {new_path}")
+    vault_health = inspect_vault()
     await send_event({
         "event": "project_path_ack",
         "path": new_path,
         "files_loaded": result.get("count", 0) if "error" not in result else 0,
+        "vault_health": vault_health,
     })
 
 
@@ -190,7 +233,14 @@ async def ws_handler(websocket):
                     await _handle_mode_change(data, send_event)
 
                 elif event_type == "surface_dismissed":
-                    logger.info(f"Surface dismissed: {data.get('file', 'unknown')}")
+                    file_path = data.get("file", "unknown")
+                    logger.info(f"Surface dismissed: {file_path}")
+                    try:
+                        from backend.memory.jarvis_json import update as update_jarvis
+                        update_jarvis("dismissed_surfaces", "append", {"file": file_path})
+                        update_jarvis("surface_metrics", "increment", "dismissed")
+                    except Exception as e:
+                        logger.warning(f"Failed to log dismissed surface: {e}")
 
                 elif event_type == "demo_surface":
                     await send_event({
@@ -244,7 +294,6 @@ async def ws_handler(websocket):
                 })
             except Exception as e:
                 logger.warning(f"Failed to log session: {e}")
-        logger.info(f"Client disconnected. Total: {len(connected_clients)}")
         logger.info(f"Client disconnected. Total: {len(connected_clients)}")
 
 
@@ -300,4 +349,7 @@ async def health():
         "connected_clients": len(connected_clients),
         "mode": _current_mode,
         "codebase_loaded": _codebase_loaded,
+        "project_path": os.environ.get("PROJECT_PATH", str(Path(__file__).parent.parent)),
+        "vault_path": str(get_vault_path()),
+        "vault_health": inspect_vault(),
     }

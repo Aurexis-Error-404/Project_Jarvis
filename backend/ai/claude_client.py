@@ -20,6 +20,7 @@ from openai import AsyncOpenAI
 
 from backend.ai import prompts
 from backend.ai.providers import PROVIDERS, get_provider, get_fallback
+from backend.context.project_context import build_runtime_context, format_runtime_context, summarize_sessions
 from backend.tools import OAI_TOOL_SCHEMAS
 from backend.tools.tool_dispatcher import dispatch_tool
 
@@ -68,22 +69,7 @@ def _infer_task_type(query: str) -> str:
 def _format_session_history() -> str:
     """Read recent sessions from jarvis.json and format for the system prompt."""
     try:
-        from backend.memory.session_log import read as read_sessions
-        sess = read_sessions(last_n_sessions=3)
-        sessions = sess.get("sessions", [])
-        if not sessions:
-            return "No previous sessions recorded."
-        lines = []
-        for s in sessions:
-            ts = s.get("timestamp", "unknown time")
-            msgs = s.get("messages", 0)
-            mode = s.get("mode", "unknown")
-            summary = s.get("summary", "")
-            entry = f"- {ts}: {msgs} messages ({mode} mode)"
-            if summary:
-                entry += f"\n  Last topic: {summary}"
-            lines.append(entry)
-        return "\n".join(lines)
+        return summarize_sessions(last_n_sessions=3)
     except Exception as e:
         logger.warning(f"Failed to load session history: {e}")
         return "Session history unavailable."
@@ -108,8 +94,10 @@ async def _call_provider(provider_name: str, messages: list, tools: list = None,
     """Call a single provider. Raises on failure."""
     p = PROVIDERS[provider_name]
     client = _get_client(provider_name)
-    # Ollama's OpenAI-compat endpoint accepts tools but chokes on tool_choice="auto"
-    tool_choice_val = "auto" if (tools and provider_name != "ollama") else None
+    # Ollama chokes on tool_choice="auto"; Groq requires plain string but newer openai
+    # client versions can send {"type": "auto"} object format which Groq rejects with 400.
+    # Only pass tool_choice to Gemini — Groq and Ollama work fine without it.
+    tool_choice_val = "auto" if (tools and provider_name == "gemini") else None
     return await client.chat.completions.create(
         model=p["model"],
         messages=messages,
@@ -192,6 +180,21 @@ async def _stream_text(text: str, send_event) -> None:
 
 
 # Task-adaptive parameters — better output quality per task type
+def _serialize_tool_result(result: dict) -> str:
+    raw_json = _json.dumps(result, ensure_ascii=False, default=str)
+    if len(raw_json) <= MAX_TOOL_OUTPUT_CHARS:
+        return raw_json
+
+    return _json.dumps(
+        {
+            "truncated": True,
+            "original_length": len(raw_json),
+            "preview": raw_json[:MAX_TOOL_OUTPUT_CHARS],
+        },
+        ensure_ascii=False,
+    )
+
+
 _TASK_PARAMS = {
     "error_diagnosis":  {"temperature": 0.2, "max_tokens": 4096},
     "research_report":  {"temperature": 0.5, "max_tokens": 8192},
@@ -241,8 +244,14 @@ async def run(query: str, mode: str, send_event,
     send_event: async callable that sends a WebSocket event dict to the client
     history: prior turns [{role, content}, ...] for session continuity
     """
-    session_summary = _format_session_history()
-    system = prompts.build_system_prompt(codebase_map=codebase_map, session_history=session_summary)
+    routed_context = build_runtime_context(query=query, codebase_map=codebase_map)
+    session_summary = routed_context.get("recent_sessions") or _format_session_history()
+    routed_context_text = format_runtime_context(routed_context)
+    system = prompts.build_system_prompt(
+        codebase_map=routed_context.get("codebase_map") or codebase_map,
+        session_history=session_summary,
+        runtime_context=routed_context_text,
+    )
     messages = [{"role": "system", "content": system}]
     if history:
         messages.extend(history)
@@ -297,12 +306,6 @@ async def _run_tool_loop(messages: list, task_type: str, mode: str,
 
         if choice.finish_reason == "stop":
             text = choice.message.content or ""
-            # Only use real streaming API for cloud mode after tool calls.
-            # Ollama's stream=True can hang indefinitely (never sends [DONE]).
-            if iteration > 0 and mode == "cloud":
-                streamed = await _stream_final_response(task_type, mode, messages, send_event)
-                if streamed is not None:
-                    return streamed
             await _stream_text(text, send_event)
             return text
 
@@ -360,9 +363,7 @@ async def _execute_tool(tc, messages: list, send_event) -> None:
     result = await dispatch_tool(tool_name, tool_input)
     tool_elapsed = int((time.monotonic() - tool_start) * 1000)
 
-    result_json = _json.dumps(result, ensure_ascii=False, default=str)
-    if len(result_json) > MAX_TOOL_OUTPUT_CHARS:
-        result_json = result_json[:MAX_TOOL_OUTPUT_CHARS] + '..."}'
+    result_json = _serialize_tool_result(result)
 
     await send_event({
         "event": "tool_call_status", "tool": tool_name, "status": "done",

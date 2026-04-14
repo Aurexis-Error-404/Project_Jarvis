@@ -3,6 +3,8 @@
 // Toggled by Ctrl+Space (fallback: Ctrl+Shift+Space), hidden by default, system tray icon
 
 const { app, BrowserWindow, globalShortcut, ipcMain, dialog } = require('electron');
+const { spawn } = require('child_process');
+const http = require('http');
 const path = require('path');
 const { createTray } = require('./tray');
 
@@ -26,10 +28,113 @@ if (!gotTheLock) {
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+let backendProcess = null;
+let backendStartedByApp = false;
 
 // ─── Window dimensions (Notebook UI) ───────────
 const DEFAULT_WIDTH = 1280;
 const DEFAULT_HEIGHT = 800;
+const BACKEND_HTTP_PORT = Number(process.env.BACKEND_PORT || 8000);
+const BACKEND_WS_PORT = Number(process.env.WS_PORT || 8765);
+const BACKEND_HOST = '127.0.0.1';
+const PROJECT_ROOT = path.join(__dirname, '..');
+
+function checkBackendHealth() {
+  return new Promise((resolve) => {
+    const req = http.get(
+      {
+        host: BACKEND_HOST,
+        port: BACKEND_HTTP_PORT,
+        path: '/health',
+        timeout: 1000,
+      },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode === 200);
+      }
+    );
+
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+async function waitForBackend(timeoutMs = 15000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await checkBackendHealth()) {
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  return false;
+}
+
+async function ensureBackend() {
+  if (await checkBackendHealth()) {
+    console.log('[JARVIS] Backend already running');
+    return;
+  }
+
+  const pythonCmd = process.env.JARVIS_PYTHON || 'python';
+  const backendArgs = [
+    '-m',
+    'uvicorn',
+    'backend.main:app',
+    '--host',
+    BACKEND_HOST,
+    '--port',
+    String(BACKEND_HTTP_PORT),
+  ];
+
+  backendProcess = spawn(pythonCmd, backendArgs, {
+    cwd: PROJECT_ROOT,
+    env: {
+      ...process.env,
+      PYTHONUNBUFFERED: '1',
+      WS_PORT: String(BACKEND_WS_PORT),
+    },
+    windowsHide: true,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  backendStartedByApp = true;
+
+  backendProcess.stdout?.on('data', (chunk) => {
+    console.log(`[JARVIS backend] ${chunk.toString().trim()}`);
+  });
+  backendProcess.stderr?.on('data', (chunk) => {
+    console.error(`[JARVIS backend] ${chunk.toString().trim()}`);
+  });
+  backendProcess.once('exit', (code, signal) => {
+    console.log(`[JARVIS] Backend exited (code=${code}, signal=${signal || 'none'})`);
+    backendProcess = null;
+    backendStartedByApp = false;
+  });
+  backendProcess.once('error', (error) => {
+    console.error('[JARVIS] Failed to start backend:', error.message);
+  });
+
+  if (await waitForBackend()) {
+    console.log('[JARVIS] Backend ready');
+    return;
+  }
+
+  console.error('[JARVIS] Backend did not become ready in time');
+}
+
+function stopBackend() {
+  if (!backendStartedByApp || !backendProcess) return;
+  try {
+    backendProcess.kill();
+  } catch (error) {
+    console.warn('[JARVIS] Failed to stop backend cleanly:', error.message);
+  }
+  backendProcess = null;
+  backendStartedByApp = false;
+}
 
 /**
  * Create the main overlay window.
@@ -93,7 +198,8 @@ function toggleOverlay() {
 }
 
 // ─── App lifecycle ───────────────────────────────────────
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  await ensureBackend();
   createWindow();
 
   tray = createTray({
@@ -128,6 +234,7 @@ app.whenReady().then(() => {
 
 // Unregister hotkeys on quit to prevent leaks
 app.on('will-quit', () => {
+  stopBackend();
   try {
     globalShortcut.unregisterAll();
   } catch (_) {

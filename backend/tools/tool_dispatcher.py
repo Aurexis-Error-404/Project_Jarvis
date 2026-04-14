@@ -9,7 +9,7 @@ import asyncio
 import functools
 import logging
 
-from backend.tools import codebase_reader, git_interface, report_generator, web_research
+from backend.tools import codebase_reader, git_interface, obsidian_reader, report_generator, web_research
 from backend.memory import jarvis_json, session_log
 
 logger = logging.getLogger("jarvis.dispatcher")
@@ -18,6 +18,7 @@ logger = logging.getLogger("jarvis.dispatcher")
 _SYNC_TOOLS = {
     "read_codebase":       codebase_reader.run,
     "read_git_history":    git_interface.run,
+    "read_project_context": obsidian_reader.run,
     "generate_html_report": report_generator.run,
     "update_project_memory": jarvis_json.update,
     "read_session_history": session_log.read,
@@ -34,6 +35,7 @@ async def dispatch_tool(name: str, inputs: dict) -> dict:
     Route a tool call to its implementation.
     Returns a dict. Never raises — wraps all exceptions as {"error": "..."}.
     """
+    inputs = inputs or {}
     logger.info(f"Dispatching tool: {name} inputs={list(inputs.keys())}")
 
     try:

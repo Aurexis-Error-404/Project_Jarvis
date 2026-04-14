@@ -13,7 +13,6 @@ export const SEND = {
 
 export const RECV = {
   STREAM_CHUNK:     'jarvis_stream_chunk',
-  RESPONSE:         'jarvis_response',
   SURFACE:          'jarvis_surface',
   MODE_ACK:         'jarvis_mode_ack',
   ERROR:            'jarvis_error',

@@ -1,7 +1,7 @@
 import { TOOL_DONE_REMOVE_MS } from '../constants/config';
 
 /**
- * useJarvisEvents — wires all backend WebSocket events to state dispatchers.
+ * useJarvisEvents - wires all backend WebSocket events to state dispatchers.
  * Extracted from App.jsx to keep App lean and event logic testable.
  */
 export default function buildJarvisEventHandlers({
@@ -32,18 +32,12 @@ export default function buildJarvisEventHandlers({
       }
     },
 
-    onResponse: (event) => {
-      if (isStreamingRef.current) {
-        isStreamingRef.current = false;
-        dispatch({ type: 'REPLACE_RESPONSE', text: event.text });
-        setIsStreaming(false);
-      } else {
-        dispatch({ type: 'ADD_JARVIS_MESSAGE', text: event.text });
-      }
-    },
-
     onSurface: (event) => {
-      setSurfaceData({ bullets: event.bullets, file: event.file });
+      setSurfaceData({
+        bullets: event.bullets,
+        file: event.file,
+        signalType: event.signal_type || 'code_change',
+      });
     },
 
     onModeAck: (event) => { setMode(event.mode); },
@@ -62,7 +56,7 @@ export default function buildJarvisEventHandlers({
       setReports(prev => [{ path: event.path, name, time: new Date().toLocaleTimeString() }, ...prev]);
     },
 
-    onStatusUpdate: () => { /* transient — no state update needed */ },
+    onStatusUpdate: () => {},
 
     onProjectPathAck: (event) => { setProjectPath(event.path); },
 
