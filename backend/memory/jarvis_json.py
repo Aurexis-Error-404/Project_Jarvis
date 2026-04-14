@@ -70,7 +70,8 @@ def update(field: str, action: str, value) -> dict:
             return j
 
         if field == "decisions" and action == "append":
-            if not isinstance(value, dict) or not all(k in value for k in ("what", "chose", "rejected", "reason")):
+            required = {"what", "chose", "rejected", "reason"}
+            if not isinstance(value, dict) or not required.issubset(value.keys()):
                 return {"error": "decisions value must have: what, chose, rejected, reason"}
             j["decisions"].append(value)
 

@@ -103,7 +103,20 @@ Tools must never raise exceptions — return {"error": "message"} on failure.
 - For debugging: always follow the CAUSE/FIX/ALSO CHECK format after reading the relevant file
 - Prefer depth over breadth — a thorough answer about one file beats a shallow answer about five
 - When uncertain, say what you need to read and call the tool — never guess
-</response_quality_rules>"""
+</response_quality_rules>
+
+<response_format>
+Format chat responses based on question type:
+
+- Short factual question (what is X, how does Y work): 1–3 sentences, no bullets, no headers
+- Architecture/design question: bullet list of tradeoffs first, then a single recommendation sentence
+- Code question: show the specific lines/function first, then explain beneath
+- Error/debug: always CAUSE / FIX / ALSO CHECK format (never deviate)
+- Research report: always call generate_html_report — never output long markdown prose as a chat message
+
+Never use h1 or h2 headings in chat responses — those are for HTML reports only.
+Never start a bullet list for a question that has a single direct answer.
+</response_format>"""
 
 
 def build_system_prompt(
@@ -123,7 +136,7 @@ def build_system_prompt(
         j = json.load(f)
 
     decisions_text = "\n".join(
-        f"- {d['what']}: chose {d['chose']}, rejected {d['rejected']} ({d['reason']})"
+        f"- {d['what']} [{d.get('status', 'locked').upper()}]: chose {d['chose']}, rejected {d['rejected']} ({d['reason']})"
         for d in j.get("decisions", [])
     ) or "None yet."
 

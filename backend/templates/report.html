@@ -285,6 +285,50 @@
   .callout-danger { border-left: 3px solid var(--red); }
   .callout-success { border-left: 3px solid var(--green); }
 
+  /* ── Error Diagnosis Cards ────────────────────── */
+  .diag-card {
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .diag-card .diag-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .diag-cause  { background: rgba(248,113,113,0.06); border-left: 3px solid var(--red); }
+  .diag-cause .diag-label { color: var(--red); }
+  .diag-fix    { background: rgba(52,211,153,0.06);  border-left: 3px solid var(--green); }
+  .diag-fix .diag-label { color: var(--green); }
+  .diag-check  { background: rgba(251,191,36,0.06);  border-left: 3px solid var(--amber); }
+  .diag-check .diag-label { color: var(--amber); }
+
+  /* ── Copy Button on Code Blocks ─────────────── */
+  .code-wrapper {
+    position: relative;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--dim);
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .code-wrapper:hover .copy-btn { opacity: 1; }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent-dim); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
   /* ── Footer ──────────────────────────────────── */
   footer {
     margin-top: 48px;
@@ -366,5 +410,58 @@
     <span class="logo">JARVIS</span>
     <span>Proactive Developer Intelligence Layer</span>
   </footer>
+
+  <script>
+  (function() {
+    // ── Auto-detect CAUSE / FIX / ALSO CHECK and wrap in styled diagnosis cards ──
+    document.querySelectorAll('.section-content p').forEach(function(p) {
+      var text = p.textContent.trim();
+      var mapping = [
+        { prefix: 'CAUSE:',      cls: 'diag-cause',  label: 'Cause' },
+        { prefix: 'FIX:',        cls: 'diag-fix',    label: 'Fix' },
+        { prefix: 'ALSO CHECK:', cls: 'diag-check',  label: 'Also Check' }
+      ];
+      for (var i = 0; i < mapping.length; i++) {
+        if (text.indexOf(mapping[i].prefix) === 0) {
+          var card = document.createElement('div');
+          card.className = 'diag-card ' + mapping[i].cls;
+          var lbl = document.createElement('div');
+          lbl.className = 'diag-label';
+          lbl.textContent = mapping[i].label;
+          card.appendChild(lbl);
+          var body = document.createElement('div');
+          body.innerHTML = p.innerHTML.replace(mapping[i].prefix, '').trim();
+          card.appendChild(body);
+          p.parentNode.replaceChild(card, p);
+          break;
+        }
+      }
+    });
+
+    // ── Copy-to-clipboard buttons on code blocks ──
+    document.querySelectorAll('pre').forEach(function(pre) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'code-wrapper';
+      pre.parentNode.insertBefore(wrapper, pre);
+      wrapper.appendChild(pre);
+      var btn = document.createElement('button');
+      btn.className = 'copy-btn';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', function() {
+        var code = pre.querySelector('code');
+        var text = code ? code.textContent : pre.textContent;
+        navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(function() {
+            btn.textContent = 'Copy';
+            btn.classList.remove('copied');
+          }, 2000);
+        });
+      });
+      wrapper.appendChild(btn);
+    });
+  })();
+  </script>
 </body>
 </html>

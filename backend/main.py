@@ -230,10 +230,17 @@ async def ws_handler(websocket):
         if session_msg_count > 0:
             try:
                 from backend.memory.jarvis_json import update as update_jarvis
+                # Grab last assistant response as a summary for cross-session context
+                last_summary = ""
+                for msg in reversed(session_history):
+                    if msg.get("role") == "assistant" and msg.get("content"):
+                        last_summary = msg["content"][:200]
+                        break
                 update_jarvis("session_log", "append", {
                     "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     "messages": session_msg_count,
                     "mode": _current_mode,
+                    "summary": last_summary,
                 })
             except Exception as e:
                 logger.warning(f"Failed to log session: {e}")

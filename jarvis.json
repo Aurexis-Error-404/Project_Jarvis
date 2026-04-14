@@ -19,31 +19,36 @@
             "what": "AI engine for proactive gate",
             "chose": "Ollama / CodeLlama",
             "rejected": "Claude API",
-            "reason": "Gate runs 50+ times per hour \u2014 must be free and local"
+            "reason": "Gate runs 50+ times per hour \u2014 must be free and local",
+            "status": "locked"
         },
         {
             "what": "AI engine for error diagnosis",
             "chose": "gemini-2.5-flash",
             "rejected": "llama-3.3-70b-versatile",
-            "reason": "Error diagnosis is user-facing quality \u2014 needs deep reasoning"
+            "reason": "Error diagnosis is user-facing quality \u2014 needs deep reasoning",
+            "status": "locked"
         },
         {
             "what": "AI engine for summaries and commit messages",
             "chose": "llama-3.3-70b-versatile",
             "rejected": "gemini-2.5-flash",
-            "reason": "Structured short output \u2014 Groq matches Gemini quality at lower latency and cost"
+            "reason": "Structured short output \u2014 Groq matches Gemini quality at lower latency and cost",
+            "status": "locked"
         },
         {
             "what": "Project memory format",
             "chose": "jarvis.json structured schema",
             "rejected": "free-text notes",
-            "reason": "Structured fields prevent hallucination \u2014 Claude reads schema not prose"
+            "reason": "Structured fields prevent hallucination \u2014 Claude reads schema not prose",
+            "status": "locked"
         },
         {
             "what": "Local secure mode model",
             "chose": "CodeLlama via Ollama",
             "rejected": "Claude API in local mode",
-            "reason": "Zero bytes leave machine in secure mode"
+            "reason": "Zero bytes leave machine in secure mode",
+            "status": "locked"
         }
     ],
     "open_questions": [
@@ -102,7 +107,6 @@
             "mode": "cloud"
         },
         {
-<<<<<<< HEAD
             "timestamp": "2026-04-11T10:20:19.335357+00:00",
             "messages": 2,
             "mode": "local"
@@ -113,10 +117,6 @@
             "mode": "local"
         },
         {
-            "timestamp": "2026-04-11T18:56:40.404337+00:00",
-            "messages": 1,
-            "mode": "local"
-=======
             "timestamp": "2026-04-11T12:06:52.723174+00:00",
             "messages": 9,
             "mode": "local"
@@ -125,7 +125,11 @@
             "timestamp": "2026-04-11T13:13:31.878208+00:00",
             "messages": 2,
             "mode": "local"
->>>>>>> e389db3f56978f7d7f15cde282a77e0feef7c135
+        },
+        {
+            "timestamp": "2026-04-11T18:56:40.404337+00:00",
+            "messages": 1,
+            "mode": "local"
         }
     ]
-}
+}

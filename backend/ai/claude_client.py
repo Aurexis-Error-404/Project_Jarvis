@@ -78,7 +78,11 @@ def _format_session_history() -> str:
             ts = s.get("timestamp", "unknown time")
             msgs = s.get("messages", 0)
             mode = s.get("mode", "unknown")
-            lines.append(f"- {ts}: {msgs} messages ({mode} mode)")
+            summary = s.get("summary", "")
+            entry = f"- {ts}: {msgs} messages ({mode} mode)"
+            if summary:
+                entry += f"\n  Last topic: {summary}"
+            lines.append(entry)
         return "\n".join(lines)
     except Exception as e:
         logger.warning(f"Failed to load session history: {e}")
