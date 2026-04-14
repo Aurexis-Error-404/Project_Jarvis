@@ -23,14 +23,6 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('jarvis_reports') || '[]'); }
     catch { return []; }
   });
-<<<<<<< HEAD
-=======
-  const [conversations, setConversations] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('jarvis_conversations') || '[]'); }
-    catch { return []; }
-  });
-  const [activeConvId, setActiveConvId] = useState(null);
->>>>>>> e389db3f56978f7d7f15cde282a77e0feef7c135
   const [showStartup, setShowStartup] = useState(true);
   const [activeTools, setActiveTools] = useState([]);
   const [projectPath, setProjectPath] = useState(null);
@@ -42,81 +34,8 @@ export default function App() {
     localStorage.setItem('jarvis_reports', JSON.stringify(reports));
   }, [reports]);
 
-<<<<<<< HEAD
   const { conversations, activeConvId, autoTitle, syncMessages, selectConv, newSession } = useConversations({
     dispatch, discardStreamRef, isStreamingRef, setIsStreaming, setActiveTools,
-=======
-  // Persist conversations across restarts
-  useEffect(() => {
-    localStorage.setItem('jarvis_conversations', JSON.stringify(conversations));
-  }, [conversations]);
-
-  // Save messages into the active conversation on every change
-  useEffect(() => {
-    if (activeConvId && messages.length > 0) {
-      setConversations(prev => prev.map(c =>
-        c.id === activeConvId ? { ...c, messages } : c
-      ));
-    }
-  }, [messages, activeConvId]);
-
-  const { sendMessage, connectionStatus } = useWebSocket('ws://localhost:8765', {
-    onStreamChunk: (event) => {
-      if (discardStreamRef.current) return;
-      if (!isStreamingRef.current) {
-        isStreamingRef.current = true;
-        setIsStreaming(true);
-        dispatch({ type: 'START_STREAM' });
-      }
-      if (event.text) {
-        dispatch({ type: 'APPEND_CHUNK', text: event.text });
-      }
-      if (event.done) { isStreamingRef.current = false; dispatch({ type: 'FINISH_STREAM' }); setIsStreaming(false); }
-    },
-    onResponse: (event) => {
-      if (isStreamingRef.current) {
-        isStreamingRef.current = false;
-        dispatch({ type: 'REPLACE_RESPONSE', text: event.text });
-        setIsStreaming(false);
-      } else {
-        dispatch({ type: 'ADD_JARVIS_MESSAGE', text: event.text });
-      }
-    },
-    onSurface: (event) => { setSurfaceData({ bullets: event.bullets, file: event.file }); },
-    onModeAck: (event) => { setMode(event.mode); },
-    onError: (event) => {
-      if (isStreamingRef.current) { dispatch({ type: 'FINISH_STREAM' }); }
-      dispatch({ type: 'ADD_ERROR', message: event.message });
-      isStreamingRef.current = false;
-      setIsStreaming(false);
-      setActiveTools([]);
-    },
-    onReportGenerated: (event) => {
-      setReportReady({ path: event.path });
-      const name = event.path.split(/[\\/]/).pop() || 'Report';
-      setReports(prev => [{ path: event.path, name, time: new Date().toLocaleTimeString() }, ...prev]);
-    },
-    onStatusUpdate: () => { /* transient */ },
-    onProjectPathAck: (event) => { setProjectPath(event.path); },
-    onToolCallStatus: (event) => {
-      if (event.status === 'start') {
-        setActiveTools(prev => [...prev, {
-          tool: event.tool, params: event.params || {}, status: 'running',
-        }]);
-      } else {
-        setActiveTools(prev => prev.map(t =>
-          t.tool === event.tool && t.status === 'running'
-            ? { ...t, status: 'done', duration: event.duration_ms }
-            : t
-        ));
-        setTimeout(() => {
-          setActiveTools(prev => prev.filter(t =>
-            !(t.tool === event.tool && t.status === 'done')
-          ));
-        }, 1500);
-      }
-    },
->>>>>>> e389db3f56978f7d7f15cde282a77e0feef7c135
   });
 
   // Sync messages into active conversation on every change

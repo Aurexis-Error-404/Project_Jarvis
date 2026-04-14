@@ -238,7 +238,6 @@ async def ws_handler(websocket):
             except Exception as e:
                 logger.warning(f"Failed to log session: {e}")
         logger.info(f"Client disconnected. Total: {len(connected_clients)}")
-        logger.info(f"Client disconnected. Total: {len(connected_clients)}")
 
 
 async def start_ws_server():
