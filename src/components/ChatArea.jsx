@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import ModeToggle from './ModeToggle';
 import { IconSend } from './Icons';
 import renderMarkdown from '../utils/renderMarkdown';
@@ -12,6 +13,20 @@ const TOOL_LABELS = {
 };
 
 export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [] }) {
+  const [inputValue, setInputValue] = useState('');
+
+  // Keep external inputRef in sync so App.jsx can focus it
+  useEffect(() => {
+    if (inputRef) {
+      inputRef.current = { focus: () => document.getElementById('jarvis-input')?.focus() };
+    }
+  }, [inputRef]);
+
+  const submit = () => {
+    const val = inputValue.trim();
+    if (val && !isStreaming) { onSend(val); setInputValue(''); }
+  };
+
   return (
     <div className="chat-area">
       <div className="chat-header" style={{ WebkitAppRegion: 'drag' }}>
@@ -42,7 +57,6 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
                 </div>
               </div>
             ))}
-            {/* Tool progress indicators */}
             {activeTools.length > 0 && (
               <div className="tool-progress">
                 {activeTools.map((t, i) => (
@@ -71,16 +85,12 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
 
       <div className="input-area" style={{ WebkitAppRegion: 'no-drag' }}>
         <div className="chat-input-wrapper">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const val = inputRef.current?.value?.trim();
-              if (val) { onSend(val); inputRef.current.value = ''; }
-            }}
-          >
+          <form onSubmit={(e) => { e.preventDefault(); submit(); }}>
             <input
-              ref={inputRef}
+              id="jarvis-input"
               type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
               placeholder={mode === 'local' ? 'Message JARVIS (Secure Mode)...' : 'Message JARVIS...'}
               disabled={isStreaming}
               className="chat-input"
@@ -90,15 +100,7 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
             <span className="input-disclaimer">
               {mode === 'local' ? '🔒 Secure mode — all data stays local' : 'JARVIS can be inaccurate, please double check its responses.'}
             </span>
-            <button
-              className="btn-send"
-              disabled={isStreaming}
-              onClick={() => {
-                const val = inputRef.current?.value?.trim();
-                if (val) { onSend(val); inputRef.current.value = ''; }
-              }}
-              title="Send"
-            >
+            <button className="btn-send" disabled={isStreaming} onClick={submit} title="Send">
               <IconSend />
             </button>
           </div>

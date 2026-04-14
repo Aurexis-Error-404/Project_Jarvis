@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useReducer } from 'react';
+import { WS_URL, SPLASH_DISMISS_MS, INPUT_FOCUS_MS } from './constants/config';
 import useWebSocket from './hooks/useWebSocket';
+import useConversations from './hooks/useConversations';
+import buildJarvisEventHandlers from './hooks/useJarvisEvents';
 import messageReducer from './reducers/messageReducer';
 import SplashScreen from './components/SplashScreen';
 import SurfaceCard from './components/SurfaceCard';
@@ -20,8 +23,6 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('jarvis_reports') || '[]'); }
     catch { return []; }
   });
-  const [conversations, setConversations] = useState([]); // { id, title, time, messages[] }
-  const [activeConvId, setActiveConvId] = useState(null);
   const [showStartup, setShowStartup] = useState(true);
   const [activeTools, setActiveTools] = useState([]);
   const [projectPath, setProjectPath] = useState(null);
@@ -33,94 +34,40 @@ export default function App() {
     localStorage.setItem('jarvis_reports', JSON.stringify(reports));
   }, [reports]);
 
-  // Save messages into the active conversation on every change
-  useEffect(() => {
-    if (activeConvId && messages.length > 0) {
-      setConversations(prev => prev.map(c =>
-        c.id === activeConvId ? { ...c, messages } : c
-      ));
-    }
-  }, [messages, activeConvId]);
-
-  const { sendMessage, connectionStatus } = useWebSocket('ws://localhost:8765', {
-    onStreamChunk: (event) => {
-      if (discardStreamRef.current) return;
-      if (!isStreamingRef.current) {
-        isStreamingRef.current = true;
-        setIsStreaming(true);
-        dispatch({ type: 'START_STREAM' });
-      }
-      if (event.text) {
-        dispatch({ type: 'APPEND_CHUNK', text: event.text });
-      }
-      if (event.done) { isStreamingRef.current = false; dispatch({ type: 'FINISH_STREAM' }); setIsStreaming(false); }
-    },
-    onResponse: (event) => {
-      if (isStreamingRef.current) {
-        isStreamingRef.current = false;
-        dispatch({ type: 'REPLACE_RESPONSE', text: event.text });
-        setIsStreaming(false);
-      } else {
-        dispatch({ type: 'ADD_JARVIS_MESSAGE', text: event.text });
-      }
-    },
-    onSurface: (event) => { setSurfaceData({ bullets: event.bullets, file: event.file }); },
-    onModeAck: (event) => { setMode(event.mode); },
-    onError: (event) => {
-      if (isStreamingRef.current) { dispatch({ type: 'FINISH_STREAM' }); }
-      dispatch({ type: 'ADD_ERROR', message: event.message });
-      isStreamingRef.current = false;
-      setIsStreaming(false);
-      setActiveTools([]);
-    },
-    onReportGenerated: (event) => {
-      setReportReady({ path: event.path });
-      const name = event.path.split(/[\\/]/).pop() || 'Report';
-      setReports(prev => [{ path: event.path, name, time: new Date().toLocaleTimeString() }, ...prev]);
-    },
-    onStatusUpdate: () => { /* transient */ },
-    onProjectPathAck: (event) => { setProjectPath(event.path); },
-    onToolCallStatus: (event) => {
-      if (event.status === 'start') {
-        setActiveTools(prev => [...prev, {
-          tool: event.tool, params: event.params || {}, status: 'running',
-        }]);
-      } else {
-        setActiveTools(prev => prev.map(t =>
-          t.tool === event.tool && t.status === 'running'
-            ? { ...t, status: 'done', duration: event.duration_ms }
-            : t
-        ));
-        setTimeout(() => {
-          setActiveTools(prev => prev.filter(t =>
-            !(t.tool === event.tool && t.status === 'done')
-          ));
-        }, 1500);
-      }
-    },
+  const { conversations, activeConvId, autoTitle, syncMessages, selectConv, newSession } = useConversations({
+    dispatch, discardStreamRef, isStreamingRef, setIsStreaming, setActiveTools,
   });
+
+  // Sync messages into active conversation on every change
+  useEffect(() => { syncMessages(messages); }, [messages, syncMessages]);
+
+  const { sendMessage, connectionStatus } = useWebSocket(
+    WS_URL,
+    buildJarvisEventHandlers({
+      dispatch, isStreamingRef, discardStreamRef,
+      setIsStreaming, setSurfaceData, setMode,
+      setReports, setReportReady, setActiveTools, setProjectPath,
+    })
+  );
 
   useEffect(() => {
     if (window.jarvis?.onToggleOverlay) {
-      return window.jarvis.onToggleOverlay(() => setTimeout(() => inputRef.current?.focus(), 50));
+      return window.jarvis.onToggleOverlay(() => setTimeout(() => inputRef.current?.focus(), INPUT_FOCUS_MS));
     }
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        manualSplashRef.current = true;
-        setShowStartup(true);
-      }
+    const onKey = (e) => {
+      if (e.key === 'Escape') { manualSplashRef.current = true; setShowStartup(true); }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // Auto-skip splash on connect — but only if user didn't manually navigate here
+  // Auto-skip splash on connect — only on cold start, not manual returns
   useEffect(() => {
     if (showStartup && connectionStatus === 'connected' && !manualSplashRef.current) {
-      const t = setTimeout(() => setShowStartup(false), 1500);
+      const t = setTimeout(() => setShowStartup(false), SPLASH_DISMISS_MS);
       return () => clearTimeout(t);
     }
   }, [showStartup, connectionStatus]);
@@ -144,14 +91,8 @@ export default function App() {
     isStreamingRef.current = true;
     setIsStreaming(true);
     sendMessage({ event: 'user_query', query: text.trim(), mode });
-    // Auto-title the first message of a new conversation
-    if (messages.length === 0 && !activeConvId) {
-      const id = Date.now().toString();
-      const title = text.trim().slice(0, 40) + (text.trim().length > 40 ? '...' : '');
-      setActiveConvId(id);
-      setConversations(prev => [{ id, title, time: new Date().toLocaleTimeString(), messages: [] }, ...prev]);
-    }
-  }, [isStreaming, mode, sendMessage, messages.length, activeConvId]);
+    autoTitle(text.trim(), messages.length);
+  }, [isStreaming, mode, sendMessage, messages.length, autoTitle]);
 
   const handleModeToggle = useCallback(() => {
     const next = mode === 'cloud' ? 'local' : 'cloud';
@@ -160,34 +101,13 @@ export default function App() {
   }, [mode, sendMessage]);
 
   const handleNewSession = useCallback(() => {
-    discardStreamRef.current = true;
-    dispatch({ type: 'CLEAR' });
-    setActiveConvId(null);
-    setActiveTools([]);
-    setIsStreaming(false);
-    isStreamingRef.current = false;
-    setReportReady(null);
-    setSurfaceData(null);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  }, []);
-
-  const handleSelectConv = useCallback((convId) => {
-    if (convId === activeConvId) return;
-    const conv = conversations.find(c => c.id === convId);
-    if (!conv?.messages?.length) return;
-    discardStreamRef.current = true;
-    isStreamingRef.current = false;
-    setIsStreaming(false);
-    setActiveTools([]);
-    setActiveConvId(convId);
-    dispatch({ type: 'RESTORE_MESSAGES', messages: conv.messages });
-  }, [activeConvId, conversations]);
+    newSession(() => { setReportReady(null); setSurfaceData(null); });
+    setTimeout(() => inputRef.current?.focus(), INPUT_FOCUS_MS);
+  }, [newSession]);
 
   const handleSelectProject = useCallback(async () => {
     const dir = await window.jarvis?.selectProjectDir();
-    if (dir) {
-      sendMessage({ event: 'set_project_path', path: dir });
-    }
+    if (dir) sendMessage({ event: 'set_project_path', path: dir });
   }, [sendMessage]);
 
   const handleDismissSurface = useCallback(() => {
@@ -230,13 +150,14 @@ export default function App() {
           <button className="surface-dismiss" onClick={() => setReportReady(null)}>✕</button>
         </div>
       )}
+
       <SidebarLeft
         connectionStatus={connectionStatus}
         onGoHome={() => { manualSplashRef.current = true; setShowStartup(true); }}
         onNewSession={handleNewSession}
         conversations={conversations}
         activeConvId={activeConvId}
-        onSelectConv={handleSelectConv}
+        onSelectConv={selectConv}
         projectPath={projectPath}
         onSelectProject={handleSelectProject}
       />

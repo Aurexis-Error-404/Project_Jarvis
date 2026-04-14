@@ -118,3 +118,27 @@ def get_fallback(provider_name: str, mode: str):
     if mode == "local":
         return None
     return CLOUD_FALLBACK.get(provider_name)
+
+
+def validate_providers() -> None:
+    """
+    Log warnings for any cloud providers with missing API keys.
+    Called once at startup so misconfiguration surfaces immediately in logs
+    instead of silently triggering the fallback chain at runtime.
+    """
+    import logging
+    logger = logging.getLogger("jarvis.providers")
+
+    cloud_providers = ("gemini", "groq")
+    missing = [name for name in cloud_providers if not _get_providers()[name]["api_key"]]
+
+    if not missing:
+        logger.info("Provider validation passed — Gemini and Groq API keys present")
+        return
+
+    for name in missing:
+        env_var = {"gemini": "GEMINI_API_KEY", "groq": "GROQ_API_KEY"}[name]
+        logger.warning(
+            f"Provider '{name}' has no API key — set {env_var} in .env. "
+            f"Cloud mode will skip {name} and use its fallback."
+        )

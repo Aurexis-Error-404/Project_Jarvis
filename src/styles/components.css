@@ -1,43 +1,3 @@
-/* ─── Reset ─────────────────────────────────────────────── */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html, body {
-  width: 100%; height: 100%;
-  overflow: hidden;
-  background: transparent;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #e8e8f0;
-  -webkit-font-smoothing: antialiased;
-}
-#root { width: 100%; height: 100%; }
-
-/* ─── Scrollbar ──────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
-
-/* ─── Animations ─────────────────────────────────────────── */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(12px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0; }
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.4; }
-}
-@keyframes splashFadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
 /* ─── Splash Screen ──────────────────────────────────────── */
 .splash-screen {
   width: 100vw; height: 100vh;
@@ -106,46 +66,6 @@ html, body {
 }
 .splash-dot.ready    { background: #10b981; box-shadow: 0 0 8px #10b981; }
 .splash-dot.connecting { background: #f59e0b; animation: pulse 1.4s ease infinite; }
-
-/* ─── App Layout ─────────────────────────────────────────── */
-.app-container {
-  display: flex;
-  height: 100vh;
-  background: #0e0e11;
-  color: #ececf1;
-  overflow: hidden;
-  position: relative;
-}
-
-/* ─── Sidebars ───────────────────────────────────────────── */
-.sidebar {
-  width: 280px;
-  min-width: 280px;
-  display: flex;
-  flex-direction: column;
-  background: #0e0e11;
-  transition: width 0.25s ease;
-}
-.sidebar-left  { border-right: 1px solid #1f1f23; }
-.sidebar-right { border-left:  1px solid #1f1f23; }
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  min-height: 52px;
-  border-bottom: 1px solid #1f1f23;
-}
-.sidebar-body { flex: 1; overflow-y: auto; }
-.sidebar-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-top: 1px solid #1f1f23;
-  min-height: 48px;
-}
 
 /* ─── Workspace ──────────────────────────────────────────── */
 .workspace-avatar {
@@ -346,26 +266,6 @@ html, body {
 .conn-dot.offline    { background: #f59e0b; animation: pulse 1.4s ease infinite; }
 .conn-label { font-size: 10px; color: #52525b; letter-spacing: 0.08em; }
 
-/* ─── Chat Area ──────────────────────────────────────────── */
-.chat-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #0e0e11;
-  min-width: 0;
-}
-
-.chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  min-height: 52px;
-  border-bottom: 1px solid #1f1f23;
-  gap: 16px;
-}
-.chat-title { font-size: 14px; font-weight: 500; color: #ececf1; flex-shrink: 0; }
-
 /* ─── Mode Toggle Area ───────────────────────────────────── */
 .header-toggles {
   display: flex;
@@ -439,20 +339,6 @@ html, body {
 .mode-track.cloud .mode-dot { transform: translateX(16px); }
 
 /* ─── Messages ───────────────────────────────────────────── */
-.messages-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 28px 52px;
-  display: flex;
-  flex-direction: column;
-}
-.messages-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding-bottom: 20px;
-}
-
 .empty-state {
   flex: 1;
   display: flex;
@@ -507,90 +393,6 @@ html, body {
   border-radius: 8px;
 }
 
-/* ── Markdown content in JARVIS responses ── */
-.markdown-content { line-height: 1.6; word-wrap: break-word; }
-.markdown-content p { margin: 6px 0; }
-.markdown-content pre {
-  background: #1a1a2e;
-  border: 1px solid #2a2a3e;
-  border-radius: 8px;
-  padding: 14px;
-  overflow-x: auto;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 10px 0;
-}
-.markdown-content code {
-  background: rgba(255,255,255,0.06);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
-  font-size: 13px;
-}
-.markdown-content pre code { background: none; padding: 0; }
-
-/* ── Syntax Highlighting (dark theme) ── */
-.hljs { color: #c9d1d9; }
-.hljs-keyword, .hljs-built_in, .hljs-type { color: #ff7b72; }
-.hljs-string, .hljs-attr { color: #a5d6ff; }
-.hljs-number, .hljs-literal { color: #79c0ff; }
-.hljs-comment, .hljs-quote { color: #8b949e; font-style: italic; }
-.hljs-function .hljs-title, .hljs-title.function_ { color: #d2a8ff; }
-.hljs-class .hljs-title, .hljs-title.class_ { color: #ffa657; }
-.hljs-variable, .hljs-template-variable { color: #ffa657; }
-.hljs-params { color: #c9d1d9; }
-.hljs-property { color: #79c0ff; }
-.hljs-punctuation { color: #c9d1d9; }
-.hljs-meta { color: #8b949e; }
-.hljs-tag { color: #7ee787; }
-.hljs-name { color: #7ee787; }
-.hljs-selector-class, .hljs-selector-id, .hljs-selector-tag { color: #7ee787; }
-.hljs-addition { color: #aff5b4; background: rgba(46,160,67,0.15); }
-.hljs-deletion { color: #ffdcd7; background: rgba(248,81,73,0.15); }
-.hljs-regexp { color: #a5d6ff; }
-.hljs-symbol { color: #79c0ff; }
-.hljs-doctag { color: #ff7b72; }
-.hljs-section { color: #d2a8ff; font-weight: 600; }
-.markdown-content h1, .markdown-content h2, .markdown-content h3 {
-  color: #ececf1; margin: 14px 0 6px; font-weight: 600;
-}
-.markdown-content h1 { font-size: 1.3em; }
-.markdown-content h2 { font-size: 1.15em; }
-.markdown-content h3 { font-size: 1.05em; }
-.markdown-content ul, .markdown-content ol { margin: 6px 0; padding-left: 20px; }
-.markdown-content li { margin: 3px 0; }
-.markdown-content strong { color: #fff; }
-.markdown-content a { color: #93c5fd; text-decoration: none; }
-.markdown-content a:hover { text-decoration: underline; }
-.markdown-content blockquote {
-  border-left: 3px solid #3f3f46;
-  margin: 8px 0; padding: 4px 12px;
-  color: #a1a1aa;
-}
-.markdown-content table { border-collapse: collapse; margin: 8px 0; width: 100%; }
-.markdown-content th, .markdown-content td {
-  border: 1px solid #2a2a3e; padding: 6px 10px; font-size: 13px; text-align: left;
-}
-.markdown-content th { background: #1a1a2e; font-weight: 600; }
-.markdown-content hr { border: none; border-top: 1px solid #2a2a3e; margin: 12px 0; }
-
-/* ── Error Diagnosis Cards ── */
-.diag-section {
-  border-left: 3px solid; padding: 8px 12px; margin: 8px 0;
-  border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.02);
-}
-.diag-cause  { border-color: #ef4444; }
-.diag-fix    { border-color: #10b981; }
-.diag-check  { border-color: #f59e0b; }
-.diag-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
-  text-transform: uppercase; margin-right: 6px;
-}
-.diag-cause .diag-label  { color: #fca5a5; }
-.diag-fix .diag-label    { color: #6ee7b7; }
-.diag-check .diag-label  { color: #fcd34d; }
-
 .streaming-cursor { animation: blink 0.9s step-end infinite; }
 .thinking-indicator {
   align-self: flex-start;
@@ -633,21 +435,7 @@ html, body {
   background: rgba(255,255,255,0.04); padding: 1px 6px; border-radius: 4px;
 }
 
-/* ─── Input Area ─────────────────────────────────────────── */
-.input-area { padding: 0 52px 22px; }
-
-.chat-input-wrapper {
-  background: #18181b;
-  border: 1px solid #2a2a2e;
-  border-radius: 12px;
-  padding: 12px 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-.chat-input-wrapper:focus-within {
-  border-color: #3f3f46;
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04);
-}
-
+/* ─── Chat Input ─────────────────────────────────────────── */
 .chat-input {
   width: 100%;
   background: transparent;
@@ -660,12 +448,6 @@ html, body {
 }
 .chat-input::placeholder { color: #3f3f46; }
 
-.input-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-}
 .input-disclaimer { font-size: 11px; color: #3a3a3e; }
 
 .btn-send {

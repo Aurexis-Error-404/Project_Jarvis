@@ -1,11 +1,10 @@
 // src/hooks/useWebSocket.js — Custom hook for WebSocket communication
-// Connects to ws://localhost:8765, flat 2s reconnect, centralized event handling
+// Connects to ws://localhost:8765, exponential backoff reconnect (2s → 4s → 8s → cap 30s)
 // Exposes: { sendMessage, connectionStatus }
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-
-// ─── Reconnect config ─────────────────────────────────────
-const RECONNECT_DELAY_MS = 2000; // Flat 2s — no exponential, backend restarts constantly
+import { RECONNECT_BASE_MS, RECONNECT_MAX_MS } from '../constants/config';
+import { RECV } from '../constants/wsEvents';
 
 /**
  * useWebSocket — connects once on mount, auto-reconnects on disconnect.
@@ -24,6 +23,7 @@ export default function useWebSocket(url, handlers = {}) {
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const wsRef = useRef(null);
   const reconnectTimerRef = useRef(null);
+  const reconnectAttemptsRef = useRef(0);
   const handlersRef = useRef(handlers);
   const mountedRef = useRef(true);
 
@@ -50,6 +50,7 @@ export default function useWebSocket(url, handlers = {}) {
     // ─── Connected ──────────────────────────────────────
     ws.onopen = () => {
       if (!mountedRef.current) return;
+      reconnectAttemptsRef.current = 0; // Reset backoff on successful connect
       setConnectionStatus('connected');
       console.log('[WS] Connected');
     };
@@ -71,39 +72,39 @@ export default function useWebSocket(url, handlers = {}) {
       // One place to update if the contract changes
       const h = handlersRef.current;
       switch (data.event) {
-        case 'jarvis_stream_chunk':
+        case RECV.STREAM_CHUNK:
           h.onStreamChunk?.(data);
           break;
 
-        case 'jarvis_response':
+        case RECV.RESPONSE:
           h.onResponse?.(data);
           break;
 
-        case 'jarvis_surface':
+        case RECV.SURFACE:
           h.onSurface?.(data);
           break;
 
-        case 'jarvis_mode_ack':
+        case RECV.MODE_ACK:
           h.onModeAck?.(data);
           break;
 
-        case 'jarvis_error':
+        case RECV.ERROR:
           h.onError?.(data);
           break;
 
-        case 'report_generated':
+        case RECV.REPORT_GENERATED:
           h.onReportGenerated?.(data);
           break;
 
-        case 'status_update':
+        case RECV.STATUS_UPDATE:
           h.onStatusUpdate?.(data);
           break;
 
-        case 'tool_call_status':
+        case RECV.TOOL_CALL_STATUS:
           h.onToolCallStatus?.(data);
           break;
 
-        case 'project_path_ack':
+        case RECV.PROJECT_PATH_ACK:
           h.onProjectPathAck?.(data);
           break;
 
@@ -119,11 +120,13 @@ export default function useWebSocket(url, handlers = {}) {
       console.log('[WS] Disconnected (code:', event.code, ')');
       wsRef.current = null;
 
-      // Auto-reconnect with flat 2s delay
+      // Auto-reconnect with exponential backoff: 2s → 4s → 8s → … → 30s cap
+      const delay = Math.min(RECONNECT_BASE_MS * 2 ** reconnectAttemptsRef.current, RECONNECT_MAX_MS);
+      reconnectAttemptsRef.current += 1;
+      console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})...`);
       reconnectTimerRef.current = setTimeout(() => {
-        console.log('[WS] Reconnecting...');
         connect();
-      }, RECONNECT_DELAY_MS);
+      }, delay);
     };
 
     // ─── Error — log but don't crash ────────────────────

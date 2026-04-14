@@ -1,9 +1,10 @@
-// main.js — Electron main process
+// electron/main.js — Electron main process
 // Frameless, transparent, always-on-top JARVIS overlay
 // Toggled by Ctrl+Space (fallback: Ctrl+Shift+Space), hidden by default, system tray icon
 
-const { app, BrowserWindow, globalShortcut, Tray, Menu, nativeImage, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, dialog } = require('electron');
 const path = require('path');
+const { createTray } = require('./tray');
 
 // ─── Redirect userData before anything else ───────────────
 // Prevents "Access is denied" cache errors when the default
@@ -59,7 +60,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+  mainWindow.loadFile(path.join(__dirname, '..', 'src', 'index.html'));
 
   // Intercept close — hide only, real quit from tray
   mainWindow.on('close', (event) => {
@@ -91,76 +92,17 @@ function toggleOverlay() {
   }
 }
 
-/**
- * Create system tray icon with context menu.
- */
-function createTray() {
-  let icon;
-  const iconPath = path.join(__dirname, 'assets', 'icon.png');
-
-  // Try file-based icon first
-  try {
-    const fileIcon = nativeImage.createFromPath(iconPath);
-    if (!fileIcon.isEmpty()) {
-      icon = fileIcon.resize({ width: 16, height: 16 });
-      console.log('[JARVIS] Tray icon loaded from file');
-    }
-  } catch (e) {
-    console.warn('[JARVIS] Failed to load icon file:', e.message);
-  }
-
-  // Fallback: programmatic 16x16 cyan dot
-  if (!icon || icon.isEmpty()) {
-    const size = 16;
-    const buffer = Buffer.alloc(size * size * 4);
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const cx = x - 7.5, cy = y - 7.5;
-        const dist = Math.sqrt(cx * cx + cy * cy);
-        const idx = (y * size + x) * 4;
-        if (dist < 6) {
-          buffer[idx] = 0;       // R
-          buffer[idx + 1] = 212; // G
-          buffer[idx + 2] = 255; // B
-          buffer[idx + 3] = 255; // A
-        }
-      }
-    }
-    icon = nativeImage.createFromBuffer(buffer, { width: size, height: size });
-    console.log('[JARVIS] Tray icon: using fallback');
-  }
-
-  tray = new Tray(icon);
-  tray.setToolTip('JARVIS — AI Developer Assistant');
-
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: 'Open',
-      click: () => {
-        if (mainWindow) {
-          mainWindow.show();
-          mainWindow.focus();
-        }
-      },
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        isQuitting = true;
-        app.quit();
-      },
-    },
-  ]);
-
-  tray.setContextMenu(contextMenu);
-  tray.on('double-click', toggleOverlay);
-}
-
 // ─── App lifecycle ───────────────────────────────────────
 app.whenReady().then(() => {
   createWindow();
-  createTray();
+
+  tray = createTray({
+    toggleOverlay,
+    onQuit: () => {
+      isQuitting = true;
+      app.quit();
+    },
+  });
 
   // IPC: let renderer open a native directory picker
   ipcMain.handle('select-project-dir', async () => {

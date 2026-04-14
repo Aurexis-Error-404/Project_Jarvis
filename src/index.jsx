@@ -4,7 +4,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
-import './index.css';
+import './styles/index.css';
 
 // Mount React app
 const container = document.getElementById('root');

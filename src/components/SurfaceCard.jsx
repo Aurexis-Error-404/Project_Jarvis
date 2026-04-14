@@ -1,10 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { SURFACE_DISMISS_MS } from '../constants/config';
 
 export default function SurfaceCard({ surfaceData, onDismiss }) {
   const dismissTimerRef = useRef(null);
 
   const startDismissTimer = useCallback(() => {
-    dismissTimerRef.current = setTimeout(onDismiss, 8000);
+    dismissTimerRef.current = setTimeout(onDismiss, SURFACE_DISMISS_MS);
   }, [onDismiss]);
 
   const clearDismissTimer = useCallback(() => {

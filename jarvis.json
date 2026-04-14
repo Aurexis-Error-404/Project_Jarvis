@@ -100,6 +100,21 @@
             "timestamp": "2026-04-11T10:05:32.351325+00:00",
             "messages": 12,
             "mode": "cloud"
+        },
+        {
+            "timestamp": "2026-04-11T10:20:19.335357+00:00",
+            "messages": 2,
+            "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-11T10:54:34.859415+00:00",
+            "messages": 3,
+            "mode": "local"
+        },
+        {
+            "timestamp": "2026-04-11T18:56:40.404337+00:00",
+            "messages": 1,
+            "mode": "local"
         }
     ]
 }

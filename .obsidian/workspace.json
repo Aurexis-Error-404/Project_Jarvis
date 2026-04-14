@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "8f233257a857697f",
+        "id": "f82e063b7e0f93fb",
         "type": "tabs",
         "children": [
           {
-            "id": "02b0acca1e42a664",
+            "id": "da3bebd5ab24cede",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -176,10 +176,45 @@
       "bases:Create new base": false
     }
   },
-  "active": "02b0acca1e42a664",
+  "active": "da3bebd5ab24cede",
   "lastOpenFiles": [
-    "src/App.jsx.tmp.11316.1775901785748",
-    "node_modules/responselike/README.md",
-    "node_modules/global-agent/node_modules/semver/README.md"
+    "dist/bundle.js",
+    "dist/bundle.css",
+    "dist",
+    "tests/conftest.py",
+    "tests/test_ws_client.py",
+    "tests/test_prompt.py",
+    "tests",
+    "src/components/SurfaceCard.jsx.tmp.34228.1775931436167",
+    "src/App.jsx.tmp.34228.1775931383928",
+    "src/constants/config.js",
+    "node_modules/sumchecker/README.md",
+    "src/constants/wsEvents.js",
+    "wiki/analyses/2026-04-11-codebase-restructure-plan.md",
+    "wiki/analyses/2026-04-11-jarvis-architecture-review.md",
+    "wiki/concepts/project-memory.md",
+    "wiki/concepts/ai-model-routing.md",
+    "README.md",
+    "wiki/concepts/proactive-context-surfacing.md",
+    "wiki/concepts/zero-search-paradigm.md",
+    "Untitled.canvas",
+    "2026-04-11.md",
+    "wiki/entities/websocket-contract.md",
+    "wiki/entities/ollama.md",
+    "wiki/entities/groq-llama.md",
+    "wiki/entities/gemini-flash.md",
+    "wiki/entities/fastapi.md",
+    "wiki/entities/electron.md",
+    "node_modules/fs-extra/README.md",
+    "wiki/sources/jarvis-project-architecture.md",
+    "wiki/log.md",
+    "wiki/index.md",
+    "wiki/setup.md",
+    "assets/icon.png",
+    "prompts/tool_schema.md",
+    "prompts/tool.md",
+    "prompts/prompt_struc.md",
+    "prompts/prompt_fund.md",
+    "prompts/prompt_caching.md"
   ]
 }

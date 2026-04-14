@@ -232,8 +232,21 @@ async def run(query: str, mode: str, send_event,
 
     # Enable tools for all modes — Ollama's OpenAI-compat endpoint supports
     # tool definitions (tool_choice handled separately in _call_provider)
-    use_tools = OAI_TOOL_SCHEMAS
+    return await _run_tool_loop(messages, task_type, mode, params, send_event)
 
+
+async def _run_tool_loop(messages: list, task_type: str, mode: str,
+                         params: dict, send_event) -> str:
+    """
+    Tool-use loop — iterates until the model responds with finish_reason='stop'
+    or MAX_TOOL_ITERATIONS is reached.
+
+    Critical invariants:
+      - Assistant message with tool_calls appended BEFORE tool results
+      - Each tool result in its own 'tool' role message (never bundled)
+      - tool_call_id ALWAYS from tc.id — never constructed manually
+      - Tools passed on every iteration
+    """
     for iteration in range(MAX_TOOL_ITERATIONS):
         _trim_history(messages)
         try:
@@ -241,7 +254,7 @@ async def run(query: str, mode: str, send_event,
                 task_type=task_type,
                 mode=mode,
                 messages=messages,
-                tools=use_tools,
+                tools=OAI_TOOL_SCHEMAS,
                 **params,
             )
         except RuntimeError as e:
@@ -260,8 +273,7 @@ async def run(query: str, mode: str, send_event,
         if choice.finish_reason == "stop":
             text = choice.message.content or ""
             # Only use real streaming API for cloud mode after tool calls.
-            # Ollama's stream=True can hang indefinitely (never sends [DONE]),
-            # which would permanently disable the chat input.
+            # Ollama's stream=True can hang indefinitely (never sends [DONE]).
             if iteration > 0 and mode == "cloud":
                 streamed = await _stream_final_response(task_type, mode, messages, send_event)
                 if streamed is not None:
@@ -273,80 +285,18 @@ async def run(query: str, mode: str, send_event,
             tool_calls = choice.message.tool_calls or []
 
             # CRITICAL: append assistant message with tool_calls to history first
-            messages.append(
-                {
-                    "role": "assistant",
-                    "content": choice.message.content,
-                    "tool_calls": [
-                        {
-                            "id": tc.id,
-                            "type": "function",
-                            "function": {
-                                "name": tc.function.name,
-                                "arguments": tc.function.arguments,
-                            },
-                        }
-                        for tc in tool_calls
-                    ],
-                }
-            )
+            messages.append({
+                "role": "assistant",
+                "content": choice.message.content,
+                "tool_calls": [
+                    {"id": tc.id, "type": "function",
+                     "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
+                    for tc in tool_calls
+                ],
+            })
 
             for tc in tool_calls:
-                tool_name = tc.function.name
-                try:
-                    tool_input = _json.loads(tc.function.arguments)
-                except (ValueError, _json.JSONDecodeError) as e:
-                    logger.warning(f"Malformed tool arguments for {tool_name}: {e}")
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "content": _json.dumps({"error": f"Malformed arguments: {e}"}),
-                    })
-                    continue
-
-                await send_event({
-                    "event": "tool_call_status",
-                    "tool": tool_name,
-                    "status": "start",
-                    "params": {k: str(v)[:80] for k, v in tool_input.items()},
-                })
-
-                tool_start = time.monotonic()
-                result = await dispatch_tool(tool_name, tool_input)
-                tool_elapsed = int((time.monotonic() - tool_start) * 1000)
-
-                # Serialize result as clean JSON for the model (truncate large outputs)
-                result_json = _json.dumps(result, ensure_ascii=False, default=str)
-                if len(result_json) > MAX_TOOL_OUTPUT_CHARS:
-                    result_json = result_json[:MAX_TOOL_OUTPUT_CHARS] + '..."}'
-
-                await send_event({
-                    "event": "tool_call_status",
-                    "tool": tool_name,
-                    "status": "done",
-                    "result_summary": result_json[:200],
-                    "duration_ms": tool_elapsed,
-                })
-
-                # CRITICAL: each result is its own "tool" role message
-                # CRITICAL: always use tc.id — never construct tool_call_id manually
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "content": result_json,
-                    }
-                )
-
-                # Special event for report generation
-                if tool_name == "generate_html_report" and isinstance(result, dict) and "path" in result:
-                    await send_event(
-                        {
-                            "event": "report_generated",
-                            "path": result["path"],
-                            "html": result.get("html", ""),
-                        }
-                    )
+                await _execute_tool(tc, messages, send_event)
 
             continue
 
@@ -354,14 +304,55 @@ async def run(query: str, mode: str, send_event,
         break
 
     logger.warning("Max tool iterations reached")
-    await send_event(
-        {
-            "event": "jarvis_error",
-            "message": "Reached max tool iterations. Please ask a more specific question.",
-            "recoverable": True,
-        }
-    )
+    await send_event({
+        "event": "jarvis_error",
+        "message": "Reached max tool iterations. Please ask a more specific question.",
+        "recoverable": True,
+    })
     return "I ran into a loop. Please try a more specific question."
+
+
+async def _execute_tool(tc, messages: list, send_event) -> None:
+    """Dispatch a single tool call and append the result to messages."""
+    tool_name = tc.function.name
+    try:
+        tool_input = _json.loads(tc.function.arguments)
+    except (ValueError, _json.JSONDecodeError) as e:
+        logger.warning(f"Malformed tool arguments for {tool_name}: {e}")
+        messages.append({
+            "role": "tool",
+            "tool_call_id": tc.id,
+            "content": _json.dumps({"error": f"Malformed arguments: {e}"}),
+        })
+        return
+
+    await send_event({
+        "event": "tool_call_status", "tool": tool_name, "status": "start",
+        "params": {k: str(v)[:80] for k, v in tool_input.items()},
+    })
+
+    tool_start = time.monotonic()
+    result = await dispatch_tool(tool_name, tool_input)
+    tool_elapsed = int((time.monotonic() - tool_start) * 1000)
+
+    result_json = _json.dumps(result, ensure_ascii=False, default=str)
+    if len(result_json) > MAX_TOOL_OUTPUT_CHARS:
+        result_json = result_json[:MAX_TOOL_OUTPUT_CHARS] + '..."}'
+
+    await send_event({
+        "event": "tool_call_status", "tool": tool_name, "status": "done",
+        "result_summary": result_json[:200], "duration_ms": tool_elapsed,
+    })
+
+    # CRITICAL: each result is its own "tool" role message
+    messages.append({"role": "tool", "tool_call_id": tc.id, "content": result_json})
+
+    if tool_name == "generate_html_report" and isinstance(result, dict) and "path" in result:
+        await send_event({
+            "event": "report_generated",
+            "path": result["path"],
+            "html": result.get("html", ""),
+        })
 
 
 def _utcnow() -> str:

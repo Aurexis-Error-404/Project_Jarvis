@@ -1,4 +1,4 @@
-// preload.js — Secure bridge between Electron main process and React renderer
+// electron/preload.js — Secure bridge between Electron main process and React renderer
 // Uses contextBridge.exposeInMainWorld — NEVER expose ipcRenderer directly
 
 const { contextBridge, ipcRenderer, shell } = require('electron');

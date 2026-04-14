@@ -1,0 +1,6 @@
+/* ─── Import barrel ──────────────────────────────────────── */
+/* Order matters: base defines keyframes used by components  */
+@import './base.css';
+@import './layout.css';
+@import './components.css';
+@import './markdown.css';
