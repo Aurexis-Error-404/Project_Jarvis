@@ -108,6 +108,10 @@ session_*.json
 # Compiled/cached prompt outputs
 prompts/__pycache__/
 *.prompt.cache
+.claude/failure_log.md
+.claude/success_log.md
+.claude/cache/
+.claude/temp/
 
 # Electron app temp files
 .electron-gyp/

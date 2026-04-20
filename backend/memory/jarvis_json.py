@@ -13,6 +13,8 @@ import logging
 import time
 from pathlib import Path
 
+from backend.ai.security import sanitize_for_logging
+
 logger = logging.getLogger("jarvis.jarvis_json")
 
 # Resolve path relative to repo root (two levels up from this file)
@@ -68,6 +70,11 @@ def update(field: str, action: str, value) -> dict:
         j = read()
         if "error" in j:
             return j
+
+        # Defense-in-depth: scrub anything key-shaped before it hits disk.
+        # Callers should not be passing secrets, but a leaked API key in a
+        # decision's `reason` or in a session_log entry would persist forever.
+        value = sanitize_for_logging(value)
 
         if field == "decisions" and action == "append":
             if not isinstance(value, dict) or not all(k in value for k in ("what", "chose", "rejected", "reason")):

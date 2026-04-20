@@ -20,6 +20,9 @@ from openai import AsyncOpenAI
 
 from backend.ai import prompts
 from backend.ai.providers import PROVIDERS, get_provider, get_fallback
+from backend.ai.security import redact_keys
+from backend.context.workspace import Workspace, reset_active, set_active
+from backend.memory.prompt_log import load_prompt_context, post_query_hook
 from backend.tools import OAI_TOOL_SCHEMAS
 from backend.tools.tool_dispatcher import dispatch_tool
 
@@ -228,7 +231,8 @@ async def _stream_final_response(task_type, mode, messages, send_event):
 
 async def run(query: str, mode: str, send_event,
               codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.",
-              history: list = None) -> str:
+              history: list = None,
+              project_path: str | None = None) -> str:
     """
     Main entry point — runs the full tool-use loop for a user query.
 
@@ -237,103 +241,68 @@ async def run(query: str, mode: str, send_event,
     send_event: async callable that sends a WebSocket event dict to the client
     history: prior turns [{role, content}, ...] for session continuity
     """
-    session_summary = _format_session_history()
-    system = prompts.build_system_prompt(codebase_map=codebase_map, session_history=session_summary)
-    messages = [{"role": "system", "content": system}]
-    if history:
-        messages.extend(history)
-    messages.append({"role": "user", "content": query})
+    workspace_token = set_active(Workspace(project_path))
+    try:
+        session_summary = _format_session_history()
+        prompt_context = load_prompt_context(project_path=project_path)
+        system = prompts.build_system_prompt(
+            codebase_map=codebase_map,
+            session_history=session_summary,
+            user_prefs=prompt_context.get("user_prefs", ""),
+            failure_log=prompt_context.get("failure_log", ""),
+            success_log=prompt_context.get("success_log", ""),
+            capability_map=prompt_context.get("capability_map", ""),
+        )
+        messages = [{"role": "system", "content": system}]
+        if history:
+            messages.extend(history)
+        messages.append({"role": "user", "content": query})
 
-    # Infer task type from query — drives provider routing and adaptive params
-    # Local mode always uses quick_qa — Ollama works best with fast params
-    # (research_report would set max_tokens=8192 which is very slow on Ollama)
-    task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
-    params = _TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096})
-    logger.info(f"Running query (mode={mode}, task={task_type}): {query[:80]}")
+        # Infer task type from query — drives provider routing and adaptive params
+        # Local mode always uses quick_qa — Ollama works best with fast params
+        # (research_report would set max_tokens=8192 which is very slow on Ollama)
+        task_type = "quick_qa" if mode == "local" else _infer_task_type(query)
+        params = _TASK_PARAMS.get(task_type, {"temperature": 0.4, "max_tokens": 4096})
+        logger.info(f"Running query (mode={mode}, task={task_type}): {redact_keys(query[:80])}")
 
-    # Enable tools for all modes — Ollama's OpenAI-compat endpoint supports
-    # tool definitions (tool_choice handled separately in _call_provider)
-    return await _run_tool_loop(messages, task_type, mode, params, send_event)
+        # Enable tools for all modes — Ollama's OpenAI-compat endpoint supports
+        # tool definitions (tool_choice handled separately in _call_provider)
+        response_text = await _run_tool_loop(messages, task_type, mode, params, send_event)
+        tool_calls_made = sum(1 for m in messages if m.get("role") == "tool")
+        post_query_hook(
+            query=query,
+            response=response_text,
+            tool_calls_made=tool_calls_made,
+            project_path=project_path,
+        )
+        return response_text
+    finally:
+        reset_active(workspace_token)
 
 
 async def _run_tool_loop(messages: list, task_type: str, mode: str,
                          params: dict, send_event) -> str:
-    """
-    Tool-use loop — iterates until the model responds with finish_reason='stop'
-    or MAX_TOOL_ITERATIONS is reached.
+    from backend.ai.agent import JarvisAgent
 
-    Critical invariants:
-      - Assistant message with tool_calls appended BEFORE tool results
-      - Each tool result in its own 'tool' role message (never bundled)
-      - tool_call_id ALWAYS from tc.id — never constructed manually
-      - Tools passed on every iteration
-    """
-    for iteration in range(MAX_TOOL_ITERATIONS):
-        _trim_history(messages)
-        try:
-            response = await _call_with_fallback(
-                task_type=task_type,
-                mode=mode,
-                messages=messages,
-                tools=OAI_TOOL_SCHEMAS,
-                **params,
-            )
-        except RuntimeError as e:
-            err = str(e)
-            logger.error(err)
-            is_ollama = "ollama" in err.lower() or "connection" in err.lower()
-            await send_event({
-                "event": "jarvis_error",
-                "message": "Ollama is not running. Start with: ollama serve" if is_ollama else err,
-                "recoverable": is_ollama,
-            })
-            return f"API error: {e}"
-
-        choice = response.choices[0]
-
-        if choice.finish_reason == "stop":
-            text = choice.message.content or ""
-            # Only use real streaming API for cloud mode after tool calls.
-            # Ollama's stream=True can hang indefinitely (never sends [DONE]).
-            if iteration > 0 and mode == "cloud":
-                streamed = await _stream_final_response(task_type, mode, messages, send_event)
-                if streamed is not None:
-                    return streamed
-            await _stream_text(text, send_event)
-            return text
-
-        if choice.finish_reason == "tool_calls":
-            tool_calls = choice.message.tool_calls or []
-
-            # CRITICAL: append assistant message with tool_calls to history first
-            messages.append({
-                "role": "assistant",
-                "content": choice.message.content,
-                "tool_calls": [
-                    {"id": tc.id, "type": "function",
-                     "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
-                    for tc in tool_calls
-                ],
-            })
-
-            for tc in tool_calls:
-                await _execute_tool(tc, messages, send_event)
-
-            continue
-
-        logger.warning(f"Unexpected finish_reason: {choice.finish_reason}")
-        break
-
-    logger.warning("Max tool iterations reached")
-    await send_event({
-        "event": "jarvis_error",
-        "message": "Reached max tool iterations. Please ask a more specific question.",
-        "recoverable": True,
-    })
-    return "I ran into a loop. Please try a more specific question."
+    agent = JarvisAgent(
+        messages=messages,
+        task_type=task_type,
+        mode=mode,
+        params=params,
+        send_event=send_event,
+        call_with_fallback=_call_with_fallback,
+        stream_final_response=_stream_final_response,
+        stream_text=_stream_text,
+        execute_tool=_execute_tool,
+        trim_history=_trim_history,
+        tool_schemas=OAI_TOOL_SCHEMAS,
+        max_iterations=MAX_TOOL_ITERATIONS,
+    )
+    return await agent.run()
 
 
-async def _execute_tool(tc, messages: list, send_event) -> None:
+async def _execute_tool(tc, messages: list, send_event,
+                        pre_tool_check=None, post_tool_check=None) -> None:
     """Dispatch a single tool call and append the result to messages."""
     tool_name = tc.function.name
     try:
@@ -347,6 +316,14 @@ async def _execute_tool(tc, messages: list, send_event) -> None:
         })
         return
 
+    if pre_tool_check is not None:
+        pre_result = await pre_tool_check(tool_name, tool_input)
+        if pre_result is not None:
+            result = pre_result
+            result_json = _json.dumps(result, ensure_ascii=False, default=str)
+            messages.append({"role": "tool", "tool_call_id": tc.id, "content": result_json})
+            return
+
     await send_event({
         "event": "tool_call_status", "tool": tool_name, "status": "start",
         "params": {k: str(v)[:80] for k, v in tool_input.items()},
@@ -355,10 +332,22 @@ async def _execute_tool(tc, messages: list, send_event) -> None:
     tool_start = time.monotonic()
     result = await dispatch_tool(tool_name, tool_input)
     tool_elapsed = int((time.monotonic() - tool_start) * 1000)
+    if post_tool_check is not None:
+        result = await post_tool_check(tool_name, result)
 
     result_json = _json.dumps(result, ensure_ascii=False, default=str)
     if len(result_json) > MAX_TOOL_OUTPUT_CHARS:
-        result_json = result_json[:MAX_TOOL_OUTPUT_CHARS] + '..."}'
+        truncated_payload = {
+            "truncated": True,
+            "original_size": len(result_json),
+            "partial_data": result_json[:MAX_TOOL_OUTPUT_CHARS],
+            "note": (
+                f"Tool result exceeded {MAX_TOOL_OUTPUT_CHARS} chars and was truncated. "
+                "partial_data contains the first N chars of the serialized result; "
+                "it may be partial JSON. Narrow the query or paginate to see the rest."
+            ),
+        }
+        result_json = _json.dumps(truncated_payload, ensure_ascii=False)
 
     await send_event({
         "event": "tool_call_status", "tool": tool_name, "status": "done",

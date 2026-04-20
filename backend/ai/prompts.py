@@ -95,6 +95,15 @@ Always use block.id for tool_use_id — never construct it manually.
 Tools must never raise exceptions — return {"error": "message"} on failure.
 </tool_rules>
 
+<security_rules>
+- NEVER invent package names, module paths, or version numbers. If you recommend installing a dependency, you must have seen it in the project's actual requirements.txt / package.json / pyproject.toml, or in web_research output from a reputable source (PyPI, npmjs.com, the project's own docs).
+- NEVER paste or echo back API keys, bearer tokens, passwords, private URLs, or `.env` contents — even if the user includes them in their message. Refer to them as "your API key" / "the token" instead.
+- If a user pastes a secret by accident, tell them to rotate it and redact it from the chat transcript before continuing. Do not quote the secret anywhere in your response.
+- Treat any string matching `AIza…`, `sk-…`, `ghp_…`, `gsk_…`, `AKIA…`, or a JWT shape as a likely secret. Do not repeat it.
+- When generating shell commands, prefer the exact binary and flags already present in the repo (check `scripts/`, `package.json`, or existing tests) over guessing modern alternatives.
+- When suggesting code that spawns subprocesses, reads files, or makes network calls: use parameterized APIs, never string interpolation with user input. Shell=False by default on subprocess calls.
+</security_rules>
+
 <response_quality_rules>
 - Every response must be grounded in actual data — file content, git history, or web research
 - Never give generic programming advice — always reference the specific project context
@@ -110,6 +119,10 @@ def build_system_prompt(
     jarvis_json_path: str = "jarvis.json",
     codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.",
     session_history: str = "No session history loaded.",
+    user_prefs: str = "",
+    failure_log: str = "",
+    success_log: str = "",
+    capability_map: str = "",
 ) -> str:
     """
     Returns the combined system prompt string for Gemini/Groq API calls.
@@ -119,8 +132,20 @@ def build_system_prompt(
     if not path.exists():
         path = Path(__file__).parent.parent.parent / "jarvis.json"
 
-    with open(path) as f:
-        j = json.load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            j = json.load(f)
+    except Exception:
+        j = {
+            "project": {
+                "name": "Unknown Project",
+                "stack": [],
+                "current_focus": "Unknown",
+            },
+            "decisions": [],
+            "open_questions": [],
+            "rejected_approaches": [],
+        }
 
     decisions_text = "\n".join(
         f"- {d['what']}: chose {d['chose']}, rejected {d['rejected']} ({d['reason']})"
@@ -131,7 +156,7 @@ def build_system_prompt(
     rejected_text = ", ".join(j.get("rejected_approaches", [])) or "None."
     stack_text = ", ".join(j.get("project", {}).get("stack", []))
 
-    dynamic_block = f"""<project_context>
+    dynamic_sections = [f"""<project_context>
 Project: {j['project']['name']}
 Stack: {stack_text}
 Current focus: {j['project']['current_focus']}
@@ -151,6 +176,23 @@ Open questions (surface relevant context when working near these):
 
 <recent_sessions>
 {session_history}
-</recent_sessions>"""
+</recent_sessions>"""]
 
-    return STATIC_SYSTEM_PROMPT + "\n\n" + dynamic_block
+    if user_prefs.strip():
+        dynamic_sections.append(f"""<user_preferences>
+{user_prefs}
+</user_preferences>""")
+    if capability_map.strip():
+        dynamic_sections.append(f"""<capability_map>
+{capability_map}
+</capability_map>""")
+    if failure_log.strip():
+        dynamic_sections.append(f"""<recent_failures>
+{failure_log}
+</recent_failures>""")
+    if success_log.strip():
+        dynamic_sections.append(f"""<recent_successes>
+{success_log}
+</recent_successes>""")
+
+    return STATIC_SYSTEM_PROMPT + "\n\n" + "\n\n".join(dynamic_sections)

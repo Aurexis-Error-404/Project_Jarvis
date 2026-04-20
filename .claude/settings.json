@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(npm run:*)",
-      "Bash(find /c/Users/Nkroc/OneDrive/Desktop/College/Aurexis/Project_Jarvis/backend/tools -name \"__init__.py\" -exec cat {} \\\\;)"
+      "Bash(find /c/Users/Nkroc/OneDrive/Desktop/College/Aurexis/Project_Jarvis/backend/tools -name \"__init__.py\" -exec cat {} \\\\;)",
+      "Bash(python -c \"import json; json.load\\(open\\('jarvis.json'\\)\\); print\\('jarvis.json parses OK'\\)\")",
+      "Skill(codex:adversarial-review)",
+      "Skill(codex:adversarial-review:*)",
+      "Bash(python -m pytest tests/test_claude_client.py tests/test_tool_dispatcher.py tests/test_main.py -v)",
+      "Bash(pip install *)",
+      "Bash(python -m pytest tests/test_claude_client.py tests/test_tool_dispatcher.py tests/test_main.py -v --tb=short)",
+      "Bash(taskkill //F //FI \"IMAGENAME eq python.exe\")",
+      "Bash(python -m pytest tests/test_claude_client.py tests/test_tool_dispatcher.py tests/test_main.py -v --tb=short --timeout=30)",
+      "Bash(python -c \"from backend import main; from backend.ai import claude_client; from backend.tools import tool_dispatcher; print\\('imports OK'\\)\")",
+      "Bash(python -m pytest tests/test_security.py tests/test_claude_client.py tests/test_tool_dispatcher.py tests/test_main.py -v --tb=short)"
     ]
   }
 }

@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGENT_IITH — Multi-Agent Stock Analysis System — JARVIS Report</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface-hover: #1a1a24;
+    --border: #232336;
+    --border-accent: #3b82f6;
+    --text: #e4e4ed;
+    --text-secondary: #9898a8;
+    --dim: #6b6b7b;
+    --accent: #60a5fa;
+    --accent-dim: #2563eb;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── Header ─────────────────────────────────── */
+  header {
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, #1e1b4b, #1e3a5f);
+    border: 1px solid var(--accent-dim);
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+  }
+  .meta-text {
+    font-size: 12px;
+    color: var(--dim);
+    letter-spacing: 0.03em;
+  }
+
+  /* ── Table of Contents ──────────────────────── */
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 36px;
+  }
+  .toc-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .toc ol {
+    list-style: none;
+    counter-reset: toc-counter;
+    padding: 0;
+  }
+  .toc li {
+    counter-increment: toc-counter;
+    margin: 6px 0;
+  }
+  .toc li::before {
+    content: counter(toc-counter, decimal-leading-zero);
+    color: var(--accent-dim);
+    font-size: 12px;
+    font-family: var(--mono);
+    font-weight: 600;
+    margin-right: 10px;
+  }
+  .toc a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.15s;
+  }
+  .toc a:hover { color: var(--accent); }
+
+  /* ── Sections ───────────────────────────────── */
+  section {
+    margin-bottom: 36px;
+    padding-bottom: 4px;
+  }
+  h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border);
+    letter-spacing: -0.01em;
+  }
+  h2 .section-number {
+    color: var(--accent-dim);
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 8px;
+  }
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 18px 0 8px;
+  }
+
+  /* ── Content Typography ─────────────────────── */
+  .section-content {
+    font-size: 14.5px;
+    color: var(--text);
+    line-height: 1.75;
+  }
+  .section-content p { margin-bottom: 12px; }
+  .section-content strong { color: #fff; font-weight: 600; }
+  .section-content em { color: var(--text-secondary); font-style: italic; }
+
+  .section-content ul, .section-content ol {
+    margin: 10px 0;
+    padding-left: 24px;
+  }
+  .section-content li {
+    margin: 6px 0;
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .section-content li::marker { color: var(--accent-dim); }
+
+  /* ── Code ────────────────────────────────────── */
+  pre {
+    background: #111119;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 14px 0;
+    color: #c9d1d9;
+  }
+  code {
+    background: rgba(96, 165, 250, 0.08);
+    border: 1px solid rgba(96, 165, 250, 0.12);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--accent);
+  }
+  pre code { background: none; border: none; padding: 0; color: inherit; }
+
+  /* ── Tables ──────────────────────────────────── */
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+  }
+  th {
+    background: var(--surface);
+    font-weight: 600;
+    color: #fff;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  tr:hover td { background: var(--surface-hover); }
+
+  /* ── Blockquotes ─────────────────────────────── */
+  blockquote {
+    border-left: 3px solid var(--accent-dim);
+    background: var(--surface);
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  /* ── Links ───────────────────────────────────── */
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ── Horizontal Rules ────────────────────────── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 24px 0;
+  }
+
+  /* ── Research Data ───────────────────────────── */
+  .research-data {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-dim);
+    border-radius: 0 10px 10px 0;
+    padding: 20px 24px;
+    margin-top: 32px;
+  }
+  .research-data h2 {
+    font-size: 0.9rem;
+    color: var(--accent);
+    border-bottom-color: var(--accent-dim);
+    margin-bottom: 12px;
+  }
+  .research-data pre {
+    background: #0d0d14;
+    max-height: 400px;
+    overflow-y: auto;
+    font-size: 12px;
+  }
+
+  /* ── Status Indicators ──────────────────────── */
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .status-good .status-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-warn .status-dot { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .status-bad .status-dot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+
+  /* ── Key Findings / Callouts ─────────────────── */
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .callout-info { border-left: 3px solid var(--accent); }
+  .callout-warn { border-left: 3px solid var(--amber); }
+  .callout-danger { border-left: 3px solid var(--red); }
+  .callout-success { border-left: 3px solid var(--green); }
+
+  /* ── Footer ──────────────────────────────────── */
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #3f3f50;
+    letter-spacing: 0.04em;
+  }
+  footer .logo { color: var(--accent-dim); font-weight: 600; }
+
+  /* ── Print Media ─────────────────────────────── */
+  @media print {
+    body { background: #fff; color: #1a1a1a; padding: 20px; }
+    header, footer { border-color: #ddd; }
+    h2 { border-color: #ddd; color: #111; }
+    pre { background: #f7f7f7; border-color: #ddd; color: #333; }
+    code { background: #f0f0f0; border-color: #ddd; color: #1a56db; }
+    th { background: #f0f0f0; color: #111; }
+    .toc { background: #f9f9f9; border-color: #ddd; }
+    .research-data { background: #f9f9f9; border-color: #ddd; }
+    .research-data pre { background: #f4f4f4; color: #333; }
+    .badge { background: #e8f0fe; border-color: #93b5e8; }
+    blockquote { background: #f5f5f5; border-color: #999; }
+    a { color: #1a56db; }
+    tr:hover td { background: transparent; }
+  }
+
+  /* ── Responsive ──────────────────────────────── */
+  @media (max-width: 640px) {
+    body { padding: 24px 16px 48px; }
+    header h1 { font-size: 1.4rem; }
+    .header-meta { flex-direction: column; align-items: flex-start; gap: 8px; }
+    pre { padding: 12px; font-size: 12px; }
+    table { font-size: 12px; }
+    th, td { padding: 6px 8px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>AGENT_IITH — Multi-Agent Stock Analysis System</h1>
+    <div class="header-meta">
+      <span class="badge">JARVIS</span>
+      <span class="meta-text">Generated April 14, 2026 at 10:36 UTC</span>
+    </div>
+  </header>
+
+  
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ol>
+      
+      <li><a href="#section-1">Executive Summary</a></li>
+      
+      <li><a href="#section-2">System Architecture</a></li>
+      
+      <li><a href="#section-3">Agent Roles & Prompts</a></li>
+      
+      <li><a href="#section-4">Tech Stack</a></li>
+      
+      <li><a href="#section-5">Development Status</a></li>
+      
+      <li><a href="#section-6">Key Differentiators</a></li>
+      
+      <li><a href="#section-7">Team Responsibilities</a></li>
+      
+      <li><a href="#section-8">Demo Strategy</a></li>
+      
+      <li><a href="#section-9">Next Steps</a></li>
+      
+      <li><a href="#research-data">Sources &amp; Research Data</a></li>
+    </ol>
+  </nav>
+  
+
+  
+  <section id="section-1">
+    <h2><span class="section-number">01</span>Executive Summary</h2>
+    <div class="section-content"><p>AGENT_IITH is a multi-agent stock analysis system built for Forge Inspira 2026 hackathon under the theme &#x27;Autonomous System That Takes Action&#x27;. The system uses adversarial debate between Bull, Bear, and Risk agents with a Mediator synthesizing final recommendations. Built with Node.js/Express backend, React 18 + Vite frontend, Supabase database, and Qwen2.5-72B-Instruct via Featherless.ai.</p></div>
+  </section>
+  
+  <section id="section-2">
+    <h2><span class="section-number">02</span>System Architecture</h2>
+    <div class="section-content"><pre><code>
+┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+
+
+│   User UI   │────▶│  WebSocket   │────▶│  Agent Orchestrator │
+
+
+│  (React)    │◀────│   Server     │◀────│  (Node.js/Express)│
+
+
+└─────────────┘     └──────────────┘     └─────────────────┘
+
+
+                                                │
+
+
+                    ┌───────────────────────────┼───────────────────────────┐
+
+
+                    ▼                           ▼                           ▼
+
+
+            ┌──────────────┐           ┌──────────────┐           ┌──────────────┐
+
+
+            │  Bull Agent  │           │  Bear Agent  │           │  Risk Agent  │
+
+
+            │  (Buy signals)│          │  (Sell signals)│         │  (Hold bias) │
+
+
+            └──────────────┘           └──────────────┘           └──────────────┘
+
+
+                    │                           │                           │
+
+
+                    └───────────────────────────┼───────────────────────────┘
+
+
+                                                ▼
+
+
+                                        ┌──────────────┐
+
+
+                                        │  Mediator    │
+
+
+                                        │  (Synthesis) │
+
+
+                                        └──────────────┘
+
+
+                                                │
+
+
+                                                ▼
+
+
+                                        ┌──────────────┐
+
+
+                                        │   Supabase   │
+
+
+                                        │  (Persistence)│
+
+
+                                        └──────────────┘
+
+
+</code></pre></div>
+  </section>
+  
+  <section id="section-3">
+    <h2><span class="section-number">03</span>Agent Roles & Prompts</h2>
+    <div class="section-content"><p>| Agent | Role | Output Bias | Key Focus | |-------|------|-------------|----------| | <strong>Bull</strong> | Identify buy signals | Optimistic | Revenue growth, market share, positive catalysts | | <strong>Bear</strong> | Identify sell signals | Pessimistic | Risks, competition, downside scenarios | | <strong>Risk</strong> | Flag dangers | Conservative | Volatility, regulatory issues, red flags | | <strong>Mediator</strong> | Synthesize all three | Neutral | Weight evidence, resolve conflicts, assign confidence |</p>
+<p><strong>Output Format:</strong> Each agent returns structured JSON with:</p>
+<ul>
+<li><code>recommendation</code>: BUY/SELL/HOLD</li>
+<li><code>confidence</code>: 0-100 score</li>
+<li><code>reasoning</code>: Array of specific data points with sources</li>
+<li><code>conditional_triggers</code>: Events that would change the recommendation</li>
+</ul></div>
+  </section>
+  
+  <section id="section-4">
+    <h2><span class="section-number">04</span>Tech Stack</h2>
+    <div class="section-content"><p>| Layer | Technology | Purpose | |-------|-----------|----------| | <strong>Backend Runtime</strong> | Node.js 20+ | Agent orchestration, WebSocket server | | <strong>API Framework</strong> | Express.js | REST endpoints, request handling | | <strong>Real-time Comms</strong> | WebSocket (ws) | Stream agent results to UI | | <strong>Frontend Framework</strong> | React 18 + Vite | Dashboard, live results display | | <strong>Database</strong> | Supabase | Store analysis history, user sessions | | <strong>AI Model</strong> | Qwen2.5-72B-Instruct | Agent reasoning via Featherless.ai | | <strong>Data Source</strong> | Yahoo Finance API + Bright Data | Live stock data, news scraping |</p></div>
+  </section>
+  
+  <section id="section-5">
+    <h2><span class="section-number">05</span>Development Status</h2>
+    <div class="section-content"><h3>Phase 1 ✅ Complete</h3>
+<ul>
+<li>AAPL ticker scraping working</li>
+<li>Bull Agent generating valid JSON output</li>
+<li>Basic WebSocket connection established</li>
+</ul>
+<h3>Phase 2 ✅ Complete</h3>
+<ul>
+<li>All 4 agents (Bull, Bear, Risk, Mediator) running</li>
+<li>WebSocket emitting real-time results</li>
+<li>Supabase persistence implemented</li>
+<li>Frontend receiving and displaying streams</li>
+</ul>
+<h3>Phase 3 🔄 In Progress</h3>
+<ul>
+<li>Prompt refinement for better agent differentiation</li>
+<li>Confidence score calibration</li>
+<li>UI polish and error handling</li>
+<li>Demo preparation</li>
+</ul>
+<h3>Remaining Tasks</h3>
+<ul>
+<li>[ ] 2-turn debate structure (Bull critiques Bear, vice versa)</li>
+<li>[ ] Confidence tracking across agent disagreement</li>
+<li>[ ] Fallback strategy if Featherless.ai rate limits</li>
+<li>[ ] Pre-demo testing with 5+ tickers</li>
+</ul></div>
+  </section>
+  
+  <section id="section-6">
+    <h2><span class="section-number">06</span>Key Differentiators</h2>
+    <div class="section-content"><ol>
+<li><strong>Reasoning Transparency</strong> — Shows full decision trail, not just final recommendation</li>
+<li><strong>Adversarial Debate</strong> — Conflicting agents surface both bullish and bearish cases</li>
+<li><strong>Conflict Resolution</strong> — Mediator explicitly resolves disagreements with weighted evidence</li>
+<li><strong>Conditional Triggers</strong> — Each recommendation includes events that would change the stance</li>
+<li><strong>Real-time Streaming</strong> — Results appear as agents complete, not after all finish</li>
+</ol>
+<p><strong>Hackathon Alignment:</strong> Directly addresses &#x27;Autonomous System That Takes Action&#x27; theme — system independently gathers data, analyzes through multiple perspectives, and produces actionable recommendations without human intervention.</p></div>
+  </section>
+  
+  <section id="section-7">
+    <h2><span class="section-number">07</span>Team Responsibilities</h2>
+    <div class="section-content"><p>| Person | Responsibilities | |--------|------------------| | <strong>Person A</strong> | Backend architecture, WebSocket server, agent prompts, data scraping pipeline, Supabase schema | | <strong>Person B</strong> | React frontend, API integration, UI/UX design, real-time display components, error states |</p>
+<p><strong>Integration Points:</strong></p>
+<ul>
+<li>WebSocket contract (event names, payload structure)</li>
+<li>Supabase table schema (analyses, agents, recommendations)</li>
+<li>Agent output JSON format (must be consistent across all 4 agents)</li>
+</ul></div>
+  </section>
+  
+  <section id="section-8">
+    <h2><span class="section-number">08</span>Demo Strategy</h2>
+    <div class="section-content"><h3>Recommended Demo Flow</h3>
+<ol>
+<li><strong>Start with AAPL</strong> — Already tested, stable output</li>
+<li><strong>Show reasoning trail</strong> — Expand Bull/Bear cards to display specific data points</li>
+<li><strong>Highlight conflict</strong> — Point out where Bull and Bear disagree, show Mediator resolution</li>
+<li><strong>Run 2-3 more tickers</strong> — Demonstrate system works across different sectors</li>
+<li><strong>Show Supabase data</strong> — Quick peek at persistence layer</li>
+</ol>
+<h3>Fallback Plan</h3>
+<ul>
+<li>Pre-recorded analysis videos if live scraping fails</li>
+<li>Cached results for 3 tickers if API rate limits hit</li>
+<li>Single-agent mode if multi-agent orchestration has issues</li>
+</ul>
+<h3>Judge Talking Points</h3>
+<ul>
+<li>Emphasize autonomous data gathering (no manual input beyond ticker)</li>
+<li>Highlight adversarial approach vs. single-model summaries</li>
+<li>Show confidence scores and how they correlate with agent agreement</li>
+</ul></div>
+  </section>
+  
+  <section id="section-9">
+    <h2><span class="section-number">09</span>Next Steps</h2>
+    <div class="section-content"><h3>Before Demo (Priority Order)</h3>
+<ol>
+<li>Test with 5 different tickers across sectors (tech, finance, retail, energy, healthcare)</li>
+<li>Implement 2-turn debate structure for deeper analysis</li>
+<li>Add error handling for API failures and rate limits</li>
+<li>Polish UI loading states and error messages</li>
+<li>Prepare backup demo video</li>
+</ol>
+<h3>Post-Hackathon Enhancements</h3>
+<ul>
+<li>Add more agents (ESG Agent, Technical Analysis Agent)</li>
+<li>Integrate additional data sources (SEC filings, earnings call transcripts)</li>
+<li>User accounts and watchlist persistence</li>
+<li>Export recommendations as PDF reports</li>
+<li>Slack/Discord webhook for real-time alerts</li>
+</ul></div>
+  </section>
+  
+
+  
+  <div class="research-data" id="research-data">
+    <h2>Sources &amp; Research Data</h2>
+    <pre>Project summary compiled from developer briefing — AGENT_IITH hackathon project details provided directly by development team.</pre>
+  </div>
+  
+
+  <footer>
+    <span class="logo">JARVIS</span>
+    <span>Proactive Developer Intelligence Layer</span>
+  </footer>
+</body>
+</html>

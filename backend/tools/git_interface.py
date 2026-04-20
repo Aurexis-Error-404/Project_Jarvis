@@ -10,10 +10,11 @@ NOT limit: int (that was backend CLAUDE.md — see CONFLICTS.md #3).
 """
 
 import logging
-import os
 from datetime import datetime, timedelta, timezone
 
 import git
+
+from backend.context.workspace import current_path
 
 logger = logging.getLogger("jarvis.git_interface")
 
@@ -21,10 +22,10 @@ MAX_COMMITS = 50
 MAX_DIFF_CHARS = 3000
 
 
-def run(since: str, include_diff: bool = False, file_path: str = None) -> dict:
+def run(since: str, include_diff: bool = False, file_path: str = None,
+        project_path: str = None) -> dict:
     try:
-        project_path = os.environ.get("PROJECT_PATH", ".")
-        repo = git.Repo(project_path, search_parent_directories=True)
+        repo = git.Repo(project_path or current_path(), search_parent_directories=True)
         commits = _get_commits(repo, since, file_path)
 
         result = []

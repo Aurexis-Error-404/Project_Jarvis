@@ -2,9 +2,25 @@
 // Frameless, transparent, always-on-top JARVIS overlay
 // Toggled by Ctrl+Space (fallback: Ctrl+Shift+Space), hidden by default, system tray icon
 
-const { app, BrowserWindow, globalShortcut, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain, dialog, session } = require('electron');
 const path = require('path');
 const { createTray } = require('./tray');
+
+// Content-Security-Policy — injected on every response so the renderer
+// can only talk to the local WebSocket backend and cannot load arbitrary
+// remote scripts, fonts, or images. Tightened per JARVIS_IMPLEMENTATION_PLAN.md §9.1.
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",       // React inline styles + component.css
+  "font-src 'self' data:",
+  "img-src 'self' data: blob:",
+  "connect-src 'self' ws://localhost:8765 http://localhost:8765",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
 
 // ─── Redirect userData before anything else ───────────────
 // Prevents "Access is denied" cache errors when the default
@@ -94,6 +110,17 @@ function toggleOverlay() {
 
 // ─── App lifecycle ───────────────────────────────────────
 app.whenReady().then(() => {
+  // Inject CSP on every renderer response. Must be registered before the
+  // window loads its HTML so the first document already carries the header.
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [CSP],
+      },
+    });
+  });
+
   createWindow();
 
   tray = createTray({

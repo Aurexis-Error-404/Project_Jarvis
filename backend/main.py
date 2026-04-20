@@ -26,8 +26,11 @@ logger = logging.getLogger("jarvis.main")
 
 connected_clients: set = set()
 
-# Persists for the process lifetime; updated on mode_change events.
-_current_mode: str = os.environ.get("AI_MODE", "local")
+# Process-wide default only — NEVER mutated by handlers. Each WebSocket connection
+# owns its own mode in a local variable threaded through _handle_* callables.
+# See JARVIS_IMPLEMENTATION_PLAN.md §5.5 (per-session state) and §13.0 (R-5).
+_default_mode: str = os.environ.get("AI_MODE", "local")
+_default_project_path: str = str(Path(os.environ.get("PROJECT_PATH", ".")).resolve())
 
 # Populated once when the first client connects (codebase awareness).
 _codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load."
@@ -51,13 +54,13 @@ async def broadcast_event(payload: dict):
     connected_clients.difference_update(dead)
 
 
-async def _load_codebase_map() -> str:
+async def _load_codebase_map(project_path: str | None = None) -> str:
     """
     Scan the project directory at session start for codebase awareness.
     Uses codebase_reader — no AI call, just file listing.
     """
     from backend.tools.codebase_reader import run as read_codebase
-    result = read_codebase(".")
+    result = read_codebase(".", project_path=project_path)
     if "error" in result:
         logger.warning(f"Codebase scan failed: {result['error']}")
         return "Codebase scan failed. Call read_codebase('.') to retry."
@@ -68,11 +71,11 @@ async def _load_codebase_map() -> str:
     return f"Project files ({count} total):\n{file_list}"
 
 
-async def _load_codebase_map_async():
+async def _load_codebase_map_async(project_path: str | None = None):
     """Non-blocking codebase loader — updates global without blocking ws_handler."""
     global _codebase_map
     try:
-        _codebase_map = await _load_codebase_map()
+        _codebase_map = await _load_codebase_map(project_path=project_path)
     except Exception as e:
         logger.error(f"Async codebase load failed: {e}")
     finally:
@@ -82,15 +85,17 @@ async def _load_codebase_map_async():
 
 # ── Per-event handlers (extracted for testability) ───────────────────────────
 
-async def _handle_user_query(data: dict, send_event, session_history: list) -> list:
-    """Handle user_query event. Returns updated session_history."""
+async def _handle_user_query(data: dict, send_event, session_history: list,
+                             session_mode: str, session_project_path: str,
+                             session_codebase_map: str | None) -> tuple[list, str]:
+    """Handle user_query event. Returns updated session_history + codebase_map."""
     global _codebase_map, _codebase_ready
     query = data.get("query", "").strip()
-    mode = data.get("mode", _current_mode)
+    mode = data.get("mode", session_mode)
 
     if not query:
         await send_event({"event": "jarvis_error", "message": "Empty query", "recoverable": True})
-        return session_history
+        return session_history, (session_codebase_map or _codebase_map)
 
     await send_event({"event": "status_update", "message": "Thinking..."})
 
@@ -100,20 +105,30 @@ async def _handle_user_query(data: dict, send_event, session_history: list) -> l
         except asyncio.TimeoutError:
             logger.warning("Codebase map not ready after 5s — proceeding without it")
 
+    if session_codebase_map is None:
+        if session_project_path == _default_project_path:
+            session_codebase_map = _codebase_map
+        else:
+            session_codebase_map = await _load_codebase_map(project_path=session_project_path)
+
     response_text = await claude_run(
         query=query, mode=mode, send_event=send_event,
-        codebase_map=_codebase_map, history=list(session_history),
+        codebase_map=session_codebase_map, history=list(session_history),
+        project_path=session_project_path,
     )
     session_history.append({"role": "user", "content": query})
     session_history.append({"role": "assistant", "content": response_text or ""})
     if len(session_history) > 40:
         session_history = session_history[-40:]
-    return session_history
+    return session_history, session_codebase_map
 
 
-async def _handle_mode_change(data: dict, send_event) -> bool:
-    """Handle mode_change event. Returns True if handled, False on error."""
-    global _current_mode
+async def _handle_mode_change(data: dict, send_event) -> str | None:
+    """Handle mode_change event. Returns the new mode if valid, None on error.
+
+    Per-session: the caller owns the mode variable and assigns from the return value.
+    NO process-global mutation — see R-5 (JARVIS_IMPLEMENTATION_PLAN.md §13.0).
+    """
     new_mode = data.get("mode", "").strip()
     if new_mode not in ("local", "cloud"):
         await send_event({
@@ -121,16 +136,14 @@ async def _handle_mode_change(data: dict, send_event) -> bool:
             "message": f"Invalid mode '{new_mode}'. Expected 'local' or 'cloud'.",
             "recoverable": True,
         })
-        return False
-    _current_mode = new_mode
-    logger.info(f"Mode changed to: {_current_mode}")
-    await send_event({"event": "jarvis_mode_ack", "mode": _current_mode})
-    return True
+        return None
+    logger.info(f"Session mode changed to: {new_mode}")
+    await send_event({"event": "jarvis_mode_ack", "mode": new_mode})
+    return new_mode
 
 
-async def _handle_set_project_path(data: dict, send_event):
-    """Handle set_project_path event — reload codebase map for new path."""
-    global _codebase_map
+async def _handle_set_project_path(data: dict, send_event) -> tuple[str, str] | None:
+    """Handle set_project_path event — return the new project_path + codebase_map."""
     new_path = data.get("path", "").strip()
     if not new_path or not os.path.isdir(new_path):
         await send_event({
@@ -138,24 +151,26 @@ async def _handle_set_project_path(data: dict, send_event):
             "message": f"Invalid project path: {new_path}",
             "recoverable": True,
         })
-        return
+        return None
+    resolved_path = str(Path(new_path).resolve())
     from backend.tools.codebase_reader import run as read_codebase
-    result = read_codebase(new_path)
+    result = read_codebase(".", project_path=resolved_path)
+    codebase_map = _codebase_map
     if "error" not in result:
         files = result.get("files", [])
         count = result.get("count", len(files))
-        _codebase_map = f"Project files ({count} total):\n" + "\n".join(f"  {f}" for f in files)
-    os.environ["PROJECT_PATH"] = new_path
-    logger.info(f"Project path changed to: {new_path}")
+        codebase_map = f"Project files ({count} total):\n" + "\n".join(f"  {f}" for f in files)
+    logger.info(f"Session project path changed to: {resolved_path}")
     await send_event({
         "event": "project_path_ack",
-        "path": new_path,
+        "path": resolved_path,
         "files_loaded": result.get("count", 0) if "error" not in result else 0,
     })
+    return resolved_path, codebase_map
 
 
 async def ws_handler(websocket):
-    global _current_mode, _codebase_map, _codebase_loaded, _codebase_ready
+    global _codebase_map, _codebase_loaded, _codebase_ready
 
     if _codebase_ready is None:
         _codebase_ready = asyncio.Event()
@@ -163,12 +178,16 @@ async def ws_handler(websocket):
     connected_clients.add(websocket)
     session_msg_count = 0
     session_history: list = []
+    # Per-connection mode — seeded from the process default, never written back to it.
+    session_mode: str = _default_mode
+    session_project_path: str = _default_project_path
+    session_codebase_map: str | None = None
     logger.info(f"Client connected. Total: {len(connected_clients)}")
 
     async with _codebase_lock:
         if not _codebase_loaded:
             _codebase_loaded = True
-            asyncio.create_task(_load_codebase_map_async())
+            asyncio.create_task(_load_codebase_map_async(project_path=_default_project_path))
 
     async def send_event(payload: dict):
         try:
@@ -184,10 +203,15 @@ async def ws_handler(websocket):
 
                 if event_type == "user_query":
                     session_msg_count += 1
-                    session_history = await _handle_user_query(data, send_event, session_history)
+                    session_history, session_codebase_map = await _handle_user_query(
+                        data, send_event, session_history, session_mode,
+                        session_project_path, session_codebase_map,
+                    )
 
                 elif event_type == "mode_change":
-                    await _handle_mode_change(data, send_event)
+                    new_mode = await _handle_mode_change(data, send_event)
+                    if new_mode is not None:
+                        session_mode = new_mode
 
                 elif event_type == "surface_dismissed":
                     logger.info(f"Surface dismissed: {data.get('file', 'unknown')}")
@@ -204,7 +228,9 @@ async def ws_handler(websocket):
                     })
 
                 elif event_type == "set_project_path":
-                    await _handle_set_project_path(data, send_event)
+                    project_state = await _handle_set_project_path(data, send_event)
+                    if project_state is not None:
+                        session_project_path, session_codebase_map = project_state
 
                 else:
                     query = data.get("query", "").strip()
@@ -212,7 +238,10 @@ async def ws_handler(websocket):
                         logger.warning("Message has no event field — treating as user_query")
                         session_msg_count += 1
                         data["event"] = "user_query"
-                        session_history = await _handle_user_query(data, send_event, session_history)
+                        session_history, session_codebase_map = await _handle_user_query(
+                            data, send_event, session_history, session_mode,
+                            session_project_path, session_codebase_map,
+                        )
                     else:
                         await send_event({
                             "event": "jarvis_error",
@@ -233,7 +262,7 @@ async def ws_handler(websocket):
                 update_jarvis("session_log", "append", {
                     "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
                     "messages": session_msg_count,
-                    "mode": _current_mode,
+                    "mode": session_mode,
                 })
             except Exception as e:
                 logger.warning(f"Failed to log session: {e}")
@@ -271,7 +300,11 @@ async def lifespan(_app: FastAPI):
     ws_task = asyncio.create_task(start_ws_server())
     from backend.context.file_watcher import start as start_watcher
     watcher_task = asyncio.create_task(
-        start_watcher(broadcast_event, get_mode=lambda: _current_mode)
+        start_watcher(
+            broadcast_event,
+            get_mode=lambda: _default_mode,
+            get_project_path=lambda: _default_project_path,
+        )
     )
     # Non-blocking warm-up for Gemini cache
     asyncio.create_task(_warm_up_gemini())
@@ -290,6 +323,6 @@ async def health():
     return {
         "status": "ok",
         "connected_clients": len(connected_clients),
-        "mode": _current_mode,
+        "default_mode": _default_mode,
         "codebase_loaded": _codebase_loaded,
     }

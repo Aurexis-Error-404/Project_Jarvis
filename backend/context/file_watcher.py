@@ -1,5 +1,5 @@
 """
-Proactive file watcher — monitors PROJECT_PATH for file changes,
+Proactive file watcher — monitors the active project path for file changes,
 runs the Ollama gate, and sends jarvis_surface events to the frontend
 when the gate confidence meets the threshold.
 
@@ -131,20 +131,26 @@ class JarvisHandler(FileSystemEventHandler):
             logger.error(f"File watcher _evaluate error for {path}: {e}")
 
 
-async def start(send_event: Callable, get_mode: Callable[[], str] = None):
+async def start(send_event: Callable, get_mode: Callable[[], str] = None,
+                get_project_path: Callable[[], str] = None):
     """
     Start the file watcher. Call from main.py lifespan after WebSocket is up.
 
     send_event: async callable that fans out events to all connected clients.
     get_mode:   callable returning current AI mode ("local" | "cloud").
                 Defaults to reading AI_MODE env var if not provided.
+    get_project_path:
+                callable returning the project root to watch. Defaults to the
+                repo root (or PROJECT_PATH env var if provided).
     """
     if get_mode is None:
         def get_mode():
             return os.environ.get("AI_MODE", "local")
+    if get_project_path is None:
+        def get_project_path():
+            return os.environ.get("PROJECT_PATH", str(Path(__file__).parent.parent.parent))
 
-    _default_path = str(Path(__file__).parent.parent.parent)
-    project_path = os.environ.get("PROJECT_PATH", _default_path)
+    project_path = str(Path(get_project_path()).resolve())
     threshold = float(os.environ.get("OLLAMA_GATE_THRESHOLD", "0.7"))
     loop = asyncio.get_running_loop()  # get_event_loop() deprecated in Python 3.10+
 

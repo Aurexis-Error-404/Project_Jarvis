@@ -9,8 +9,9 @@ NOT path + depth (that was backend CLAUDE.md — see CONFLICTS.md #2).
 """
 
 import logging
-import os
 from pathlib import Path
+
+from backend.context.workspace import current_path
 
 logger = logging.getLogger("jarvis.codebase_reader")
 
@@ -19,7 +20,7 @@ MAX_FILES = 100
 MAX_LINES = 500  # truncate single-file reads at this line count
 
 
-def run(file_path: str, lines: str = None) -> dict:
+def run(file_path: str, lines: str = None, project_path: str = None) -> dict:
     """
     file_path="."       → list all files up to MAX_FILES limit
     file_path="src/x.py" → read that file, optionally filtered by line range
@@ -27,16 +28,16 @@ def run(file_path: str, lines: str = None) -> dict:
     """
     try:
         if file_path == ".":
-            return _list_files()
+            return _list_files(project_path=project_path)
         else:
-            return _read_file(file_path, lines)
+            return _read_file(file_path, lines, project_path=project_path)
     except Exception as e:
         logger.error(f"codebase_reader error: {e}")
         return {"error": str(e)}
 
 
-def _list_files() -> dict:
-    root = Path(os.environ.get("PROJECT_PATH", ".")).resolve()
+def _list_files(project_path: str = None) -> dict:
+    root = Path(project_path or current_path()).resolve()
     files = []
     for p in sorted(root.rglob("*")):
         if not p.is_file():
@@ -53,10 +54,10 @@ def _list_files() -> dict:
     }
 
 
-def _read_file(file_path: str, lines: str = None) -> dict:
+def _read_file(file_path: str, lines: str = None, project_path: str = None) -> dict:
     p = Path(file_path)
     if not p.is_absolute():
-        project_root = Path(os.environ.get("PROJECT_PATH", ".")).resolve()
+        project_root = Path(project_path or current_path()).resolve()
         p = project_root / p
     if not p.exists():
         return {"error": f"File not found: {file_path}"}

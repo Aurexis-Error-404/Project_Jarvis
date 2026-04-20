@@ -9,6 +9,7 @@ import SurfaceCard from './components/SurfaceCard';
 import SidebarLeft from './components/SidebarLeft';
 import SidebarRight from './components/SidebarRight';
 import ChatArea from './components/ChatArea';
+import { sanitizeForStorage } from './utils/redaction';
 
 export default function App() {
   const [messages, dispatch] = useReducer(messageReducer, []);
@@ -29,9 +30,9 @@ export default function App() {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Persist reports across restarts
+  // Persist reports across restarts — scrub key-shaped strings first.
   useEffect(() => {
-    localStorage.setItem('jarvis_reports', JSON.stringify(reports));
+    localStorage.setItem('jarvis_reports', JSON.stringify(sanitizeForStorage(reports)));
   }, [reports]);
 
   const { conversations, activeConvId, autoTitle, syncMessages, selectConv, newSession } = useConversations({

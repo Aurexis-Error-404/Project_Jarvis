@@ -6,6 +6,7 @@ All tools must return dict — never raise exceptions.
 """
 
 import asyncio
+import contextvars
 import functools
 import logging
 
@@ -13,6 +14,9 @@ from backend.tools import codebase_reader, git_interface, report_generator, web_
 from backend.memory import jarvis_json, session_log
 
 logger = logging.getLogger("jarvis.dispatcher")
+
+# Timeout applied to BOTH sync and async tool dispatch. Overridable in tests.
+TOOL_TIMEOUT_SECONDS: float = 60.0
 
 # Sync tools — run in thread executor to avoid blocking the event loop
 _SYNC_TOOLS = {
@@ -38,20 +42,26 @@ async def dispatch_tool(name: str, inputs: dict) -> dict:
 
     try:
         if name in _ASYNC_TOOLS:
-            return await asyncio.wait_for(_ASYNC_TOOLS[name](**inputs), timeout=60)
+            return await asyncio.wait_for(
+                _ASYNC_TOOLS[name](**inputs), timeout=TOOL_TIMEOUT_SECONDS,
+            )
 
         if name in _SYNC_TOOLS:
             loop = asyncio.get_event_loop()
-            return await loop.run_in_executor(
-                None, functools.partial(_SYNC_TOOLS[name], **inputs)
-            )
+            # Copy the current async context (including the active Workspace
+            # ContextVar) into the executor thread so sync tools can read
+            # per-session state without growing an explicit parameter.
+            ctx = contextvars.copy_context()
+            call = functools.partial(_SYNC_TOOLS[name], **inputs)
+            fut = loop.run_in_executor(None, lambda: ctx.run(call))
+            return await asyncio.wait_for(fut, timeout=TOOL_TIMEOUT_SECONDS)
 
         logger.warning(f"Unknown tool: {name}")
         return {"error": f"Unknown tool: {name}"}
 
     except asyncio.TimeoutError:
-        logger.error(f"Tool {name} timed out after 60s")
-        return {"error": f"Tool {name} timed out after 60 seconds"}
+        logger.error(f"Tool {name} timed out after {TOOL_TIMEOUT_SECONDS}s")
+        return {"error": f"Tool {name} timed out after {TOOL_TIMEOUT_SECONDS} seconds"}
     except TypeError as e:
         logger.error(f"Tool {name} called with wrong parameters: {e}")
         return {"error": f"Parameter error in {name}: {e}"}
