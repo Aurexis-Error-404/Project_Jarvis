@@ -1,0 +1,31 @@
+{% extends "base_report.html" %}
+
+{% block extra_style %}
+body { max-width: 680px; }
+section.report-section > h2 { font-size: 1.1rem; }
+.callout {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  padding: 0.8rem 1.1rem;
+  margin: 1rem 0;
+  font-family: var(--sans);
+}
+{% endblock %}
+
+{% block badges %}
+<div class="badges">
+  <span class="badge">executive briefing</span>
+</div>
+{% endblock %}
+
+{% block abstract %}
+{% if headline %}
+<div class="callout">
+  <strong>{{ headline }}</strong>
+</div>
+{% endif %}
+{% endblock %}
+
+{# Single page — no TOC, no bibliography. #}
+{% block toc %}{% endblock %}
+{% block bibliography %}{% endblock %}

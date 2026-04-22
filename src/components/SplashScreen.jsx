@@ -1,3 +1,5 @@
+import AssemblingTitle from './AssemblingTitle';
+
 export default function SplashScreen({ connectionStatus, onStart }) {
   return (
     <div className="splash-screen" style={{ WebkitAppRegion: 'drag' }}>
@@ -7,7 +9,7 @@ export default function SplashScreen({ connectionStatus, onStart }) {
         <div className="splash-line" />
       </div>
 
-      <h1 className="splash-title">J.A.R.V.I.S</h1>
+      <AssemblingTitle />
 
       <p className="splash-subtitle">JUST A RATHER VERY INTELLIGENT SYSTEM</p>
 

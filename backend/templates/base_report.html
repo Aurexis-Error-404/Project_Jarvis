@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ title }} — JARVIS Report</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #232336;
+    --text: #e4e4ed;
+    --text-dim: #9898a8;
+    --accent: #60a5fa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --serif: Charter, Cambria, Georgia, 'Times New Roman', serif;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #ffffff;
+      --surface: #f5f5f7;
+      --border: #e2e2e6;
+      --text: #18181c;
+      --text-dim: #55555d;
+      --accent: #2563eb;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--text);
+    max-width: 780px;
+    margin: 2.5rem auto;
+    padding: 0 1.5rem;
+    line-height: 1.65;
+    counter-reset: section;
+  }
+
+  .title-page {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .title-page h1 {
+    font-family: var(--sans);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .title-page .authors,
+  .title-page .date {
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+  }
+  .title-page .badges {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+
+  .abstract {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0 2rem;
+    font-size: 0.95rem;
+  }
+  .abstract h2 {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  nav.toc {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0 2rem;
+    font-family: var(--sans);
+    font-size: 0.92rem;
+  }
+  nav.toc h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  nav.toc ol { list-style: none; padding-left: 0; counter-reset: toc; }
+  nav.toc ol li {
+    counter-increment: toc;
+    padding: 2px 0;
+  }
+  nav.toc ol li::before {
+    content: counter(toc) ". ";
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  nav.toc a { color: var(--text); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+
+  section.report-section {
+    margin-bottom: 2rem;
+    counter-increment: section;
+  }
+  section.report-section > h2 {
+    font-family: var(--sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+  section.report-section > h2::before {
+    content: counter(section) ". ";
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  h3 { font-family: var(--sans); font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+  h4 { font-family: var(--sans); font-size: 0.95rem; margin: 0.75rem 0 0.35rem; }
+  p { margin: 0.6rem 0; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin: 0.2rem 0; }
+
+  code {
+    font-family: var(--mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.88em;
+  }
+  pre {
+    font-family: var(--mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  blockquote {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 0.5rem 1rem;
+    margin: 0.75rem 0;
+    color: var(--text-dim);
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-family: var(--sans); font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; }
+  th { background: var(--surface); font-weight: 600; }
+
+  .bibliography { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .bibliography h2 { font-family: var(--sans); font-size: 1.05rem; margin-bottom: 0.75rem; }
+  .bibliography pre { font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; }
+
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  @media print {
+    body { max-width: none; margin: 0; padding: 0; color: #000; background: #fff; }
+    @page { size: A4; margin: 2.5cm; }
+    section.report-section { break-inside: avoid; }
+    section.report-section > h2 { break-after: avoid; }
+    nav.toc, .badges { display: none; }
+    a { color: #000; text-decoration: none; }
+  }
+
+  {% block extra_style %}{% endblock %}
+</style>
+</head>
+<body>
+
+{% block title_page %}
+<header class="title-page">
+  <h1>{{ title }}</h1>
+  <div class="authors">JARVIS, {{ project_name|default('your project') }}</div>
+  <div class="date">{{ generated_at }}</div>
+  {% block badges %}{% endblock %}
+</header>
+{% endblock %}
+
+{% block abstract %}{% endblock %}
+
+{% block toc %}
+{% if sections and sections|length > 2 %}
+<nav class="toc" aria-label="Table of contents">
+  <h2>Contents</h2>
+  <ol>
+    {% for s in sections %}
+    <li><a href="#section-{{ loop.index }}">{{ s.heading }}</a></li>
+    {% endfor %}
+  </ol>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% for s in sections %}
+<section class="report-section" id="section-{{ loop.index }}">
+  <h2>{{ s.heading }}</h2>
+  <div>{{ s.content|safe }}</div>
+</section>
+{% endfor %}
+{% endblock %}
+
+{% block bibliography %}
+{% if research_data %}
+<div class="bibliography">
+  <h2>References &amp; research data</h2>
+  <pre>{{ research_data }}</pre>
+</div>
+{% endif %}
+{% endblock %}
+
+<footer>
+  Generated by JARVIS · {{ generated_at }}
+</footer>
+
+</body>
+</html>

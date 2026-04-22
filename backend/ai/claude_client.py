@@ -19,7 +19,9 @@ import time
 from openai import AsyncOpenAI
 
 from backend.ai import prompts
+from backend.ai.provider_health import HEALTH as PROVIDER_HEALTH
 from backend.ai.providers import PROVIDERS, get_provider, get_fallback
+from backend.ai.quality import LOW_QUALITY_THRESHOLD, score_response
 from backend.ai.security import redact_keys
 from backend.context.workspace import Workspace, reset_active, set_active
 from backend.memory.prompt_log import load_prompt_context, post_query_hook
@@ -144,6 +146,10 @@ async def _call_with_fallback(
         seen.add(current)
         current = get_fallback(current, mode)
 
+    # Demote unhealthy providers to the back of the chain (never drops them —
+    # the whole chain may be unhealthy and we still need *something* to try).
+    chain = PROVIDER_HEALTH.sort_chain(chain)
+
     last_error = None
     for name in chain:
         p = PROVIDERS[name]
@@ -152,11 +158,18 @@ async def _call_with_fallback(
             logger.warning(f"Skipping {name} — API key not set")
             continue
 
+        t0 = time.monotonic()
         try:
-            response = await _call_provider(
-                name, messages, tools,
-                temperature=temperature, max_tokens=max_tokens, stream=stream,
-            )
+            async with PROVIDER_HEALTH.slot(name):
+                response = await _call_provider(
+                    name, messages, tools,
+                    temperature=temperature, max_tokens=max_tokens, stream=stream,
+                )
+            elapsed_ms = (time.monotonic() - t0) * 1000
+            # Do not record stream responses — success isn't known until the
+            # async iterator drains. Non-stream calls count immediately.
+            if not stream:
+                await PROVIDER_HEALTH.record_success(name, elapsed_ms)
             if name != provider_name:
                 logger.info(f"Fallback: {provider_name} → {name} for task={task_type}")
             else:
@@ -164,6 +177,8 @@ async def _call_with_fallback(
             return response
 
         except Exception as e:
+            elapsed_ms = (time.monotonic() - t0) * 1000
+            await PROVIDER_HEALTH.record_failure(name, elapsed_ms)
             last_error = e
             logger.warning(f"{name} failed: {e}. Trying next in chain...")
             continue
@@ -232,7 +247,8 @@ async def _stream_final_response(task_type, mode, messages, send_event):
 async def run(query: str, mode: str, send_event,
               codebase_map: str = "Codebase not yet read. Call read_codebase('.') to load.",
               history: list = None,
-              project_path: str | None = None) -> str:
+              project_path: str | None = None,
+              _is_sub_agent: bool = False) -> str:
     """
     Main entry point — runs the full tool-use loop for a user query.
 
@@ -240,7 +256,21 @@ async def run(query: str, mode: str, send_event,
     mode: "local" | "cloud"
     send_event: async callable that sends a WebSocket event dict to the client
     history: prior turns [{role, content}, ...] for session continuity
+    _is_sub_agent: internal — skips orchestrator routing so fan-out sub-agents
+        cannot recursively re-enter the orchestrator.
     """
+    if not _is_sub_agent:
+        from backend.ai.orchestrator import should_orchestrate, route
+        strategy = should_orchestrate(query)
+        if strategy:
+            logger.info(f"orchestrator routing → {strategy}")
+            return await route(
+                strategy,
+                query=query,
+                mode=mode,
+                send_event=send_event,
+                project_path=project_path,
+            )
     workspace_token = set_active(Workspace(project_path))
     try:
         session_summary = _format_session_history()
@@ -267,7 +297,28 @@ async def run(query: str, mode: str, send_event,
 
         # Enable tools for all modes — Ollama's OpenAI-compat endpoint supports
         # tool definitions (tool_choice handled separately in _call_provider)
-        response_text = await _run_tool_loop(messages, task_type, mode, params, send_event)
+        response_text, tools_used = await _run_tool_loop(
+            messages, task_type, mode, params, send_event,
+        )
+
+        # One-shot quality retry. Never retries inside the tool loop — only
+        # on the top-level response, with a bumped temperature to shake the
+        # model out of a degenerate answer. See §8.1.
+        #
+        # P1 guard: if tools fired on the first pass, skip the retry. Re-running
+        # the loop could re-invoke non-idempotent tools (generate_html_report,
+        # update_project_memory, computer/browser automation).
+        if tools_used > 0:
+            logger.info(
+                "skipping quality retry: %d tool call(s) already fired", tools_used,
+            )
+        else:
+            response_text = await _maybe_retry_low_quality(
+                query=query, response_text=response_text,
+                task_type=task_type, mode=mode, params=params,
+                send_event=send_event, system=system, history=history,
+            )
+
         tool_calls_made = sum(1 for m in messages if m.get("role") == "tool")
         post_query_hook(
             query=query,
@@ -280,8 +331,62 @@ async def run(query: str, mode: str, send_event,
         reset_active(workspace_token)
 
 
+async def _maybe_retry_low_quality(
+    *,
+    query: str,
+    response_text: str,
+    task_type: str,
+    mode: str,
+    params: dict,
+    send_event,
+    system: str,
+    history: list | None,
+) -> str:
+    """One-shot retry for low-quality replies.
+
+    Re-runs the tool loop with a bumped temperature and a retry hint
+    appended to the system prompt. Only fires once per query, never from
+    inside the loop itself, and never recurses (the retry call does not
+    re-enter this function because retry results are returned verbatim).
+    """
+    score = score_response(query, response_text)
+    if score >= LOW_QUALITY_THRESHOLD:
+        return response_text
+
+    logger.info(
+        f"Low-quality response (score={score:.2f} < {LOW_QUALITY_THRESHOLD}); retrying once"
+    )
+
+    retry_params = {**params, "temperature": min(1.0, params.get("temperature", 0.4) + 0.3)}
+    retry_system = system + (
+        "\n\n<retry_hint>Your previous attempt was short, refused, or looked broken. "
+        "Answer the user's question directly and concretely. Use structured output "
+        "(bullets / code blocks) when the question asks for steps, a list, or a comparison."
+        "</retry_hint>"
+    )
+    retry_messages: list = [{"role": "system", "content": retry_system}]
+    if history:
+        retry_messages.extend(history)
+    retry_messages.append({"role": "user", "content": query})
+    try:
+        # allow_tools=False — the retry must be pure text. The first pass
+        # already proved the model didn't need tools (tools_used==0), and
+        # even if it changes its mind we don't want to pay side effects
+        # twice if the heuristic is wrong.
+        retry_text, _ = await _run_tool_loop(
+            retry_messages, task_type, mode, retry_params, send_event,
+            allow_tools=False,
+        )
+        return retry_text
+    except Exception as e:
+        logger.warning(f"Quality retry failed, keeping original response: {e}")
+        return response_text
+
+
 async def _run_tool_loop(messages: list, task_type: str, mode: str,
-                         params: dict, send_event) -> str:
+                         params: dict, send_event,
+                         allow_tools: bool = True) -> tuple[str, int]:
+    """Run one tool-use pass. Returns (final_text, tools_used_count)."""
     from backend.ai.agent import JarvisAgent
 
     agent = JarvisAgent(
@@ -295,10 +400,11 @@ async def _run_tool_loop(messages: list, task_type: str, mode: str,
         stream_text=_stream_text,
         execute_tool=_execute_tool,
         trim_history=_trim_history,
-        tool_schemas=OAI_TOOL_SCHEMAS,
+        tool_schemas=OAI_TOOL_SCHEMAS if allow_tools else [],
         max_iterations=MAX_TOOL_ITERATIONS,
     )
-    return await agent.run()
+    text = await agent.run()
+    return text, agent.tools_used
 
 
 async def _execute_tool(tc, messages: list, send_event,

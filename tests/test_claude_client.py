@@ -101,6 +101,89 @@ async def test_small_tool_result_passes_through_unchanged(monkeypatch):
     assert "truncated" not in parsed
 
 
+@pytest.mark.asyncio
+async def test_low_quality_retry_skipped_when_tools_fired(monkeypatch):
+    """P1 regression: if the first pass invoked any tool, the quality-retry
+    path must NOT re-enter the tool loop — non-idempotent tools (report
+    generation, memory updates, automation) would double-fire."""
+    calls = {"tool_loop": 0, "retry": 0}
+
+    async def fake_run_tool_loop(messages, task_type, mode, params,
+                                 send_event, allow_tools=True):
+        calls["tool_loop"] += 1
+        return "terse", 1  # tools fired
+
+    async def fake_maybe_retry(**kwargs):
+        calls["retry"] += 1
+        return kwargs["response_text"]
+
+    monkeypatch.setattr(claude_client, "_run_tool_loop", fake_run_tool_loop)
+    monkeypatch.setattr(claude_client, "_maybe_retry_low_quality", fake_maybe_retry)
+    monkeypatch.setattr(claude_client, "should_orchestrate",
+                        lambda q: None, raising=False)
+    from backend.ai import orchestrator as _orch
+    monkeypatch.setattr(_orch, "should_orchestrate", lambda q: None)
+    monkeypatch.setattr(claude_client, "_format_session_history", lambda: "")
+    monkeypatch.setattr(claude_client, "load_prompt_context",
+                        lambda project_path=None: {})
+    monkeypatch.setattr(claude_client, "post_query_hook",
+                        lambda **kw: None)
+
+    async def send_event(_p): pass
+
+    out = await claude_client.run(
+        query="make a report", mode="cloud", send_event=send_event,
+        codebase_map="x", history=[],
+    )
+
+    assert out == "terse"
+    assert calls["tool_loop"] == 1
+    assert calls["retry"] == 0, "retry must be skipped when tools fired"
+
+
+@pytest.mark.asyncio
+async def test_low_quality_retry_runs_text_only_when_no_tools(monkeypatch):
+    """When the first pass fired zero tools, the retry is allowed —
+    but it must run with tools disabled so we never go from text-only →
+    surprise side effect."""
+    captured = {}
+
+    async def fake_run_tool_loop(messages, task_type, mode, params,
+                                 send_event, allow_tools=True):
+        # First call = original pass (text-only, low quality).
+        # Second call = retry — record its allow_tools arg.
+        if "first_done" not in captured:
+            captured["first_done"] = True
+            return "short", 0
+        captured["retry_allow_tools"] = allow_tools
+        return "better", 0
+
+    monkeypatch.setattr(claude_client, "_run_tool_loop", fake_run_tool_loop)
+    # Force low-quality verdict so the retry path is taken.
+    monkeypatch.setattr(claude_client, "score_response",
+                        lambda q, r: 0.0)
+    monkeypatch.setattr(claude_client, "LOW_QUALITY_THRESHOLD", 0.5)
+    from backend.ai import orchestrator as _orch
+    monkeypatch.setattr(_orch, "should_orchestrate", lambda q: None)
+    monkeypatch.setattr(claude_client, "_format_session_history", lambda: "")
+    monkeypatch.setattr(claude_client, "load_prompt_context",
+                        lambda project_path=None: {})
+    monkeypatch.setattr(claude_client, "post_query_hook",
+                        lambda **kw: None)
+
+    async def send_event(_p): pass
+
+    out = await claude_client.run(
+        query="what is 2+2", mode="cloud", send_event=send_event,
+        codebase_map="x", history=[],
+    )
+
+    assert out == "better"
+    assert captured["retry_allow_tools"] is False, (
+        "retry must disable tools to avoid surprise side effects"
+    )
+
+
 if __name__ == "__main__":
     asyncio.run(test_truncated_tool_result_is_valid_json.__wrapped__(
         monkeypatch=type("M", (), {"setattr": lambda *a, **k: None})()

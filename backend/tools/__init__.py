@@ -3,6 +3,11 @@ TOOL_SCHEMAS — exact schemas from prompts/tool_schema.md (authoritative source
 These are passed to Claude on EVERY API call via tools= parameter.
 """
 
+import os as _os
+
+_COMPUTER_AUTOMATION_ENABLED = _os.environ.get("COMPUTER_AUTOMATION_ENABLED", "0").lower() in ("1", "true", "yes")
+_BROWSER_AUTOMATION_ENABLED = _os.environ.get("BROWSER_AUTOMATION_ENABLED", "0").lower() in ("1", "true", "yes")
+
 TOOL_SCHEMAS = [
     {
         "name": "read_codebase",
@@ -173,6 +178,28 @@ TOOL_SCHEMAS = [
                     "type": "string",
                     "description": "File path to save the report. Default: 'reports/jarvis_report_{timestamp}.html'",
                 },
+                "report_type": {
+                    "type": "string",
+                    "enum": ["research", "diagnosis", "git_summary", "audit", "executive", "general"],
+                    "description": (
+                        "Picks the report template. Default 'research'. "
+                        "Use 'diagnosis' for error/bug summaries, 'git_summary' for changelogs, "
+                        "'audit' for codebase reviews with severity groupings, 'executive' for "
+                        "single-page briefings, 'general' when none of the above fits."
+                    ),
+                },
+                "extra": {
+                    "type": "object",
+                    "description": (
+                        "Type-specific extras rendered by the template. "
+                        "diagnosis: {severity, impact, root_cause, summary}. "
+                        "git_summary: {range_label}. "
+                        "audit: {severity_counts: {critical, high, medium, low}, summary}. "
+                        "executive: {headline}. "
+                        "research: {abstract, tags}. "
+                        "general: (none)."
+                    ),
+                },
             },
             "required": ["title", "sections"],
         },
@@ -269,6 +296,54 @@ TOOL_SCHEMAS = [
         },
     },
 ]
+
+# ─── Optional consent-gated tools (§7.2) ─────────────────────────────────
+# Registered only when the corresponding env flag is on. Every call passes
+# through the dispatcher's consent gate before the tool runs.
+
+if _COMPUTER_AUTOMATION_ENABLED:
+    TOOL_SCHEMAS.append({
+        "name": "computer_automation",
+        "description": (
+            "Control the user's mouse, keyboard, or take a screenshot. "
+            "EVERY call prompts the user for consent before running — never "
+            "call this speculatively. Use only when the developer has "
+            "explicitly asked for a UI action."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["screenshot", "click", "type", "key", "move"]},
+                "x": {"type": "integer"},
+                "y": {"type": "integer"},
+                "text": {"type": "string"},
+                "key": {"type": "string"},
+                "button": {"type": "string", "enum": ["left", "right", "middle"]},
+            },
+            "required": ["action"],
+        },
+    })
+
+if _BROWSER_AUTOMATION_ENABLED:
+    TOOL_SCHEMAS.append({
+        "name": "browser_automation",
+        "description": (
+            "Navigate to a URL on an allowlisted domain and read DOM text or "
+            "take a screenshot. EVERY call prompts the user for consent. "
+            "Requests to non-allowlisted domains fail closed."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "action": {"type": "string", "enum": ["navigate", "dom_text", "screenshot"]},
+                "url": {"type": "string"},
+                "selector": {"type": "string"},
+                "max_chars": {"type": "integer"},
+                "full_page": {"type": "boolean"},
+            },
+            "required": ["action", "url"],
+        },
+    })
 
 # OpenAI-compatible format for Gemini + Groq (converted from Anthropic format above)
 OAI_TOOL_SCHEMAS = [

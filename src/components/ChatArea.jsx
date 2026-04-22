@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ModeToggle from './ModeToggle';
 import { IconSend } from './Icons';
 import renderMarkdown from '../utils/renderMarkdown';
+import AutoResearchProgress from './AutoResearchProgress';
 
 const TOOL_LABELS = {
   read_codebase: 'Reading codebase',
@@ -12,7 +13,7 @@ const TOOL_LABELS = {
   read_session_history: 'Loading session history',
 };
 
-export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [], connectionStatus }) {
+export default function ChatArea({ messages, isStreaming, mode, inputRef, messagesEndRef, onSend, onModeToggle, activeTools = [], connectionStatus, orchestratorStatus, autoResearchProgress }) {
   const [inputValue, setInputValue] = useState('');
 
   // Keep external inputRef in sync so App.jsx can focus it
@@ -37,6 +38,18 @@ export default function ChatArea({ messages, isStreaming, mode, inputRef, messag
       </div>
 
       <div className="messages-area">
+        <AutoResearchProgress progress={autoResearchProgress} />
+        {orchestratorStatus && (
+          <div className="orchestrator-status" role="status" aria-live="polite">
+            <span className="orchestrator-strategy">{orchestratorStatus.strategy}</span>
+            <span className="orchestrator-phase">{orchestratorStatus.phase}</span>
+            {orchestratorStatus.total ? (
+              <span className="orchestrator-count">
+                {orchestratorStatus.iteration || 0}/{orchestratorStatus.total}
+              </span>
+            ) : null}
+          </div>
+        )}
         {messages.length === 0 ? (
           <div className="empty-state">
             <div className="empty-avatar">J</div>

@@ -108,6 +108,18 @@ export default function useWebSocket(url, handlers = {}) {
           h.onProjectPathAck?.(data);
           break;
 
+        case RECV.ORCHESTRATOR_STATUS:
+          h.onOrchestratorStatus?.(data);
+          break;
+
+        case RECV.AUTO_RESEARCH_PROGRESS:
+          h.onAutoResearchProgress?.(data);
+          break;
+
+        case RECV.CONSENT_REQUEST:
+          h.onConsentRequest?.(data);
+          break;
+
         default:
           console.warn('[WS] Unknown event:', data.event, data);
       }

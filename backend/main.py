@@ -176,12 +176,26 @@ async def ws_handler(websocket):
         _codebase_ready = asyncio.Event()
 
     connected_clients.add(websocket)
-    session_msg_count = 0
-    session_history: list = []
+    # Session state held in a container so spawned user_query tasks can mutate it
+    # in place. See P0 fix: we cannot block the receive loop on a gated tool
+    # awaiting a consent_response that only this same loop can deliver.
+    class _SessionState:
+        __slots__ = ("msg_count", "history", "mode", "project_path", "codebase_map")
+    state = _SessionState()
+    state.msg_count = 0
+    state.history = []
     # Per-connection mode — seeded from the process default, never written back to it.
-    session_mode: str = _default_mode
-    session_project_path: str = _default_project_path
-    session_codebase_map: str | None = None
+    state.mode = _default_mode
+    state.project_path = _default_project_path
+    state.codebase_map = None
+    pending_query_tasks: set[asyncio.Task] = set()
+
+    # Per-connection consent manager (§7.2). Bound as the active
+    # ConsentManager for the duration of this ws session so tool
+    # dispatches on behalf of this client prompt on THIS window only.
+    from backend.ai.consent import ConsentManager, set_active as set_active_consent, reset_active as reset_active_consent
+    session_consent = ConsentManager(send_event=None, project_path=state.project_path)
+    _consent_token = set_active_consent(session_consent)
     logger.info(f"Client connected. Total: {len(connected_clients)}")
 
     async with _codebase_lock:
@@ -195,6 +209,38 @@ async def ws_handler(websocket):
         except Exception as e:
             logger.warning(f"Failed to send event: {e}")
 
+    # Now that send_event exists, wire it into the consent manager.
+    session_consent.bind(send_event=send_event, project_path=state.project_path)
+
+    async def _run_user_query(data: dict) -> None:
+        """Run a single user_query end-to-end, updating shared session state.
+
+        Spawned as its own Task so the receive loop stays free to deliver
+        consent_response while a gated tool is awaiting its Future.
+        """
+        try:
+            new_history, new_codebase_map = await _handle_user_query(
+                data, send_event, state.history, state.mode,
+                state.project_path, state.codebase_map,
+            )
+            state.history = new_history
+            state.codebase_map = new_codebase_map
+        except Exception as e:
+            logger.exception(f"user_query task failed: {e}")
+            try:
+                await send_event({"event": "jarvis_error",
+                                  "message": str(e), "recoverable": False})
+            except Exception:
+                pass
+
+    def _spawn_user_query(data: dict) -> None:
+        state.msg_count += 1
+        # create_task copies the current context, so the ConsentManager
+        # bound via ContextVar above is inherited by the spawned task.
+        task = asyncio.create_task(_run_user_query(data))
+        pending_query_tasks.add(task)
+        task.add_done_callback(pending_query_tasks.discard)
+
     try:
         async for message in websocket:
             try:
@@ -202,16 +248,12 @@ async def ws_handler(websocket):
                 event_type = data.get("event", "")
 
                 if event_type == "user_query":
-                    session_msg_count += 1
-                    session_history, session_codebase_map = await _handle_user_query(
-                        data, send_event, session_history, session_mode,
-                        session_project_path, session_codebase_map,
-                    )
+                    _spawn_user_query(data)
 
                 elif event_type == "mode_change":
                     new_mode = await _handle_mode_change(data, send_event)
                     if new_mode is not None:
-                        session_mode = new_mode
+                        state.mode = new_mode
 
                 elif event_type == "surface_dismissed":
                     logger.info(f"Surface dismissed: {data.get('file', 'unknown')}")
@@ -230,18 +272,22 @@ async def ws_handler(websocket):
                 elif event_type == "set_project_path":
                     project_state = await _handle_set_project_path(data, send_event)
                     if project_state is not None:
-                        session_project_path, session_codebase_map = project_state
+                        state.project_path, state.codebase_map = project_state
+                        session_consent.bind(send_event=send_event,
+                                             project_path=state.project_path)
+
+                elif event_type == "consent_response":
+                    request_id = data.get("request_id", "")
+                    approved = bool(data.get("approved", False))
+                    if request_id:
+                        await session_consent.resolve(request_id, approved)
 
                 else:
                     query = data.get("query", "").strip()
                     if query:
                         logger.warning("Message has no event field — treating as user_query")
-                        session_msg_count += 1
                         data["event"] = "user_query"
-                        session_history, session_codebase_map = await _handle_user_query(
-                            data, send_event, session_history, session_mode,
-                            session_project_path, session_codebase_map,
-                        )
+                        _spawn_user_query(data)
                     else:
                         await send_event({
                             "event": "jarvis_error",
@@ -255,14 +301,19 @@ async def ws_handler(websocket):
                 logger.exception(f"Error handling message: {e}")
                 await send_event({"event": "jarvis_error", "message": str(e), "recoverable": False})
     finally:
+        for t in pending_query_tasks:
+            t.cancel()
+        if pending_query_tasks:
+            await asyncio.gather(*pending_query_tasks, return_exceptions=True)
+        reset_active_consent(_consent_token)
         connected_clients.discard(websocket)
-        if session_msg_count > 0:
+        if state.msg_count > 0:
             try:
                 from backend.memory.jarvis_json import update as update_jarvis
                 update_jarvis("session_log", "append", {
                     "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                    "messages": session_msg_count,
-                    "mode": session_mode,
+                    "messages": state.msg_count,
+                    "mode": state.mode,
                 })
             except Exception as e:
                 logger.warning(f"Failed to log session: {e}")
@@ -320,9 +371,11 @@ app = FastAPI(title="JARVIS Backend", lifespan=lifespan)
 
 @app.get("/health")
 async def health():
+    from backend.ai.provider_health import HEALTH as PROVIDER_HEALTH
     return {
         "status": "ok",
         "connected_clients": len(connected_clients),
         "default_mode": _default_mode,
         "codebase_loaded": _codebase_loaded,
+        "providers": PROVIDER_HEALTH.snapshot(),
     }

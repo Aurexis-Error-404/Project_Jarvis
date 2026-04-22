@@ -1,0 +1,41 @@
+{% extends "base_report.html" %}
+
+{% block extra_style %}
+.diag-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--red);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0 1.5rem;
+  font-family: var(--sans);
+  font-size: 0.95rem;
+}
+.diag-card dt { color: var(--text-dim); font-weight: 600; }
+.diag-card dt.sev-high { color: var(--red); }
+.diag-card dt.sev-med { color: var(--amber); }
+.diag-card dt.sev-low { color: var(--green); }
+{% endblock %}
+
+{% block badges %}
+<div class="badges">
+  <span class="badge">diagnosis</span>
+  {% if severity %}<span class="badge">severity: {{ severity }}</span>{% endif %}
+</div>
+{% endblock %}
+
+{% block abstract %}
+{% if summary %}
+<dl class="diag-card">
+  {% if severity %}<dt class="sev-{{ severity|lower }}">Severity</dt><dd>{{ severity }}</dd>{% endif %}
+  {% if impact %}<dt>Impact radius</dt><dd>{{ impact }}</dd>{% endif %}
+  {% if root_cause %}<dt>Root cause</dt><dd>{{ root_cause }}</dd>{% endif %}
+  <dt>Summary</dt><dd>{{ summary }}</dd>
+</dl>
+{% endif %}
+{% endblock %}
+
+{# Diagnosis reports don't need a bibliography #}
+{% block bibliography %}{% endblock %}

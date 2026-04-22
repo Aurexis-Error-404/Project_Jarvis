@@ -10,7 +10,10 @@ import contextvars
 import functools
 import logging
 
-from backend.tools import codebase_reader, git_interface, report_generator, web_research
+from backend.tools import (
+    browser_automation, codebase_reader, computer_automation, git_interface,
+    report_generator, web_research,
+)
 from backend.memory import jarvis_json, session_log
 
 logger = logging.getLogger("jarvis.dispatcher")
@@ -25,20 +28,42 @@ _SYNC_TOOLS = {
     "generate_html_report": report_generator.run,
     "update_project_memory": jarvis_json.update,
     "read_session_history": session_log.read,
+    "computer_automation": computer_automation.run,
 }
 
 # Async tools — awaited directly
 _ASYNC_TOOLS = {
-    "web_research": web_research.run,
+    "web_research":         web_research.run,
+    "browser_automation":   browser_automation.run,
 }
 
+# Tools that require per-call user consent (§7.2). Every dispatch first
+# routes through the session's ConsentManager; denial returns a structured
+# error and the tool never runs.
+_CONSENT_GATED_TOOLS: set[str] = {"computer_automation", "browser_automation"}
 
-async def dispatch_tool(name: str, inputs: dict) -> dict:
+
+async def dispatch_tool(name: str, inputs: dict, consent_manager=None) -> dict:
     """
     Route a tool call to its implementation.
     Returns a dict. Never raises — wraps all exceptions as {"error": "..."}.
+
+    `consent_manager` is the session's ConsentManager. If the tool is in
+    `_CONSENT_GATED_TOOLS`, we prompt the user before dispatching; a
+    denial short-circuits with `{"error": "user denied consent", ...}`.
     """
     logger.info(f"Dispatching tool: {name} inputs={list(inputs.keys())}")
+
+    if name in _CONSENT_GATED_TOOLS:
+        if consent_manager is None:
+            # Fall back to the session-bound ConsentManager via ContextVar.
+            from backend.ai.consent import current as _current_consent
+            consent_manager = _current_consent()
+        if consent_manager is None:
+            return {"error": f"consent required for {name} but no consent manager bound"}
+        approved = await consent_manager.request(action=name, payload=dict(inputs))
+        if not approved:
+            return {"error": "user denied consent", "tool": name}
 
     try:
         if name in _ASYNC_TOOLS:

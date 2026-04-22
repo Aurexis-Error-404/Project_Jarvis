@@ -39,6 +39,9 @@ class JarvisAgent:
         self.tool_schemas = tool_schemas
         self.max_iterations = max_iterations
         self.observations: list[dict] = []
+        # Count of tool calls dispatched during this run — consumed by the
+        # quality-retry guard to skip retries when side-effecting tools fired.
+        self.tools_used: int = 0
 
     async def run(self) -> str:
         for iteration in range(self.max_iterations):
@@ -124,6 +127,7 @@ class JarvisAgent:
         })
 
         for tc in tool_calls:
+            self.tools_used += 1
             await self._execute_tool(
                 tc,
                 self.messages,

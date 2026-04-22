@@ -170,22 +170,39 @@ def _format_research_data(raw: str) -> str:
         return str(raw)
 
 
+# Report-type → template filename. `general` is the safe fallback when the
+# caller passes an unknown type — we log a warning and render anyway so a
+# typo'd tool call never fails the query outright.
+TEMPLATES = {
+    "research":    "research_report.html",
+    "diagnosis":   "diagnosis_report.html",
+    "git_summary": "git_summary_report.html",
+    "audit":       "audit_report.html",
+    "executive":   "executive_summary.html",
+    "general":     "general_report.html",
+}
+
+
 def run(
     title: str,
     sections: list,
     research_data: str = "",
     output_path: str = None,
+    report_type: str = "research",
+    extra: dict = None,
 ) -> dict:
     try:
         if output_path is None:
             ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
             output_path = str(REPORTS_DIR / f"jarvis_report_{ts}.html")
 
-        generated_at = datetime.datetime.now(datetime.timezone.utc).strftime("%B %d, %Y at %H:%M UTC")
+        generated_at = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%B %d, %Y at %H:%M UTC"
+        )
 
         # Pre-process section content: markdown → HTML
         processed_sections = []
-        for s in sections:
+        for s in sections or []:
             if not isinstance(s, dict):
                 continue
             processed_sections.append({
@@ -195,74 +212,56 @@ def run(
 
         formatted_research = _format_research_data(research_data)
 
-        template_path = TEMPLATES_DIR / "report.html"
-        if template_path.exists():
-            html = _render_jinja(template_path, title, processed_sections, formatted_research, generated_at)
-        else:
-            html = _render_fallback(title, processed_sections, formatted_research, generated_at)
-            logger.warning("report.html template not found — using fallback renderer")
+        template_name = TEMPLATES.get(report_type)
+        if template_name is None:
+            logger.warning(
+                f"Unknown report_type '{report_type}' — falling back to 'general'"
+            )
+            template_name = TEMPLATES["general"]
+
+        html = _render_jinja(
+            template_name=template_name,
+            title=title,
+            sections=processed_sections,
+            research_data=formatted_research,
+            generated_at=generated_at,
+            extra=extra or {},
+        )
 
         out = Path(output_path)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(html, encoding="utf-8")
-        logger.info(f"Report saved: {out.absolute()}")
+        logger.info(f"Report saved ({report_type}): {out.absolute()}")
 
-        return {"path": str(out.absolute()), "html": html}
+        return {"path": str(out.absolute()), "html": html, "report_type": report_type}
 
     except Exception as e:
         logger.error(f"report_generator error: {e}")
         return {"error": str(e)}
 
 
-def _render_jinja(template_path, title, sections, research_data, generated_at) -> str:
-    from jinja2 import Environment, FileSystemLoader
+def _render_jinja(
+    *,
+    template_name: str,
+    title: str,
+    sections: list,
+    research_data: str,
+    generated_at: str,
+    extra: dict,
+) -> str:
+    from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-    env = Environment(loader=FileSystemLoader(str(template_path.parent)), autoescape=False)
-    template = env.get_template(template_path.name)
-    return template.render(
-        title=_html.escape(str(title)),
-        sections=sections,
-        research_data=_html.escape(str(research_data)) if research_data else "",
-        generated_at=generated_at,
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATES_DIR)),
+        # Autoescape by default; section `content` is already HTML-processed
+        # and marked with `|safe` in the template.
+        autoescape=select_autoescape(["html"]),
     )
-
-
-def _render_fallback(title, sections, research_data, generated_at) -> str:
-    """Minimal HTML report used when Docs team template isn't ready yet."""
-    section_html = ""
-    for s in sections:
-        heading = _html.escape(str(s.get("heading", "")))
-        content = s.get("content", "")  # already processed to HTML
-        section_html += f"<h2>{heading}</h2><div>{content}</div>\n"
-
-    safe_title = _html.escape(str(title))
-    safe_research = _html.escape(str(research_data)) if research_data else ""
-    research_html = f"<h2>Research Data</h2><pre>{safe_research}</pre>" if research_data else ""
-
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><title>{safe_title}</title>
-<style>
-body{{font-family:-apple-system,sans-serif;max-width:900px;margin:2em auto;padding:0 1em;
-background:#0a0a0f;color:#e4e4ed;line-height:1.7}}
-h1{{font-size:1.6rem;margin-bottom:8px}}
-h2{{font-size:1.15rem;border-bottom:1px solid #232336;padding-bottom:6px;margin:24px 0 10px}}
-pre{{background:#111119;padding:14px;border-radius:8px;overflow-x:auto;font-size:13px}}
-code{{background:rgba(96,165,250,.08);padding:2px 6px;border-radius:4px;font-size:12.5px}}
-pre code{{background:none;padding:0}}
-table{{border-collapse:collapse;width:100%}}
-th,td{{border:1px solid #232336;padding:8px 12px;font-size:13px}}
-th{{background:#13131a;font-weight:600}}
-ul,ol{{padding-left:20px}}
-li{{margin:4px 0}}
-blockquote{{border-left:3px solid #2563eb;padding:8px 14px;margin:10px 0;background:#13131a}}
-a{{color:#60a5fa}}
-</style>
-</head>
-<body>
-<h1>{safe_title}</h1>
-<p><em>Generated: {generated_at}</em></p>
-{section_html}
-{research_html}
-</body>
-</html>"""
+    template = env.get_template(template_name)
+    return template.render(
+        title=str(title),
+        sections=sections,
+        research_data=str(research_data) if research_data else "",
+        generated_at=generated_at,
+        **extra,
+    )

@@ -9,6 +9,8 @@ import SurfaceCard from './components/SurfaceCard';
 import SidebarLeft from './components/SidebarLeft';
 import SidebarRight from './components/SidebarRight';
 import ChatArea from './components/ChatArea';
+import ConsentDialog from './components/ConsentDialog';
+import { SEND } from './constants/wsEvents';
 import { sanitizeForStorage } from './utils/redaction';
 
 export default function App() {
@@ -27,6 +29,9 @@ export default function App() {
   const [showStartup, setShowStartup] = useState(true);
   const [activeTools, setActiveTools] = useState([]);
   const [projectPath, setProjectPath] = useState(null);
+  const [orchestratorStatus, setOrchestratorStatus] = useState(null);
+  const [autoResearchProgress, setAutoResearchProgress] = useState(null);
+  const [consentRequest, setConsentRequest] = useState(null);
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -48,6 +53,7 @@ export default function App() {
       dispatch, isStreamingRef, discardStreamRef,
       setIsStreaming, setSurfaceData, setMode,
       setReports, setReportReady, setActiveTools, setProjectPath,
+      setOrchestratorStatus, setAutoResearchProgress, setConsentRequest,
     })
   );
 
@@ -172,8 +178,21 @@ export default function App() {
         onModeToggle={handleModeToggle}
         activeTools={activeTools}
         connectionStatus={connectionStatus}
+        orchestratorStatus={orchestratorStatus}
+        autoResearchProgress={autoResearchProgress}
       />
       <SidebarRight reports={reports} />
+      <ConsentDialog
+        request={consentRequest}
+        onApprove={(requestId) => {
+          sendMessage({ event: SEND.CONSENT_RESPONSE, request_id: requestId, approved: true });
+          setConsentRequest(null);
+        }}
+        onDeny={(requestId) => {
+          sendMessage({ event: SEND.CONSENT_RESPONSE, request_id: requestId, approved: false });
+          setConsentRequest(null);
+        }}
+      />
     </div>
   );
 }

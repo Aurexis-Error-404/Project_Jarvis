@@ -9,6 +9,7 @@ export const SEND = {
   SURFACE_DISMISSED: 'surface_dismissed',
   SET_PROJECT_PATH:  'set_project_path',
   DEMO_SURFACE:      'demo_surface',
+  CONSENT_RESPONSE:  'consent_response',
 };
 
 export const RECV = {
@@ -21,4 +22,7 @@ export const RECV = {
   TOOL_CALL_STATUS: 'tool_call_status',
   REPORT_GENERATED: 'report_generated',
   PROJECT_PATH_ACK: 'project_path_ack',
+  ORCHESTRATOR_STATUS:    'orchestrator_status',
+  AUTO_RESEARCH_PROGRESS: 'auto_research_progress',
+  CONSENT_REQUEST:        'consent_request',
 };

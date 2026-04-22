@@ -1,0 +1,47 @@
+{% extends "base_report.html" %}
+
+{% block extra_style %}
+.severity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  font-family: var(--sans);
+  margin: 0.75rem 0 1.25rem;
+}
+.sev-cell {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+}
+.sev-cell .label { font-size: 0.72rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 0.08em; }
+.sev-cell .count { font-size: 1.4rem; font-weight: 700; margin-top: 0.15rem; }
+.sev-cell.critical { border-left: 4px solid var(--red); }
+.sev-cell.high     { border-left: 4px solid var(--red); }
+.sev-cell.medium   { border-left: 4px solid var(--amber); }
+.sev-cell.low      { border-left: 4px solid var(--green); }
+{% endblock %}
+
+{% block badges %}
+<div class="badges">
+  <span class="badge">audit</span>
+</div>
+{% endblock %}
+
+{% block abstract %}
+{% if severity_counts %}
+<div class="severity-grid">
+  <div class="sev-cell critical"><div class="label">Critical</div><div class="count">{{ severity_counts.critical|default(0) }}</div></div>
+  <div class="sev-cell high"><div class="label">High</div><div class="count">{{ severity_counts.high|default(0) }}</div></div>
+  <div class="sev-cell medium"><div class="label">Medium</div><div class="count">{{ severity_counts.medium|default(0) }}</div></div>
+  <div class="sev-cell low"><div class="label">Low</div><div class="count">{{ severity_counts.low|default(0) }}</div></div>
+</div>
+{% endif %}
+{% if summary %}
+<div class="abstract">
+  <h2>Executive summary</h2>
+  <p>{{ summary }}</p>
+</div>
+{% endif %}
+{% endblock %}

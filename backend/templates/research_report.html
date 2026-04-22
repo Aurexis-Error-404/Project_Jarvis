@@ -1,0 +1,17 @@
+{% extends "base_report.html" %}
+
+{% block abstract %}
+{% if abstract %}
+<div class="abstract">
+  <h2>Abstract</h2>
+  <p>{{ abstract }}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block badges %}
+<div class="badges">
+  <span class="badge">research</span>
+  {% for tag in tags %}<span class="badge">{{ tag }}</span>{% endfor %}
+</div>
+{% endblock %}

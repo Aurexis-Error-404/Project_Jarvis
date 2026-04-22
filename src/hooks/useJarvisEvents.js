@@ -15,6 +15,9 @@ export default function buildJarvisEventHandlers({
   setReportReady,
   setActiveTools,
   setProjectPath,
+  setOrchestratorStatus,
+  setAutoResearchProgress,
+  setConsentRequest,
 }) {
   return {
     onStreamChunk: (event) => {
@@ -65,6 +68,44 @@ export default function buildJarvisEventHandlers({
     onStatusUpdate: () => { /* transient — no state update needed */ },
 
     onProjectPathAck: (event) => { setProjectPath(event.path); },
+
+    onOrchestratorStatus: (event) => {
+      if (typeof setOrchestratorStatus === 'function') {
+        setOrchestratorStatus({
+          strategy: event.strategy,
+          phase: event.phase,
+          iteration: event.iteration,
+          total: event.total,
+        });
+      }
+    },
+
+    onAutoResearchProgress: (event) => {
+      if (typeof setAutoResearchProgress !== 'function') return;
+      if (event.phase === 'done') {
+        setAutoResearchProgress(null);
+        return;
+      }
+      setAutoResearchProgress({
+        iteration: event.iteration,
+        total: event.total,
+        currentScore: event.current_score,
+        bestScore: event.best_score,
+        spentUsd: event.spent_usd,
+        phase: event.phase,
+      });
+    },
+
+    onConsentRequest: (event) => {
+      if (typeof setConsentRequest === 'function') {
+        setConsentRequest({
+          requestId: event.request_id,
+          action: event.action,
+          payload: event.payload || {},
+          timeoutS: event.timeout_s,
+        });
+      }
+    },
 
     onToolCallStatus: (event) => {
       if (event.status === 'start') {

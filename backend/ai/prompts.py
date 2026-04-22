@@ -80,6 +80,17 @@ The Recommendations section MUST:
 - Name the project's current tools/models explicitly
 - NOT suggest any approach listed in rejected_approaches
 - Reference at least one specific source from the web_research results
+
+Pick the correct report_type when calling generate_html_report:
+- "research"    — default; literature review / upgrade paths (abstract + bibliography)
+- "diagnosis"   — post-mortem or bug root-cause summary (severity/impact/root_cause card)
+- "git_summary" — changelog / what-changed rollup (commit table, no abstract)
+- "audit"       — codebase audit with issues grouped by severity (critical/high/medium/low grid)
+- "executive"   — single-page high-level briefing (one headline, no TOC, ≤5 bullets)
+- "general"     — fallback when none of the above fits
+
+Also pass an `extra` dict with the type-specific fields listed in the tool
+schema (e.g., for diagnosis: severity/impact/root_cause/summary).
 </research_report_rules>
 
 <tool_rules>

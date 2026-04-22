@@ -1,0 +1,27 @@
+{% extends "base_report.html" %}
+
+{% block extra_style %}
+.commit-table { font-family: var(--mono); font-size: 0.82rem; }
+.commit-table td:first-child { color: var(--accent); }
+.risk-callout {
+  border-left: 4px solid var(--amber);
+  background: var(--surface);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+}
+{% endblock %}
+
+{% block badges %}
+<div class="badges">
+  <span class="badge">git summary</span>
+  {% if range_label %}<span class="badge">{{ range_label }}</span>{% endif %}
+</div>
+{% endblock %}
+
+{# Changelogs skip the abstract and go straight to sections. #}
+{% block abstract %}{% endblock %}
+
+{# Bibliography would be noise here. #}
+{% block bibliography %}{% endblock %}
