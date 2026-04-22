@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KrishiCFO Project Audit — Season-wise Crop Intelligence Dashboard — JARVIS Report</title>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #232336;
+    --text: #e4e4ed;
+    --text-dim: #9898a8;
+    --accent: #60a5fa;
+    --green: #34d399;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --serif: Charter, Cambria, Georgia, 'Times New Roman', serif;
+    --sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #ffffff;
+      --surface: #f5f5f7;
+      --border: #e2e2e6;
+      --text: #18181c;
+      --text-dim: #55555d;
+      --accent: #2563eb;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--text);
+    max-width: 780px;
+    margin: 2.5rem auto;
+    padding: 0 1.5rem;
+    line-height: 1.65;
+    counter-reset: section;
+  }
+
+  .title-page {
+    text-align: center;
+    padding: 3rem 0 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+  }
+  .title-page h1 {
+    font-family: var(--sans);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .title-page .authors,
+  .title-page .date {
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+  }
+  .title-page .badges {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+
+  .abstract {
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0 2rem;
+    font-size: 0.95rem;
+  }
+  .abstract h2 {
+    font-family: var(--sans);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+
+  nav.toc {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 0 2rem;
+    font-family: var(--sans);
+    font-size: 0.92rem;
+  }
+  nav.toc h2 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  nav.toc ol { list-style: none; padding-left: 0; counter-reset: toc; }
+  nav.toc ol li {
+    counter-increment: toc;
+    padding: 2px 0;
+  }
+  nav.toc ol li::before {
+    content: counter(toc) ". ";
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  nav.toc a { color: var(--text); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+
+  section.report-section {
+    margin-bottom: 2rem;
+    counter-increment: section;
+  }
+  section.report-section > h2 {
+    font-family: var(--sans);
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.75rem;
+  }
+  section.report-section > h2::before {
+    content: counter(section) ". ";
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  h3 { font-family: var(--sans); font-size: 1.05rem; margin: 1rem 0 0.4rem; }
+  h4 { font-family: var(--sans); font-size: 0.95rem; margin: 0.75rem 0 0.35rem; }
+  p { margin: 0.6rem 0; }
+  ul, ol { padding-left: 1.5rem; margin: 0.5rem 0; }
+  li { margin: 0.2rem 0; }
+
+  code {
+    font-family: var(--mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.88em;
+  }
+  pre {
+    font-family: var(--mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.9rem 1rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.45;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  blockquote {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 0.5rem 1rem;
+    margin: 0.75rem 0;
+    color: var(--text-dim);
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  table { border-collapse: collapse; width: 100%; margin: 0.75rem 0; font-family: var(--sans); font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.4rem 0.75rem; text-align: left; }
+  th { background: var(--surface); font-weight: 600; }
+
+  .bibliography { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .bibliography h2 { font-family: var(--sans); font-size: 1.05rem; margin-bottom: 0.75rem; }
+  .bibliography pre { font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; }
+
+  footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  @media print {
+    body { max-width: none; margin: 0; padding: 0; color: #000; background: #fff; }
+    @page { size: A4; margin: 2.5cm; }
+    section.report-section { break-inside: avoid; }
+    section.report-section > h2 { break-after: avoid; }
+    nav.toc, .badges { display: none; }
+    a { color: #000; text-decoration: none; }
+  }
+
+  
+body { max-width: 680px; }
+section.report-section > h2 { font-size: 1.1rem; }
+.callout {
+  background: var(--surface);
+  border-left: 4px solid var(--accent);
+  padding: 0.8rem 1.1rem;
+  margin: 1rem 0;
+  font-family: var(--sans);
+}
+
+</style>
+</head>
+<body>
+
+
+<header class="title-page">
+  <h1>KrishiCFO Project Audit — Season-wise Crop Intelligence Dashboard</h1>
+  <div class="authors">JARVIS, your project</div>
+  <div class="date">April 22, 2026 at 16:33 UTC</div>
+  
+<div class="badges">
+  <span class="badge">executive briefing</span>
+</div>
+
+</header>
+
+
+
+
+<div class="callout">
+  <strong>KrishiCFO MVP: Season-wise Crop Intelligence Dashboard</strong>
+</div>
+
+
+
+
+
+
+
+<section class="report-section" id="section-1">
+  <h2>Project Overview</h2>
+  <div><p>KrishiCFO is a <strong>season-wise crop intelligence dashboard</strong> built on real agricultural data from 2022-23 through 2025-26. The project focuses on commodity comparison across seasons, MSP vs seasonal price analysis, and Kharif/Rabi arrival visibility — deliberately avoiding mandi-level forecasting until richer data is available.</p></div>
+</section>
+
+<section class="report-section" id="section-2">
+  <h2>Technology Stack</h2>
+  <div><ul>
+<li><strong>Frontend</strong>: Next.js 14 + React 18 + TypeScript</li>
+<li><strong>Backend</strong>: FastAPI + Python (planned)</li>
+<li><strong>Data</strong>: Season-wise CSV reports (4 seasons, normalized to JSON)</li>
+<li><strong>Deployment</strong>: Local-first with future API wrapper support</li>
+</ul></div>
+</section>
+
+<section class="report-section" id="section-3">
+  <h2>Current Progress</h2>
+  <div><p>| Component | Status | Location | |-----------|--------|----------| | Data normalization | ✅ Complete | <code>crop_data/normalize_season_reports.py</code> | | Merged dataset | ✅ Complete | <code>season_report_summary.csv</code> + <code>.json</code> | | Documentation | ✅ Complete | <code>README.md</code>, <code>data_dictionary.md</code> | | Frontend scaffold | ✅ Complete | <code>frontend/app/</code>, <code>frontend/components/</code> | | Dashboard page | ✅ Complete | <code>frontend/app/dashboard/page.tsx</code> | | Data access layer | ✅ Complete | <code>frontend/lib/api.ts</code>, <code>canned-data.ts</code> | | UI components | ✅ Complete | 7 components built |</p>
+<p><strong>24-hour execution plan</strong> documented in <code>member-b-execution-plan.md</code> with hour-by-hour deliverables.</p></div>
+</section>
+
+<section class="report-section" id="section-4">
+  <h2>Architecture Details</h2>
+  <div><h3>Data Layer (<code>crop_data/</code>)</h3>
+<ul>
+<li>4 raw season reports (2022-23 through 2025-26)</li>
+<li>Normalized fields: <code>season_year</code>, <code>commodity_group</code>, <code>commodity</code>, <code>msp</code>, <code>kharif_price</code>, <code>kharif_arrival_tonnes</code>, <code>rabi_price</code>, <code>rabi_arrival_tonnes</code></li>
+<li>Missing values (<code>-</code>) converted to <code>null</code> in JSON</li>
+</ul>
+<h3>Frontend Components</h3>
+<ul>
+<li><code>CommodityGroupSelector</code> — filter by crop category</li>
+<li><code>CommoditySelector</code> — filter by specific commodity</li>
+<li><code>SeasonPriceChart</code> — multi-season price movement</li>
+<li><code>SeasonArrivalChart</code> — Kharif/Rabi arrival comparison</li>
+<li><code>MSPComparisonCard</code> — price vs MSP analysis</li>
+<li><code>CommoditySummaryTable</code> — tabular overview</li>
+<li><code>InsightCards</code> — automated insights</li>
+</ul>
+<h3>API Contract</h3>
+<p>Single record shape:</p>
+<pre><code class="language-json">
+{
+
+
+  &quot;season_year&quot;: &quot;2025-26&quot;,
+
+
+  &quot;commodity_group&quot;: &quot;Pulses&quot;,
+
+
+  &quot;commodity&quot;: &quot;Bengal Gram(Gram)(Whole)&quot;,
+
+
+  &quot;msp&quot;: 5650.0,
+
+
+  &quot;kharif_price&quot;: null,
+
+
+  &quot;kharif_arrival_tonnes&quot;: null,
+
+
+  &quot;rabi_price&quot;: 5942.31,
+
+
+  &quot;rabi_arrival_tonnes&quot;: 18.42
+
+
+}
+
+
+</code></pre></div>
+</section>
+
+<section class="report-section" id="section-5">
+  <h2>Issues &amp; Risks</h2>
+  <div><p>| Priority | Item | Notes | |----------|------|-------| | 🔴 Critical | None | Core data and UI complete | | 🟡 High | Backend API wrapper | <code>lib/api.ts</code> ready, FastAPI backend not yet connected | | 🟢 Medium | Responsive polish | Hour 14-20 in execution plan | | 🟢 Medium | Insight card refinements | Can be cut if time tight | | ⚪ Low | Advanced motion | Explicitly listed as cuttable |</p>
+<p><strong>Data Limitations</strong> (documented, not bugs):</p>
+<ul>
+<li>No mandi-level data</li>
+<li>No district-level data</li>
+<li>No daily time-series</li>
+<li>Cannot support: &quot;which mandi is best&quot;, &quot;when to sell this week&quot;, transport/profit by location</li>
+</ul></div>
+</section>
+
+<section class="report-section" id="section-6">
+  <h2>Recommended Next Steps</h2>
+  <div><ol>
+<li><strong>Verify data normalization</strong> — Run <code>python crop_data/normalize_season_reports.py</code> and confirm merged outputs match expected schema</li>
+<li><strong>Test dashboard flow</strong> — Open <code>/dashboard</code>, test all commodity groups, verify charts render with real data</li>
+<li><strong>Lock demo flow</strong> — Hour 20-24: test all commodity groups, fix visible blockers, prepare backup screenshots</li>
+</ol></div>
+</section>
+
+
+
+
+
+<footer>
+  Generated by JARVIS · April 22, 2026 at 16:33 UTC
+</footer>
+
+</body>
+</html>
